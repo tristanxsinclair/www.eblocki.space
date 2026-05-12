@@ -114,3 +114,204 @@ export function scoreProof(domain: string, content: string, mode?: Mode): ProofS
 
   return { score, strength, feedback, nextUpgrade };
 }
+export type EvidenceStrength = "weak" | "moderate" | "strong" | "elite";
+
+export type ProofDomain =
+  | "law"
+  | "psychology"
+  | "sales"
+  | "eblocki"
+  | "sport"
+  | "brand"
+  | "career_money"
+  | "general";
+
+export interface ProofScoringInput {
+  domain?: ProofDomain | string;
+  title?: string;
+  artifactType?: string;
+  content?: string;
+  reflection?: string;
+  nextUpgrade?: string;
+}
+
+export interface ProofScoringResult {
+  qualityScore: number;
+  evidenceStrength: EvidenceStrength;
+  feedback: string;
+  nextUpgrade: string;
+}
+
+const DOMAIN_MARKERS: Record<string, string[]> = {
+  law: [
+    "issue",
+    "rule",
+    "application",
+    "conclusion",
+    "authority",
+    "statute",
+    "case",
+    "jurisdiction",
+    "counterargument",
+    "construction",
+    "purpose",
+    "context",
+  ],
+  psychology: [
+    "concept",
+    "application",
+    "evidence",
+    "evaluation",
+    "study",
+    "research",
+    "mechanism",
+    "cognition",
+    "behaviour",
+    "development",
+  ],
+  sales: [
+    "customer",
+    "objection",
+    "gse",
+    "warranty",
+    "close",
+    "premium",
+    "pain",
+    "diagnosis",
+    "aov",
+    "attachment",
+  ],
+  eblocki: [
+    "state",
+    "proof",
+    "artifact",
+    "avoidance",
+    "bottleneck",
+    "friction",
+    "upgrade",
+    "control",
+    "identity",
+  ],
+  sport: [
+    "movement",
+    "training",
+    "match",
+    "goal",
+    "pressing",
+    "finishing",
+    "drill",
+    "positioning",
+    "energy",
+  ],
+  brand: [
+    "hook",
+    "caption",
+    "post",
+    "script",
+    "audience",
+    "identity",
+    "content",
+    "publish",
+    "original",
+  ],
+  career_money: [
+    "cost",
+    "risk",
+    "income",
+    "opportunity",
+    "resume",
+    "cover letter",
+    "budget",
+    "decision",
+    "upside",
+  ],
+  general: ["proof", "reflection", "feedback", "upgrade", "action"],
+};
+
+function clampScore(score: number): number {
+  return Math.max(1, Math.min(10, Math.round(score)));
+}
+
+export function evidenceStrengthFromScore(score: number): EvidenceStrength {
+  if (score <= 3) return "weak";
+  if (score <= 6) return "moderate";
+  if (score <= 8) return "strong";
+  return "elite";
+}
+
+function countDomainMarkers(domain: string, text: string): number {
+  const markers = DOMAIN_MARKERS[domain] ?? DOMAIN_MARKERS.general;
+  const lower = text.toLowerCase();
+
+  return markers.reduce((count, marker) => {
+    return lower.includes(marker.toLowerCase()) ? count + 1 : count;
+  }, 0);
+}
+
+export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult {
+  const domain = String(input.domain || "general").toLowerCase();
+  const title = input.title?.trim() || "";
+  const artifactType = input.artifactType?.trim() || "";
+  const content = input.content?.trim() || "";
+  const reflection = input.reflection?.trim() || "";
+  const nextUpgrade = input.nextUpgrade?.trim() || "";
+
+  const combined = [title, artifactType, content, reflection, nextUpgrade]
+    .filter(Boolean)
+    .join("\n");
+
+  let score = 1;
+
+  if (title.length > 4) score += 1;
+  if (artifactType.length > 2) score += 1;
+  if (content.length >= 80) score += 1;
+  if (content.length >= 250) score += 1;
+  if (reflection.length >= 40) score += 1;
+  if (nextUpgrade.length >= 20) score += 1;
+
+  const markerCount = countDomainMarkers(domain, combined);
+  if (markerCount >= 2) score += 1;
+  if (markerCount >= 4) score += 1;
+
+  const hasCorrectionLanguage =
+    /\b(correct|improve|revise|upgrade|next time|weakness|feedback|mistake|fix)\b/i.test(
+      combined
+    );
+
+  if (hasCorrectionLanguage) score += 1;
+
+  const finalScore = clampScore(score);
+  const evidenceStrength = evidenceStrengthFromScore(finalScore);
+
+  let feedback = "";
+  let suggestedUpgrade = "";
+
+  if (evidenceStrength === "weak") {
+    feedback =
+      "Weak evidence. The artifact is too vague or underdeveloped. It needs clearer content, applied detail, reflection, and a next upgrade.";
+    suggestedUpgrade =
+      "Add a concrete artifact, explain what was done, identify the weakness, and define the next correction.";
+  } else if (evidenceStrength === "moderate") {
+    feedback =
+      "Moderate evidence. A concrete artifact exists, but the application or evaluation is still limited.";
+    suggestedUpgrade =
+      "Add domain-specific structure and one clear correction based on feedback.";
+  } else if (evidenceStrength === "strong") {
+    feedback =
+      "Strong evidence. The artifact shows applied skill, useful structure, and some feedback awareness.";
+    suggestedUpgrade =
+      "Sharpen the correction step and connect the artifact to the next measurable performance upgrade.";
+  } else {
+    feedback =
+      "Elite evidence. The artifact includes action, application, feedback, and a clear upgrade path.";
+    suggestedUpgrade =
+      "Preserve this standard and repeat it across the next proof cycle.";
+  }
+
+  return {
+    qualityScore: finalScore,
+    evidenceStrength,
+    feedback,
+    nextUpgrade: nextUpgrade || suggestedUpgrade,
+  };
+}
