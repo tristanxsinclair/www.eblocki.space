@@ -15,6 +15,9 @@ export function ProofContractCard({
   committing?: boolean;
   committed?: boolean;
 }) {
+  const buttonDisabled = committing || committed;
+  const buttonText = committed ? "✓ Proof Contract Saved" : committing ? "Committing…" : "Commit to Court of Evidence";
+
   return (
     <Card className="panel p-4 border-primary/30">
       <div className="flex items-start justify-between gap-3">
@@ -44,10 +47,11 @@ export function ProofContractCard({
       {onCommit && (
         <Button
           onClick={onCommit}
-          disabled={committing || committed}
+          disabled={buttonDisabled}
           className="mt-4 w-full"
+          variant={committed ? "secondary" : "default"}
         >
-          {committed ? "Committed" : committing ? "Committing…" : "Commit to Court of Evidence"}
+          {buttonText}
         </Button>
       )}
     </Card>
