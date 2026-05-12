@@ -14,16 +14,323 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      coach_interactions: {
+        Row: {
+          assistant_output: string | null
+          created_at: string
+          id: string
+          mode: string | null
+          proof_contract_id: string | null
+          proof_required: boolean | null
+          state_detected: string | null
+          user_id: string
+          user_input: string
+        }
+        Insert: {
+          assistant_output?: string | null
+          created_at?: string
+          id?: string
+          mode?: string | null
+          proof_contract_id?: string | null
+          proof_required?: boolean | null
+          state_detected?: string | null
+          user_id: string
+          user_input: string
+        }
+        Update: {
+          assistant_output?: string | null
+          created_at?: string
+          id?: string
+          mode?: string | null
+          proof_contract_id?: string | null
+          proof_required?: boolean | null
+          state_detected?: string | null
+          user_id?: string
+          user_input?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_interactions_proof_contract_id_fkey"
+            columns: ["proof_contract_id"]
+            isOneToOne: false
+            referencedRelation: "proof_commitments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_control_sheets: {
+        Row: {
+          avoidance_signal: string | null
+          created_at: string
+          eblocki_proof: string | null
+          end_avoidance: string | null
+          end_output: string | null
+          end_pattern: string | null
+          end_proof: string | null
+          friction_task: string | null
+          id: string
+          law_proof: string | null
+          next_best_action: string | null
+          prime_objective: string | null
+          psychology_proof: string | null
+          sheet_date: string
+          state: string | null
+          tomorrow_first_move: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avoidance_signal?: string | null
+          created_at?: string
+          eblocki_proof?: string | null
+          end_avoidance?: string | null
+          end_output?: string | null
+          end_pattern?: string | null
+          end_proof?: string | null
+          friction_task?: string | null
+          id?: string
+          law_proof?: string | null
+          next_best_action?: string | null
+          prime_objective?: string | null
+          psychology_proof?: string | null
+          sheet_date?: string
+          state?: string | null
+          tomorrow_first_move?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avoidance_signal?: string | null
+          created_at?: string
+          eblocki_proof?: string | null
+          end_avoidance?: string | null
+          end_output?: string | null
+          end_pattern?: string | null
+          end_proof?: string | null
+          friction_task?: string | null
+          id?: string
+          law_proof?: string | null
+          next_best_action?: string | null
+          prime_objective?: string | null
+          psychology_proof?: string | null
+          sheet_date?: string
+          state?: string | null
+          tomorrow_first_move?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      performance_os_config: {
+        Row: {
+          auto_create_proof_contracts: boolean | null
+          created_at: string
+          default_response_structure: boolean | null
+          id: string
+          model: string | null
+          proof_contract_minimum_seriousness: number | null
+          strict_verification: boolean | null
+          updated_at: string
+          user_id: string
+          vector_store_id: string | null
+        }
+        Insert: {
+          auto_create_proof_contracts?: boolean | null
+          created_at?: string
+          default_response_structure?: boolean | null
+          id?: string
+          model?: string | null
+          proof_contract_minimum_seriousness?: number | null
+          strict_verification?: boolean | null
+          updated_at?: string
+          user_id: string
+          vector_store_id?: string | null
+        }
+        Update: {
+          auto_create_proof_contracts?: boolean | null
+          created_at?: string
+          default_response_structure?: boolean | null
+          id?: string
+          model?: string | null
+          proof_contract_minimum_seriousness?: number | null
+          strict_verification?: boolean | null
+          updated_at?: string
+          user_id?: string
+          vector_store_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      proof_artifacts: {
+        Row: {
+          artifact_type: string | null
+          content: string | null
+          created_at: string
+          domain: string
+          evidence_strength: string | null
+          feedback: string | null
+          id: string
+          next_upgrade: string | null
+          quality_score: number | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          artifact_type?: string | null
+          content?: string | null
+          created_at?: string
+          domain: string
+          evidence_strength?: string | null
+          feedback?: string | null
+          id?: string
+          next_upgrade?: string | null
+          quality_score?: number | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          artifact_type?: string | null
+          content?: string | null
+          created_at?: string
+          domain?: string
+          evidence_strength?: string | null
+          feedback?: string | null
+          id?: string
+          next_upgrade?: string | null
+          quality_score?: number | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      proof_commitments: {
+        Row: {
+          coach_interaction_id: string | null
+          completed_at: string | null
+          completion_reflection: string | null
+          created_at: string
+          daily_control_sheet_id: string | null
+          domain: string
+          due_date: string | null
+          evidence_standard: string | null
+          id: string
+          mode: string | null
+          proof_artifact_id: string | null
+          required_artifact: string | null
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          coach_interaction_id?: string | null
+          completed_at?: string | null
+          completion_reflection?: string | null
+          created_at?: string
+          daily_control_sheet_id?: string | null
+          domain: string
+          due_date?: string | null
+          evidence_standard?: string | null
+          id?: string
+          mode?: string | null
+          proof_artifact_id?: string | null
+          required_artifact?: string | null
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          coach_interaction_id?: string | null
+          completed_at?: string | null
+          completion_reflection?: string | null
+          created_at?: string
+          daily_control_sheet_id?: string | null
+          domain?: string
+          due_date?: string | null
+          evidence_standard?: string | null
+          id?: string
+          mode?: string | null
+          proof_artifact_id?: string | null
+          required_artifact?: string | null
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proof_commitments_daily_control_sheet_id_fkey"
+            columns: ["daily_control_sheet_id"]
+            isOneToOne: false
+            referencedRelation: "daily_control_sheets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proof_commitments_proof_artifact_id_fkey"
+            columns: ["proof_artifact_id"]
+            isOneToOne: false
+            referencedRelation: "proof_artifacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +457,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
