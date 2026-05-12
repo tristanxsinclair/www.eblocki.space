@@ -1,3 +1,4 @@
+import { normaliseCoachResponse } from "@/lib/eblocki/coach-response";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,26 +47,53 @@ export default function Coach() {
       .then(({ data }) => setHistory(data ?? []));
   }, [user, result]);
 
-  const send = async () => {
-    if (!input.trim()) return;
-    setLoading(true);
-    setResult(null);
-    setCommitted(false);
-    try {
-      const { data, error } = await supabase.functions.invoke("coach", {
-        body: { message: input },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setResult(data);
-      if (data.commitmentId) setCommitted(true);
-    } catch (e: any) {
-      toast.error(e.message ?? "Coach failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+const send = async () => {
+  if (!message.trim()) return;
 
+  setLoading(true);
+  setError(null);
+
+  try {
+    const { data, error } = await supabase.functions.invoke("coach", {
+      body: { message: message.trim() },
+    });
+
+    if (error) {
+      console.error("Coach invoke error:", error);
+      setError(
+        `Coach request failed: ${
+          error.message || "Unknown Supabase function error"
+        }`
+      );
+      return;
+    }
+
+    if (!data) {
+      setError("Coach returned no data. The request succeeded, but the response body was empty.");
+      return;
+    }
+
+    const normalised = normaliseCoachResponse(data);
+
+    setResponse(normalised);
+    setMessage("");
+  } catch (err) {
+    console.error("Coach unexpected error:", err);
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Unexpected coach error. Check console for details."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+if (response?.commitmentId) {
+  setError("Proof Contract already saved.");
+  return;
+}
+{response?.commitmentId ? "Proof Contract Saved" : "Commit to the Court of Evidence"}
+disabled={loading || !!response?.commitmentId}
   const commit = async () => {
     if (!result || !user) return;
     setCommitting(true);
@@ -92,7 +120,7 @@ export default function Coach() {
     } finally {
       setCommitting(false);
     }
-  };
+}
 
   return (
     <AppShell>
