@@ -3,16 +3,13 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
-import { Card } from "@/components/eblocki/../ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ProofContractCard } from "@/components/eblocki/ProofContractCard";
 import { EvidenceStrengthBadge, ModeBadge, StateBadge } from "@/components/eblocki/Badges";
 import { ArrowRight, Crosshair, FileText, Gavel } from "lucide-react";
 import { detectMode, type Mode } from "@/lib/eblocki/modes";
 import { detectState, type BehaviouralState, STATE_PRESCRIPTION } from "@/lib/eblocki/states";
-import type { ProofContract } from "@/lib/eblocki/proof-contract";
-import { toast } from "sonner";
 
 export default function Dashboard() {
   const { user } = useAuth();
