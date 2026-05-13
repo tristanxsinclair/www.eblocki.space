@@ -90,7 +90,7 @@ export function scoreKeywordMatch(text: string, keywords: string[] = []): number
   }, 0);
 }
 
-function detectMode(text: string): ModeDetection {
+export function detectMode(text: string): ModeDetection {
   const t = text.toLowerCase();
   const scores = {
     LAW_MAX: 0, PSYCH_HD: 0, SALES_CLOSE: 0, EBLOCKI: 0,
