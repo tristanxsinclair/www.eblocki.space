@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 const MODELS = [
@@ -20,17 +21,35 @@ const MODELS = [
 export default function Settings() {
   const { user } = useAuth();
   const [cfg, setCfg] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [modes, setModes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [editingModeId, setEditingModeId] = useState<string | null>(null);
+  const [modeDrafts, setModeDrafts] = useState<Record<string, any>>({});
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("performance_os_config").select("*").eq("user_id", user.id).maybeSingle()
-      .then(({ data }) => setCfg(data ?? { user_id: user.id, model: MODELS[0] }));
+    setLoading(true);
+
+    Promise.all([
+      supabase.from("performance_os_config").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("user_onboarding_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("user_modes").select("*").eq("user_id", user.id).order("created_at", { ascending: true }),
+    ]).then(([cfgResult, profileResult, modesResult]) => {
+      setCfg(cfgResult.data ?? { user_id: user.id, model: MODELS[0], default_response_structure: true, strict_verification: true, auto_create_proof_contracts: true, proof_contract_minimum_seriousness: 5 });
+      setProfile(profileResult.data ?? { user_id: user.id, identity_summary: "", roles: [], goals: [], coaching_style: "direct", strictness_level: 7, prefers_detailed_analysis: true, challenge_avoidance: true, auto_create_proof_contracts: true, completed_onboarding: false });
+      setModes(modesResult.data ?? []);
+    }).catch((error) => {
+      toast.error(error?.message || "Failed to load settings.");
+    }).finally(() => setLoading(false));
   }, [user]);
 
-  if (!cfg) return <AppShell><div className="p-8">Loading…</div></AppShell>;
-
-  const set = (k: string, v: any) => setCfg((c: any) => ({ ...c, [k]: v }));
+  if (loading) return <AppShell><div className="p-8">Loading…</div></AppShell>;
+  if (!cfg || !profile) return <AppShell><div className="p-8">Loading…</div></AppShell>;
+  const setProfileField = (k: string, v: any) => setProfile((p: any) => ({ ...p, [k]: v }));
+  const setModeDraftField = (modeId: string, field: string, value: any) => setModeDrafts((drafts) => ({ ...drafts, [modeId]: { ...drafts[modeId], [field]: value } }));
 
   const save = async () => {
     setSaving(true);
@@ -41,13 +60,88 @@ export default function Settings() {
     if (error) toast.error(error.message); else toast.success("Settings saved.");
   };
 
+  const saveProfile = async () => {
+    if (!user || !profile) return;
+    setSavingProfile(true);
+    const payload = {
+      user_id: user.id,
+      identity_summary: profile.identity_summary,
+      roles: profile.roles || [],
+      goals: profile.goals || [],
+      coaching_style: profile.coaching_style,
+      strictness_level: profile.strictness_level,
+      prefers_detailed_analysis: profile.prefers_detailed_analysis,
+      challenge_avoidance: profile.challenge_avoidance,
+      auto_create_proof_contracts: profile.auto_create_proof_contracts,
+      completed_onboarding: profile.completed_onboarding ?? true,
+    };
+    delete payload.id; delete payload.created_at; delete payload.updated_at;
+    const { error } = await supabase.from("user_onboarding_profiles").upsert(payload, { onConflict: "user_id" });
+    setSavingProfile(false);
+    if (error) toast.error(error.message); else toast.success("Onboarding profile updated.");
+  };
+
+  const toggleModeActive = async (mode: any) => {
+    if (!user) return;
+    const { error } = await supabase.from("user_modes").update({ is_active: !mode.is_active }).match({ user_id: user.id, mode_id: mode.mode_id });
+    if (error) return toast.error(error.message);
+    setModes((current) => current.map((item) => item.mode_id === mode.mode_id ? { ...item, is_active: !item.is_active } : item));
+    toast.success(`${mode.display_name} ${mode.is_active ? "disabled" : "enabled"}.`);
+  };
+
+  const startEditMode = (mode: any) => {
+    setEditingModeId(mode.mode_id);
+    setModeDrafts((drafts) => ({
+      ...drafts,
+      [mode.mode_id]: {
+        display_name: mode.display_name,
+        description: mode.description,
+        proof_examples: (mode.proof_examples || []).join(", "),
+        keywords: (mode.keywords || []).join(", "),
+      },
+    }));
+  };
+
+  const saveModeEdit = async (modeId: string) => {
+    if (!user || !modeDrafts[modeId]) return;
+    const draft = modeDrafts[modeId];
+    const payload = {
+      display_name: draft.display_name,
+      description: draft.description,
+      proof_examples: draft.proof_examples.split(",").map((item: string) => item.trim()).filter(Boolean),
+      keywords: draft.keywords.split(",").map((item: string) => item.trim()).filter(Boolean),
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from("user_modes").update(payload).match({ user_id: user.id, mode_id: modeId });
+    if (error) return toast.error(error.message);
+    setModes((current) => current.map((item) => item.mode_id === modeId ? { ...item, ...payload } : item));
+    setEditingModeId(null);
+    toast.success("Mode updated.");
+  };
+
+  const resetOnboarding = async () => {
+    if (!user) return;
+    const { error } = await supabase.from("user_onboarding_profiles").upsert({ user_id: user.id, completed_onboarding: false }, { onConflict: "user_id" });
+    if (error) return toast.error(error.message);
+    toast.success("Onboarding reset. You can rerun Setup OS.");
+  };
+
+  const exportProfile = () => {
+    const payload = { profile, modes };
+    const text = JSON.stringify(payload, null, 2);
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Eblocki profile copied to clipboard.");
+    });
+  };
+
   return (
     <AppShell>
-      <div className="p-4 md:p-8 max-w-2xl mx-auto space-y-6">
+      <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
         <header>
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Settings</span>
           <h1 className="text-2xl md:text-3xl font-semibold mt-1">Operator config.</h1>
         </header>
+
         <Card className="panel p-5 space-y-5">
           <div>
             <Label>Preferred model</Label>
@@ -58,7 +152,7 @@ export default function Settings() {
           <div>
             <Label>Vector store ID (optional)</Label>
             <Input value={cfg.vector_store_id ?? ""} onChange={(e) => set("vector_store_id", e.target.value)} placeholder="vs_..." />
-            <p className="mt-1 text-[10px] text-muted-foreground font-mono">{/* TODO: wire vector store retrieval when OpenAI key supplied */}Used when OpenAI Responses API is connected.</p>
+            <p className="mt-1 text-[10px] text-muted-foreground font-mono">Used when OpenAI Responses API is connected.</p>
           </div>
           <Toggle label="Default response structure (BLUF / Analysis / System / Upgrade)" checked={!!cfg.default_response_structure} onChange={(v) => set("default_response_structure", v)} />
           <Toggle label="Strict verification (refuse to fabricate sources)" checked={!!cfg.strict_verification} onChange={(v) => set("strict_verification", v)} />
@@ -68,6 +162,138 @@ export default function Settings() {
             <input type="range" min={1} max={10} value={cfg.proof_contract_minimum_seriousness ?? 5} onChange={(e) => set("proof_contract_minimum_seriousness", Number(e.target.value))} className="w-full mt-2" />
           </div>
           <Button onClick={save} disabled={saving} className="w-full">{saving ? "Saving…" : "Save"}</Button>
+        </Card>
+
+        <Card className="panel p-5 space-y-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Personalised Eblocki OS</span>
+              <h2 className="text-xl font-semibold mt-2">Onboarding profile</h2>
+            </div>
+            <Button variant="outline" onClick={resetOnboarding}>Reset onboarding</Button>
+          </div>
+
+          <div className="grid gap-4">
+            <div>
+              <Label>Identity summary</Label>
+              <Textarea
+                value={profile.identity_summary ?? ""}
+                onChange={(e) => setProfileField("identity_summary", e.target.value)}
+                rows={4}
+                placeholder="Who is this system built for?"
+              />
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Roles</Label>
+                <Input value={(profile.roles || []).join(", ")} onChange={(e) => setProfileField("roles", e.target.value.split(",").map((item: string) => item.trim()).filter(Boolean))} placeholder="student, athlete, creator" />
+              </div>
+              <div>
+                <Label>Goals</Label>
+                <Input value={(profile.goals || []).join(", ")} onChange={(e) => setProfileField("goals", e.target.value.split(",").map((item: string) => item.trim()).filter(Boolean))} placeholder="exam prep, sales, health" />
+              </div>
+            </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <Label>Coaching style</Label>
+                <Input value={profile.coaching_style ?? "direct"} onChange={(e) => setProfileField("coaching_style", e.target.value)} />
+              </div>
+              <div>
+                <Label>Strictness level</Label>
+                <input type="range" min={1} max={10} value={profile.strictness_level ?? 7} onChange={(e) => setProfileField("strictness_level", Number(e.target.value))} className="w-full mt-2" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Behavioural toggles</label>
+                <div className="grid gap-2">
+                  <Toggle label="Detailed analysis" checked={!!profile.prefers_detailed_analysis} onChange={(v) => setProfileField("prefers_detailed_analysis", v)} />
+                  <Toggle label="Challenge avoidance" checked={!!profile.challenge_avoidance} onChange={(v) => setProfileField("challenge_avoidance", v)} />
+                  <Toggle label="Auto-create proof contracts" checked={!!profile.auto_create_proof_contracts} onChange={(v) => setProfileField("auto_create_proof_contracts", v)} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-between gap-3 pt-3">
+            <Button variant="secondary" onClick={exportProfile}>Export profile JSON</Button>
+            <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? "Saving…" : "Save onboarding profile"}</Button>
+          </div>
+        </Card>
+
+        <Card className="panel p-5 space-y-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Mode management</span>
+              <h2 className="text-xl font-semibold mt-2">Active modes</h2>
+              <p className="text-sm text-muted-foreground mt-1">Edit your personalised modes and toggle whether each arena is active.</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {modes.length === 0 ? (
+              <div className="rounded-sm border border-border p-4 text-sm text-muted-foreground">
+                No personalised modes yet. Open Setup OS or add a mode in the Modes page.
+              </div>
+            ) : (
+              modes.map((mode) => {
+                const draft = modeDrafts[mode.mode_id] ?? {};
+                return (
+                  <Card key={mode.mode_id} className="panel p-4">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div>
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{mode.mode_id}</div>
+                        <div className="text-lg font-semibold mt-2">{mode.display_name}</div>
+                        <div className="text-xs text-muted-foreground mt-1">{mode.description}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => toggleModeActive(mode)}>{mode.is_active ? "Disable" : "Enable"}</Button>
+                        <Button size="sm" variant="secondary" onClick={() => startEditMode(mode)}>{editingModeId === mode.mode_id ? "Close" : "Edit"}</Button>
+                      </div>
+                    </div>
+
+                    {editingModeId === mode.mode_id && (
+                      <div className="mt-4 grid gap-3">
+                        <div>
+                          <Label>Display name</Label>
+                          <Input
+                            value={draft.display_name ?? mode.display_name}
+                            onChange={(e) => setModeDraftField(mode.mode_id, "display_name", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Description</Label>
+                          <Textarea
+                            value={draft.description ?? mode.description}
+                            onChange={(e) => setModeDraftField(mode.mode_id, "description", e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <Label>Proof examples</Label>
+                          <Textarea
+                            value={draft.proof_examples ?? (mode.proof_examples || []).join(", ")}
+                            onChange={(e) => setModeDraftField(mode.mode_id, "proof_examples", e.target.value)}
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <Label>Keywords</Label>
+                          <Textarea
+                            value={draft.keywords ?? (mode.keywords || []).join(", ")}
+                            onChange={(e) => setModeDraftField(mode.mode_id, "keywords", e.target.value)}
+                            rows={2}
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="secondary" onClick={() => setEditingModeId(null)}>Cancel</Button>
+                          <Button size="sm" onClick={() => saveModeEdit(mode.mode_id)}>Save mode</Button>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })
+            )}
+          </div>
         </Card>
       </div>
     </AppShell>
