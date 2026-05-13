@@ -8,7 +8,41 @@ const corsHeaders = {
 };
 
 // --- inline mode/state/contract logic (copy of src/lib/eblocki, kept in-function) ---
-type Mode = "LAW_MAX" | "PSYCH_HD" | "SALES_CLOSE" | "EBLOCKI" | "SPORT" | "BRAND" | "CAREER_MONEY" | "GENERAL_EXECUTION";
+type Mode = type UserOnboardingProfile = {
+  identity_summary: string | null;
+  roles: string[] | null;
+  goals: string[] | null;
+  coaching_style: string | null;
+  strictness_level: number | null;
+  prefers_detailed_analysis: boolean | null;
+  challenge_avoidance: boolean | null;
+  auto_create_proof_contracts: boolean | null;
+  completed_onboarding: boolean | null;
+};
+
+type UserMode = {
+  mode_id: string;
+  display_name: string;
+  description: string | null;
+  keywords: string[] | null;
+  proof_examples: string[] | null;
+  weak_evidence_examples: string[] | null;
+  strong_evidence_examples: string[] | null;
+  elite_evidence_examples: string[] | null;
+  preferred_response_framework: string | null;
+  scoring_criteria: Record<string, unknown> | null;
+  research_needs: string[] | null;
+  tone_adjustments: string | null;
+  is_default: boolean | null;
+  is_active: boolean | null;
+};
+
+type ModeDetectionResult = {
+  primary: Mode | string;
+  hybrid?: Mode | string;
+  customMode?: UserMode | null;
+  isCustomMode: boolean;
+};
 type BehaviouralState = "locked_in" | "avoidant" | "overloaded" | "low_energy" | "hype_drift" | "recovery" | "momentum" | "scattered" | "academic_displacement" | "strategic_build" | null;
 
 interface ProofContract {
@@ -53,6 +87,79 @@ function detectMode(text: string): { primary: Mode; hybrid?: Mode } {
     scores[m] = 0;
     for (const k of kws) if (t.includes(k)) scores[m] += k.length > 6 ? 2 : 1;
   }
+  function scoreKeywordMatch(text: string, keywords: string[] = []): number {
+  const lower = text.toLowerCase();
+
+  return keywords.reduce((score, keyword) => {
+    const clean = String(keyword || "").trim().toLowerCase();
+    if (!clean) return score;
+
+    if (lower.includes(clean)) {
+      return score + (clean.length > 8 ? 3 : clean.length > 4 ? 2 : 1);
+    }
+
+    return score;
+  }, 0);
+}
+
+function detectPersonalisedMode(
+  text: string,
+  userModes: UserMode[]
+): ModeDetectionResult | null {
+  const activeModes = userModes.filter((mode) => mode.is_active !== false);
+
+  if (activeModes.length === 0) return null;
+
+  const scored = activeModes
+    .map((mode) => {
+      const keywordScore = scoreKeywordMatch(text, mode.keywords ?? []);
+      const nameScore = scoreKeywordMatch(text, [
+        mode.mode_id,
+        mode.display_name,
+        mode.description ?? "",
+      ]);
+
+      return {
+        mode,
+        score: keywordScore + nameScore,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const best = scored[0];
+
+  if (!best || best.score <= 0) return null;
+
+  return {debug: {
+  usedFallback,
+  aiConfigured,
+  aiError,
+  databaseInteractionError,
+  databaseCommitmentError,
+  personalisedModeUsed: isCustomMode,
+  customModeId: customMode?.mode_id ?? null,
+  onboardingLoaded: !!onboardingProfile,
+  userModesLoaded: userModes.length,
+}
+}
+
+function detectModeWithUserModes(
+  text: string,
+  userModes: UserMode[]
+): ModeDetectionResult {
+  const personalised = detectPersonalisedMode(text, userModes);
+
+  if (personalised) return personalised;
+
+  const fallback = detectMode(text);
+
+  return {
+    primary: fallback.primary,
+    hybrid: fallback.hybrid,
+    customMode: null,
+    isCustomMode: false,
+  };
+}
   const sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
   if (sorted[0][1] === 0) return { primary: "GENERAL_EXECUTION" };
   const result: { primary: Mode; hybrid?: Mode } = { primary: sorted[0][0] as Mode };
@@ -134,6 +241,62 @@ const MODE_FRAMING: Record<Mode, string> = {
   CAREER_MONEY: "MODE: CAREER_MONEY. Decision rule: Utility/Total cost/Downside/Upside/Opportunity cost/Decision.",
   GENERAL_EXECUTION: "MODE: GENERAL_EXECUTION. Diagnose bottleneck. Prescribe one controllable next action with proof artifact.",
 };
+function buildPersonalisedContext(
+  profile: UserOnboardingProfile | null,
+  customMode: UserMode | null
+): string {
+  const parts: string[] = [];
+
+  if (profile) {
+    parts.push(`USER ONBOARDING PROFILE:
+Identity summary: ${profile.identity_summary || "Not provided"}
+Roles: ${(profile.roles ?? []).join(", ") || "Not provided"}
+Goals: ${(profile.goals ?? []).join(", ") || "Not provided"}
+Coaching style: ${profile.coaching_style || "direct"}
+Strictness level: ${profile.strictness_level ?? 7}/10
+Prefers detailed analysis: ${profile.prefers_detailed_analysis ?? true}
+Challenge avoidance directly: ${profile.challenge_avoidance ?? true}
+Auto-create proof contracts: ${profile.auto_create_proof_contracts ?? true}`);
+  }
+
+  if (customMode) {
+    parts.push(`MATCHED PERSONALISED MODE:
+Mode ID: ${customMode.mode_id}
+Display name: ${customMode.display_name}
+Description: ${customMode.description || "Not provided"}
+Keywords: ${(customMode.keywords ?? []).join(", ") || "Not provided"}
+
+Proof examples:
+${(customMode.proof_examples ?? []).map((x) => `- ${x}`).join("\n") || "- Not provided"}
+
+Weak evidence examples:
+${(customMode.weak_evidence_examples ?? []).map((x) => `- ${x}`).join("\n") || "- Not provided"}
+
+Strong evidence examples:
+${(customMode.strong_evidence_examples ?? []).map((x) => `- ${x}`).join("\n") || "- Not provided"}
+
+Elite evidence examples:
+${(customMode.elite_evidence_examples ?? []).map((x) => `- ${x}`).join("\n") || "- Not provided"}
+
+Preferred response framework:
+${customMode.preferred_response_framework || "Bottom Line Up Front → Analysis → Actionable System → HD/Elite Upgrade"}
+
+Research needs:
+${(customMode.research_needs ?? []).map((x) => `- ${x}`).join("\n") || "- Not provided"}
+
+Tone adjustments:
+${customMode.tone_adjustments || "Direct, strategic, proof-first."}
+
+Scoring criteria:
+${JSON.stringify(customMode.scoring_criteria ?? {}, null, 2)}`);
+  }
+
+  if (parts.length === 0) {
+    return "No personalised onboarding context found. Use general Eblocki coaching.";
+  }
+
+  return parts.join("\n\n");
+}
 
 function fallbackResponse(message: string, mode: Mode, state: string): string {
   return `1. Bottom Line Up Front
@@ -218,11 +381,81 @@ serve(async (req): Promise<Response> => {
     const autoCreate = cfg?.auto_create_proof_contracts ?? true;
     const threshold = cfg?.proof_contract_minimum_seriousness ?? 5;
 
-    const { primary: mode, hybrid } = detectMode(message);
-    const state = detectState(message);
-    console.log("coach: mode=", mode, "hybrid=", hybrid, "state=", state);
+let onboardingProfile: UserOnboardingProfile | null = null;
+let userModes: UserMode[] = [];
 
-    const systemPrompt = `${CORE_PROMPT}\n\n${MODE_FRAMING[mode]}${hybrid ? `\n\nSecondary: ${MODE_FRAMING[hybrid]}` : ""}`;
+if (userId) {
+  try {
+    const { data: profileData, error: profileError } = await supabase
+      .from("user_onboarding_profiles")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (profileError) {
+      console.warn("coach: onboarding profile fetch failed", profileError.message);
+    } else {
+      onboardingProfile = profileData as UserOnboardingProfile | null;
+    }
+  } catch (profileEx) {
+    console.warn("coach: onboarding profile lookup threw", profileEx);
+  }
+
+  try {
+    const { data: modeData, error: modesError } = await supabase
+      .from("user_modes")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("is_active", true);
+
+    if (modesError) {
+      console.warn("coach: user modes fetch failed", modesError.message);
+    } else {
+      userModes = (modeData ?? []) as UserMode[];
+    }
+  } catch (modesEx) {
+    console.warn("coach: user modes lookup threw", modesEx);
+  }
+}
+
+const detected = detectModeWithUserModes(message, userModes);
+const mode = detected.primary as Mode;
+const hybrid = detected.hybrid as Mode | undefined;
+const customMode = detected.customMode ?? null;
+const isCustomMode = detected.isCustomMode;
+
+const state = detectState(message);
+
+console.log("coach: mode=", mode, "hybrid=", hybrid, "state=", state, "isCustomMode=", isCustomMode);
+    console.log("coach: mode=", mode, "hybrid=", hybrid, "state=", state);
+const personalisedContext = buildPersonalisedContext(
+  onboardingProfile,
+  customMode
+);
+
+const fallbackModeFraming =
+  MODE_FRAMING[mode as Mode] ?? MODE_FRAMING.GENERAL_EXECUTION;
+
+const hybridFraming =
+  hybrid && MODE_FRAMING[hybrid as Mode]
+    ? `\n\nSecondary: ${MODE_FRAMING[hybrid as Mode]}`
+    : "";
+
+const customModeInstruction = customMode
+  ? `\n\nIMPORTANT:
+This user has a personalised Eblocki mode matched to their message.
+Use the personalised mode above before hardcoded defaults.
+Do not force Tristan-specific labels like LAW_MAX unless the user's custom mode or message clearly supports it.
+Keep the Eblocki ideology, BLUF structure, academic integrity, and proof-first standard.
+Adapt the proof artifact and evidence standard to this user's own mode.`
+  : "";
+
+const systemPrompt = `${CORE_PROMPT}
+
+${fallbackModeFraming}${hybridFraming}
+
+${personalisedContext}
+${customModeInstruction}`;
 
     let assistantOutput = "";
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
@@ -269,8 +502,51 @@ serve(async (req): Promise<Response> => {
       assistantOutput = fallbackResponse(message, mode, state);
     }
 
-    const proofContract = buildContract(message, assistantOutput, mode);
+const proofContract = customMode
+  ? buildCustomModeContract(message, assistantOutput, customMode)
+  : buildContract(message, assistantOutput, mode as Mode);
+function buildCustomModeContract(
+  message: string,
+  output: string,
+  customMode: UserMode
+): ProofContract {
+  const text = `${message}\n${output}`.toLowerCase();
 
+  let seriousness = 0;
+
+  for (const verb of SERIOUS_VERBS) {
+    if (new RegExp(`\\b${verb}\\b`).test(text)) seriousness++;
+  }
+
+  if (/\b(today|tonight|tomorrow|deadline|due|exam|assessment|shift|match|client)\b/.test(text)) {
+    seriousness += 2;
+  }
+
+  seriousness = Math.max(1, Math.min(10, seriousness));
+
+  const proofExample =
+    customMode.proof_examples?.[0] ||
+    `Concrete proof artifact for ${customMode.display_name}`;
+
+  const eliteStandard =
+    customMode.elite_evidence_examples?.[0] ||
+    "Artifact includes action, application, feedback, correction, and next upgrade.";
+
+  return {
+    shouldCreate: seriousness >= 4,
+    domain: customMode.mode_id.toLowerCase(),
+    mode: customMode.mode_id as Mode,
+    title: `${customMode.display_name}: Proof Contract`,
+    requiredArtifact: proofExample,
+    evidenceStandard: eliteStandard,
+    dueDate: null,
+    seriousnessScore: seriousness,
+    reason:
+      seriousness >= 4
+        ? "Detected a serious action request inside a personalised mode."
+        : "Casual or low-seriousness request inside a personalised mode.",
+  };
+}
     // Persist interaction
     let interaction: { id: string } | null = null;
     if (userId) {
