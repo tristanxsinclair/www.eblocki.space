@@ -51,7 +51,7 @@ export default function Proof() {
     setPending((pc ?? []).filter((p) => p.status === "pending"));
     setMissed((pc ?? []).filter((p) => p.status === "missed"));
     setCompleted(pa ?? []);
-    setUserModes(modes ?? []);
+    setUserModes((modes ?? []) as any);
   };
 
   useEffect(() => {
@@ -72,7 +72,6 @@ export default function Proof() {
     const { data: artifact, error } = await supabase.from("proof_artifacts").insert({
       user_id: user.id,
       domain: domainValue,
-      mode: modeId,
       title: title || submitFor.title,
       artifact_type: submitFor.required_artifact,
       content,
