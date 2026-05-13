@@ -48,6 +48,7 @@ export default function Settings() {
 
   if (loading) return <AppShell><div className="p-8">Loading…</div></AppShell>;
   if (!cfg || !profile) return <AppShell><div className="p-8">Loading…</div></AppShell>;
+  const setCfgField = (k: string, v: any) => setCfg((c: any) => ({ ...c, [k]: v }));
   const setProfileField = (k: string, v: any) => setProfile((p: any) => ({ ...p, [k]: v }));
   const setModeDraftField = (modeId: string, field: string, value: any) => setModeDrafts((drafts) => ({ ...drafts, [modeId]: { ...drafts[modeId], [field]: value } }));
 
@@ -63,7 +64,7 @@ export default function Settings() {
   const saveProfile = async () => {
     if (!user || !profile) return;
     setSavingProfile(true);
-    const payload = {
+    const payload: any = {
       user_id: user.id,
       identity_summary: profile.identity_summary,
       roles: profile.roles || [],
@@ -75,7 +76,6 @@ export default function Settings() {
       auto_create_proof_contracts: profile.auto_create_proof_contracts,
       completed_onboarding: profile.completed_onboarding ?? true,
     };
-    delete payload.id; delete payload.created_at; delete payload.updated_at;
     const { error } = await supabase.from("user_onboarding_profiles").upsert(payload, { onConflict: "user_id" });
     setSavingProfile(false);
     if (error) toast.error(error.message); else toast.success("Onboarding profile updated.");
@@ -145,21 +145,21 @@ export default function Settings() {
         <Card className="panel p-5 space-y-5">
           <div>
             <Label>Preferred model</Label>
-            <select className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={cfg.model ?? MODELS[0]} onChange={(e) => set("model", e.target.value)}>
+            <select className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={cfg.model ?? MODELS[0]} onChange={(e) => setCfgField("model", e.target.value)}>
               {MODELS.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
           <div>
             <Label>Vector store ID (optional)</Label>
-            <Input value={cfg.vector_store_id ?? ""} onChange={(e) => set("vector_store_id", e.target.value)} placeholder="vs_..." />
+            <Input value={cfg.vector_store_id ?? ""} onChange={(e) => setCfgField("vector_store_id", e.target.value)} placeholder="vs_..." />
             <p className="mt-1 text-[10px] text-muted-foreground font-mono">Used when OpenAI Responses API is connected.</p>
           </div>
-          <Toggle label="Default response structure (BLUF / Analysis / System / Upgrade)" checked={!!cfg.default_response_structure} onChange={(v) => set("default_response_structure", v)} />
-          <Toggle label="Strict verification (refuse to fabricate sources)" checked={!!cfg.strict_verification} onChange={(v) => set("strict_verification", v)} />
-          <Toggle label="Auto-create Proof Contracts" checked={!!cfg.auto_create_proof_contracts} onChange={(v) => set("auto_create_proof_contracts", v)} />
+          <Toggle label="Default response structure (BLUF / Analysis / System / Upgrade)" checked={!!cfg.default_response_structure} onChange={(v) => setCfgField("default_response_structure", v)} />
+          <Toggle label="Strict verification (refuse to fabricate sources)" checked={!!cfg.strict_verification} onChange={(v) => setCfgField("strict_verification", v)} />
+          <Toggle label="Auto-create Proof Contracts" checked={!!cfg.auto_create_proof_contracts} onChange={(v) => setCfgField("auto_create_proof_contracts", v)} />
           <div>
             <Label>Proof contract minimum seriousness ({cfg.proof_contract_minimum_seriousness ?? 5})</Label>
-            <input type="range" min={1} max={10} value={cfg.proof_contract_minimum_seriousness ?? 5} onChange={(e) => set("proof_contract_minimum_seriousness", Number(e.target.value))} className="w-full mt-2" />
+            <input type="range" min={1} max={10} value={cfg.proof_contract_minimum_seriousness ?? 5} onChange={(e) => setCfgField("proof_contract_minimum_seriousness", Number(e.target.value))} className="w-full mt-2" />
           </div>
           <Button onClick={save} disabled={saving} className="w-full">{saving ? "Saving…" : "Save"}</Button>
         </Card>

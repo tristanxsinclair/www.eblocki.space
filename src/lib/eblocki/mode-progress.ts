@@ -118,4 +118,3 @@ export function calculateModeProgress({ artifacts, commitments, interactions }: 
     suggestedUpgrade,
   };
 }
-EOF

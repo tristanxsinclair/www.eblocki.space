@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      anonymised_learning_patterns: {
+        Row: {
+          created_at: string | null
+          domain: string | null
+          effectiveness_notes: string | null
+          evidence_count: number | null
+          id: string
+          intervention_summary: string | null
+          pattern_type: string
+          problem_description: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          domain?: string | null
+          effectiveness_notes?: string | null
+          evidence_count?: number | null
+          id?: string
+          intervention_summary?: string | null
+          pattern_type: string
+          problem_description?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          domain?: string | null
+          effectiveness_notes?: string | null
+          evidence_count?: number | null
+          id?: string
+          intervention_summary?: string | null
+          pattern_type?: string
+          problem_description?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       coach_interactions: {
         Row: {
           assistant_output: string | null
@@ -295,20 +331,83 @@ export type Database = {
           },
         ]
       }
+      user_modes: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_name: string
+          elite_evidence_examples: string[] | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          keywords: string[] | null
+          mode_id: string
+          preferred_response_framework: string | null
+          proof_examples: string[] | null
+          research_needs: string[] | null
+          scoring_criteria: Json | null
+          strong_evidence_examples: string[] | null
+          tone_adjustments: string | null
+          updated_at: string | null
+          user_id: string
+          weak_evidence_examples: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          elite_evidence_examples?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          keywords?: string[] | null
+          mode_id: string
+          preferred_response_framework?: string | null
+          proof_examples?: string[] | null
+          research_needs?: string[] | null
+          scoring_criteria?: Json | null
+          strong_evidence_examples?: string[] | null
+          tone_adjustments?: string | null
+          updated_at?: string | null
+          user_id: string
+          weak_evidence_examples?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          elite_evidence_examples?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          keywords?: string[] | null
+          mode_id?: string
+          preferred_response_framework?: string | null
+          proof_examples?: string[] | null
+          research_needs?: string[] | null
+          scoring_criteria?: Json | null
+          strong_evidence_examples?: string[] | null
+          tone_adjustments?: string | null
+          updated_at?: string | null
+          user_id?: string
+          weak_evidence_examples?: string[] | null
+        }
+        Relationships: []
+      }
       user_onboarding_profiles: {
         Row: {
           auto_create_proof_contracts: boolean | null
           challenge_avoidance: boolean | null
           coaching_style: string | null
           completed_onboarding: boolean | null
-          created_at: string
-          goals: string[]
+          created_at: string | null
+          goals: string[] | null
           id: string
           identity_summary: string | null
           prefers_detailed_analysis: boolean | null
-          roles: string[]
+          roles: string[] | null
           strictness_level: number | null
-          updated_at: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -316,14 +415,14 @@ export type Database = {
           challenge_avoidance?: boolean | null
           coaching_style?: string | null
           completed_onboarding?: boolean | null
-          created_at?: string
-          goals?: string[]
+          created_at?: string | null
+          goals?: string[] | null
           id?: string
           identity_summary?: string | null
           prefers_detailed_analysis?: boolean | null
-          roles?: string[]
+          roles?: string[] | null
           strictness_level?: number | null
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -331,111 +430,54 @@ export type Database = {
           challenge_avoidance?: boolean | null
           coaching_style?: string | null
           completed_onboarding?: boolean | null
-          created_at?: string
-          goals?: string[]
+          created_at?: string | null
+          goals?: string[] | null
           id?: string
           identity_summary?: string | null
           prefers_detailed_analysis?: boolean | null
-          roles?: string[]
+          roles?: string[] | null
           strictness_level?: number | null
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
-        }
-        Relationships: []
-      }
-      user_modes: {
-        Row: {
-          created_at: string
-          description: string | null
-          display_name: string
-          elite_evidence_examples: string[]
-          is_active: boolean
-          is_default: boolean
-          keywords: string[]
-          mode_id: string
-          preferred_response_framework: string
-          proof_examples: string[]
-          research_needs: string[]
-          scoring_criteria: Json | null
-          strong_evidence_examples: string[]
-          tone_adjustments: string | null
-          updated_at: string
-          user_id: string
-          weak_evidence_examples: string[]
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          display_name: string
-          elite_evidence_examples?: string[]
-          is_active?: boolean
-          is_default?: boolean
-          keywords?: string[]
-          mode_id: string
-          preferred_response_framework?: string
-          proof_examples?: string[]
-          research_needs?: string[]
-          scoring_criteria?: Json | null
-          strong_evidence_examples?: string[]
-          tone_adjustments?: string | null
-          updated_at?: string
-          user_id: string
-          weak_evidence_examples?: string[]
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          display_name?: string
-          elite_evidence_examples?: string[]
-          is_active?: boolean
-          is_default?: boolean
-          keywords?: string[]
-          mode_id?: string
-          preferred_response_framework?: string
-          proof_examples?: string[]
-          research_needs?: string[]
-          scoring_criteria?: Json | null
-          strong_evidence_examples?: string[]
-          tone_adjustments?: string | null
-          updated_at?: string
-          user_id?: string
-          weak_evidence_examples?: string[]
         }
         Relationships: []
       }
       user_research_profiles: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
           last_researched_at: string | null
+          mode_id: string
           research_summary: string | null
           source_quality_notes: string | null
           topic: string
-          updated_at: string
+          updated_at: string | null
           user_id: string
-          verified_sources: Json[]
+          verified_sources: Json | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           last_researched_at?: string | null
+          mode_id: string
           research_summary?: string | null
           source_quality_notes?: string | null
           topic: string
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
-          verified_sources?: Json[]
+          verified_sources?: Json | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           last_researched_at?: string | null
+          mode_id?: string
           research_summary?: string | null
           source_quality_notes?: string | null
           topic?: string
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
-          verified_sources?: Json[]
+          verified_sources?: Json | null
         }
         Relationships: []
       }
