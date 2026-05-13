@@ -91,7 +91,7 @@ export default function ModeDetail() {
         source_quality_notes: "Source cannot be confirmed until research integration is connected.",
         last_researched_at: new Date().toISOString(),
       };
-      const { error } = await supabase.from("user_research_profiles").upsert(payload, { onConflict: ["user_id", "mode_id"] });
+      const { error } = await supabase.from("user_research_profiles").upsert(payload, { onConflict: "user_id,mode_id" });
       if (error) throw error;
       toast.success("Mode research saved.");
     } catch (err: any) {
