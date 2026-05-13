@@ -11,6 +11,7 @@ import Coach from "./pages/Coach.tsx";
 import Sheet from "./pages/Sheet.tsx";
 import Proof from "./pages/Proof.tsx";
 import Modes from "./pages/Modes.tsx";
+import ModeDetail from "./pages/ModeDetail.tsx";
 import Settings from "./pages/Settings.tsx";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Onboarding from "./pages/Onboarding.tsx";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/sheet" element={<Protected><Sheet /></Protected>} />
             <Route path="/proof" element={<Protected><Proof /></Protected>} />
             <Route path="/modes" element={<Protected><Modes /></Protected>} />
+            <Route path="/modes/:modeId" element={<Protected><ModeDetail /></Protected>} />
             <Route path="/settings" element={<Protected><Settings /></Protected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
