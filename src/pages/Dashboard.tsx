@@ -10,6 +10,7 @@ import { EvidenceStrengthBadge, ModeBadge, StateBadge } from "@/components/ebloc
 import { ArrowRight, Crosshair, FileText, Gavel, MessageSquare } from "lucide-react";
 import { detectMode, type Mode } from "@/lib/eblocki/modes";
 import { detectState, type BehaviouralState, STATE_PRESCRIPTION } from "@/lib/eblocki/states";
+import { Sparkles } from "lucide-react";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -56,7 +57,31 @@ export default function Dashboard() {
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Operator dashboard</span>
           <h1 className="text-2xl md:text-3xl font-semibold mt-1">Today's command center</h1>
         </header>
+<Card className="panel p-4 border-primary/30">
+  <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+          Personalise Eblocki
+        </span>
+      </div>
+      <h2 className="text-lg font-semibold mt-2">
+        Build your operating system.
+      </h2>
+      <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+        Define the arenas where proof matters. Eblocki will use these modes to
+        route coaching, score evidence, and create better Proof Contracts.
+      </p>
+    </div>
 
+    <Link to="/onboarding">
+      <Button>
+        Setup My OS
+      </Button>
+    </Link>
+  </div>
+</Card>
         <div className="grid md:grid-cols-3 gap-4">
           <Card className="panel p-4 md:col-span-2">
             <div className="flex items-center justify-between">

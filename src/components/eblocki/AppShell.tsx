@@ -1,10 +1,11 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageSquare, FileText, Gavel, Layers, Settings, LogOut, Crosshair } from "lucide-react";
+import { LayoutDashboard, MessageSquare, FileText, Gavel, Layers, Settings, LogOut, Crosshair, Sparkles } from "lucide-react";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/onboarding", label: "Setup OS", icon: Sparkles },
   { to: "/coach", label: "Coach", icon: MessageSquare },
   { to: "/sheet", label: "Control Sheet", icon: FileText },
   { to: "/proof", label: "Court of Evidence", icon: Gavel },

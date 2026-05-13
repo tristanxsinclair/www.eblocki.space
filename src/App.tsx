@@ -13,6 +13,7 @@ import Proof from "./pages/Proof.tsx";
 import Modes from "./pages/Modes.tsx";
 import Settings from "./pages/Settings.tsx";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import Onboarding from "./pages/Onboarding.tsx";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            <Route path="/onboarding" element={<Protected><Onboarding /></Protected>} />
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
