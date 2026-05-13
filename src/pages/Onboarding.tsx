@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ArrowRight, CheckCircle2, Plus, Sparkles, Trash2 } from "lucide-react";
+import type { UserMode } from "@/lib/eblocki/modes";
 import Onboarding from "./pages/Onboarding.tsx";
 
 type Arena = {
@@ -99,12 +100,26 @@ function buildModeFromArena(arena: Arena) {
   };
 }
 
+function modeToArena(mode: UserMode): Arena {
+  return {
+    id: mode.id ?? crypto.randomUUID(),
+    name: mode.display_name,
+    why: mode.description,
+    success: mode.strong_evidence_examples?.[0] ?? "",
+    weakEffort: mode.weak_evidence_examples?.[0] ?? "",
+    proof: (mode.proof_examples ?? []).join(", "),
+    standards: (mode.keywords ?? []).join(", "),
+  };
+}
+
 export default function Onboarding() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [onboardingLoaded, setOnboardingLoaded] = useState(false);
 
   const [identitySummary, setIdentitySummary] = useState("");
   const [roles, setRoles] = useState("");
@@ -115,6 +130,46 @@ export default function Onboarding() {
   const [challengeAvoidance, setChallengeAvoidance] = useState(true);
   const [autoCreateProofContracts, setAutoCreateProofContracts] = useState(true);
   const [arenas, setArenas] = useState<Arena[]>(DEFAULT_ARENAS);
+
+  useEffect(() => {
+    if (!user) return;
+    setLoadError(null);
+    setOnboardingLoaded(false);
+
+    const fetchProfile = async () => {
+      try {
+        const [{ data: profileData, error: profileError }, { data: modeData, error: modeError }] = await Promise.all([
+          supabase.from("user_onboarding_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+          supabase.from("user_modes").select("*").eq("user_id", user.id).order("created_at", { ascending: true }),
+        ]);
+
+        if (profileError) {
+          setLoadError(profileError.message);
+        } else if (profileData) {
+          setIdentitySummary(profileData.identity_summary || "");
+          setRoles((profileData.roles || []).join(", "));
+          setGoals((profileData.goals || []).join(", "));
+          setCoachingStyle(profileData.coaching_style || "direct");
+          setStrictnessLevel(profileData.strictness_level ?? 7);
+          setPrefersDetailedAnalysis(profileData.prefers_detailed_analysis ?? true);
+          setChallengeAvoidance(profileData.challenge_avoidance ?? true);
+          setAutoCreateProofContracts(profileData.auto_create_proof_contracts ?? true);
+        }
+
+        if (modeError) {
+          setLoadError((prev) => prev ? `${prev}; ${modeError.message}` : modeError.message);
+        } else if (modeData && modeData.length > 0) {
+          setArenas(modeData.map(modeToArena));
+        }
+      } catch (e: any) {
+        setLoadError(e?.message || "Failed to load onboarding profile.");
+      } finally {
+        setOnboardingLoaded(true);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
 
   const generatedModes = useMemo(
     () =>
