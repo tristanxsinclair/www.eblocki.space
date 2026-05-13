@@ -20,7 +20,26 @@ type Arena = {
   proof: string;
   standards: string;
 };
-
+type SupabaseUserMode = {
+  id?: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  mode_id: string;
+  display_name: string;
+  description: string | null;
+  keywords: string[] | null;
+  proof_examples: string[] | null;
+  weak_evidence_examples: string[] | null;
+  strong_evidence_examples: string[] | null;
+  elite_evidence_examples: string[] | null;
+  preferred_response_framework: string | null;
+  scoring_criteria: unknown;
+  research_needs: string[] | null;
+  tone_adjustments: string | null;
+  is_default: boolean | null;
+  is_active: boolean | null;
+};
 const DEFAULT_ARENAS: Arena[] = [
   {
     id: crypto.randomUUID(),
@@ -99,7 +118,7 @@ function buildModeFromArena(arena: Arena) {
   };
 }
 
-function modeToArena(mode: UserMode): Arena {
+function modeToArena(mode: SupabaseUserMode): Arena {
   return {
     id: mode.mode_id ?? crypto.randomUUID(),
     name: mode.display_name,
@@ -158,7 +177,7 @@ export default function Onboarding() {
         if (modeError) {
           setLoadError((prev) => prev ? `${prev}; ${modeError.message}` : modeError.message);
         } else if (modeData && modeData.length > 0) {
-          setArenas(modeData.map(modeToArena));
+          setArenas(modeData.map(modeToArena));(modeData ?? []).map(modeToArena)
         }
       } catch (e: any) {
         setLoadError(e?.message || "Failed to load onboarding profile.");
