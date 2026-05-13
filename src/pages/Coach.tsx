@@ -1,6 +1,5 @@
-import { normaliseCoachResponse } from "@/lib/eblocki/coach-response";
-import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
@@ -9,32 +8,63 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ModeBadge, StateBadge } from "@/components/eblocki/Badges";
 import { ProofContractCard } from "@/components/eblocki/ProofContractCard";
+import { normaliseCoachResponse, type NormalisedCoachResponse } from "@/lib/eblocki/coach-response";
 import type { Mode } from "@/lib/eblocki/modes";
 import type { BehaviouralState } from "@/lib/eblocki/states";
-import type { ProofContract } from "@/lib/eblocki/proof-contract";
 import { toast } from "sonner";
-import { Loader2, Send } from "lucide-react";
+import { AlertCircle, ArrowRight, Loader2, Send } from "lucide-react";
 
-interface CoachResponse {
-  mode: Mode;
-  hybrid?: Mode;
-  state: BehaviouralState;
-  response: string;
-  proofContract: ProofContract;
-  proofQuestion: string;
-  interactionId?: string;
-  commitmentId?: string;
+const SECTION_TITLES = [
+  "Bottom Line Up Front",
+  "Analysis",
+  "Actionable System",
+  "HD/Elite Upgrade",
+];
+
+function splitResponseSections(text: string): { title: string; body: string }[] {
+  if (!text) return [];
+  // Match either "## Title", "1. Title", or bare "Title" lines that match SECTION_TITLES.
+  const lines = text.split(/\r?\n/);
+  const sections: { title: string; body: string[] }[] = [];
+  let current: { title: string; body: string[] } | null = null;
+
+  const isHeading = (line: string): string | null => {
+    const stripped = line.replace(/^#+\s*/, "").replace(/^\d+\.\s*/, "").replace(/[:*]+$/, "").trim();
+    const match = SECTION_TITLES.find(
+      (t) => stripped.toLowerCase() === t.toLowerCase()
+    );
+    return match ?? null;
+  };
+
+  for (const line of lines) {
+    const heading = isHeading(line);
+    if (heading) {
+      if (current) sections.push(current);
+      current = { title: heading, body: [] };
+    } else if (current) {
+      current.body.push(line);
+    }
+  }
+  if (current) sections.push(current);
+
+  if (sections.length === 0) {
+    return [{ title: "Coach Response", body: text }];
+  }
+  return sections.map((s) => ({ title: s.title, body: s.body.join("\n").trim() }));
 }
 
 export default function Coach() {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const [params] = useSearchParams();
   const [input, setInput] = useState(params.get("prompt") ?? "");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<CoachResponse | null>(null);
+  const [result, setResult] = useState<NormalisedCoachResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [committing, setCommitting] = useState(false);
-  const [committed, setCommitted] = useState(false);
+  const [localCommitmentId, setLocalCommitmentId] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
+
+  const committedId = result?.commitmentId ?? localCommitmentId;
 
   useEffect(() => {
     if (!user) return;
@@ -47,58 +77,41 @@ export default function Coach() {
       .then(({ data }) => setHistory(data ?? []));
   }, [user, result]);
 
-const send = async () => {
-  if (!message.trim()) return;
-
-  setLoading(true);
-  setError(null);
-
-  try {
-    const { data, error } = await supabase.functions.invoke("coach", {
-      body: { message: message.trim() },
-    });
-
-    if (error) {
-      console.error("Coach invoke error:", error);
-      setError(
-        `Coach request failed: ${
-          error.message || "Unknown Supabase function error"
-        }`
-      );
-      return;
+  const send = async () => {
+    if (!input.trim()) return;
+    setLoading(true);
+    setError(null);
+    setLocalCommitmentId(null);
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke("coach", {
+        body: { message: input.trim() },
+      });
+      if (invokeError) {
+        setError(invokeError.message || "Coach request failed.");
+        return;
+      }
+      if (!data) {
+        setError("Coach returned no response. Try again.");
+        return;
+      }
+      const normalised = normaliseCoachResponse(data);
+      if (!normalised.success && (data as any)?.error) {
+        setError(String((data as any).error));
+        return;
+      }
+      setResult(normalised);
+    } catch (e: any) {
+      setError(e?.message || "Unexpected coach error.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (!data) {
-      setError("Coach returned no data. The request succeeded, but the response body was empty.");
-      return;
-    }
-
-    const normalised = normaliseCoachResponse(data);
-
-    setResponse(normalised);
-    setMessage("");
-  } catch (err) {
-    console.error("Coach unexpected error:", err);
-    setError(
-      err instanceof Error
-        ? err.message
-        : "Unexpected coach error. Check console for details."
-    );
-  } finally {
-    setLoading(false);
-  }
-};
-if (response?.commitmentId) {
-  setError("Proof Contract already saved.");
-  return;
-}
-{response?.commitmentId ? "Proof Contract Saved" : "Commit to the Court of Evidence"}
-disabled={loading || !!response?.commitmentId}
   const commit = async () => {
-    if (!result || !user) return;
+    if (!result || !user || committedId) return;
     setCommitting(true);
     try {
-      const { data, error } = await supabase
+      const { data, error: insertError } = await supabase
         .from("proof_commitments")
         .insert({
           user_id: user.id,
@@ -112,74 +125,149 @@ disabled={loading || !!response?.commitmentId}
         })
         .select()
         .single();
-      if (error) throw error;
-      setCommitted(true);
+      if (insertError) throw insertError;
+      setLocalCommitmentId(data!.id);
       toast.success("Committed to the Court of Evidence.");
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(e.message || "Failed to commit.");
     } finally {
       setCommitting(false);
     }
-}
+  };
+
+  const sections = useMemo(
+    () => (result ? splitResponseSections(result.response) : []),
+    [result]
+  );
 
   return (
     <AppShell>
       <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
         <header>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">AI Coach</span>
-          <h1 className="text-2xl md:text-3xl font-semibold mt-1">Diagnose. Prescribe. Prove.</h1>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            AI Coach
+          </span>
+          <h1 className="text-2xl md:text-3xl font-semibold mt-1">
+            Diagnose. Prescribe. Prove.
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Drop the task. The system routes to the right mode, diagnoses the state, and forces a Proof Contract.
+          </p>
         </header>
 
         <Card className="panel p-4">
+          <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            What are you trying to execute?
+          </label>
           <Textarea
-            placeholder="Drop the task, the friction, or the check-in. The system will route to the right mode."
+            placeholder="e.g. I have my LAWS1005 statutory interpretation prep but I keep reorganising notes instead of writing answers. Force the next controllable action into a proof artifact."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="min-h-[120px]"
+            className="mt-2 min-h-[140px]"
           />
-          <div className="mt-3 flex justify-end">
+          <div className="mt-3 flex justify-between items-center gap-2">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+              {input.length}/5000
+            </span>
             <Button onClick={send} disabled={loading || !input.trim()}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 mr-2" /> Send</>}
+              {loading ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Diagnosing…</>
+              ) : (
+                <><Send className="h-4 w-4 mr-2" /> Send to Coach</>
+              )}
             </Button>
           </div>
         </Card>
 
+        {error && (
+          <Card className="panel p-4 border-destructive/40">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              <span className="font-mono text-[10px] uppercase tracking-widest">Coach error</span>
+            </div>
+            <p className="text-sm mt-1">{error}</p>
+          </Card>
+        )}
+
         {result && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 flex-wrap">
-              <ModeBadge mode={result.mode} hybrid={result.hybrid} />
-              <StateBadge state={result.state} />
+              <ModeBadge
+                mode={result.mode as Mode}
+                hybrid={(result.hybrid ?? undefined) as Mode | undefined}
+              />
+              {result.state && <StateBadge state={result.state as BehaviouralState} />}
             </div>
-            <Card className="panel p-5">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Coach response</span>
-              <article className="prose prose-invert prose-sm max-w-none mt-3 whitespace-pre-wrap font-sans">
-                {result.response}
-              </article>
-            </Card>
+
+            <div className="grid gap-3">
+              {sections.map((s) => (
+                <Card key={s.title} className="panel p-4">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                    {s.title}
+                  </span>
+                  <div className="mt-2 text-sm whitespace-pre-wrap leading-relaxed">
+                    {s.body || <span className="text-muted-foreground italic">—</span>}
+                  </div>
+                </Card>
+              ))}
+            </div>
+
             {result.proofContract.shouldCreate && (
               <ProofContractCard
-                contract={result.proofContract}
+                contract={{
+                  ...result.proofContract,
+                  mode: result.proofContract.mode as Mode,
+                } as any}
                 onCommit={commit}
                 committing={committing}
-                committed={committed}
+                committed={!!committedId}
               />
+            )}
+
+            {committedId && (
+              <Card className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                    Next step
+                  </span>
+                  <p className="text-sm mt-1">
+                    Contract saved. Submit the proof artifact in the Court of Evidence.
+                  </p>
+                </div>
+                <Link to="/proof">
+                  <Button size="sm">
+                    Submit Proof <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </Link>
+              </Card>
             )}
           </div>
         )}
 
-        {history.length > 0 && (
-          <Card className="panel p-4">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Recent interactions</span>
+        <Card className="panel p-4">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Recent interactions
+          </span>
+          {history.length === 0 ? (
+            <p className="text-sm text-muted-foreground mt-2">
+              No coach interactions yet. Drop a real bottleneck above to start the loop.
+            </p>
+          ) : (
             <ul className="mt-3 divide-y divide-border">
               {history.map((h) => (
                 <li key={h.id} className="py-2 text-xs">
-                  <span className="font-mono uppercase tracking-wider text-muted-foreground">{h.mode ?? "—"}</span>
-                  <span className="ml-2 text-foreground">{h.user_input.slice(0, 110)}{h.user_input.length > 110 ? "…" : ""}</span>
+                  <span className="font-mono uppercase tracking-wider text-muted-foreground">
+                    {h.mode ?? "—"}
+                  </span>
+                  <span className="ml-2 text-foreground">
+                    {h.user_input.slice(0, 110)}
+                    {h.user_input.length > 110 ? "…" : ""}
+                  </span>
                 </li>
               ))}
             </ul>
-          </Card>
-        )}
+          )}
+        </Card>
       </div>
     </AppShell>
   );
