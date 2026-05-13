@@ -295,6 +295,117 @@ export type Database = {
           },
         ]
       }
+      user_onboarding_profiles: {
+        Row: {
+          auto_create_proof_contracts: boolean | null
+          challenge_avoidance: boolean | null
+          coaching_style: string | null
+          completed_onboarding: boolean | null
+          created_at: string
+          goals: string[]
+          id: string
+          identity_summary: string | null
+          prefers_detailed_analysis: boolean | null
+          roles: string[]
+          strictness_level: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_create_proof_contracts?: boolean | null
+          challenge_avoidance?: boolean | null
+          coaching_style?: string | null
+          completed_onboarding?: boolean | null
+          created_at?: string
+          goals?: string[]
+          id?: string
+          identity_summary?: string | null
+          prefers_detailed_analysis?: boolean | null
+          roles?: string[]
+          strictness_level?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_create_proof_contracts?: boolean | null
+          challenge_avoidance?: boolean | null
+          coaching_style?: string | null
+          completed_onboarding?: boolean | null
+          created_at?: string
+          goals?: string[]
+          id?: string
+          identity_summary?: string | null
+          prefers_detailed_analysis?: boolean | null
+          roles?: string[]
+          strictness_level?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_modes: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_name: string
+          elite_evidence_examples: string[]
+          is_active: boolean
+          is_default: boolean
+          keywords: string[]
+          mode_id: string
+          preferred_response_framework: string
+          proof_examples: string[]
+          research_needs: string[]
+          role: string | null
+          scoring_criteria: Json | null
+          strong_evidence_examples: string[]
+          tone_adjustments: string | null
+          updated_at: string
+          user_id: string
+          weak_evidence_examples: string[]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_name: string
+          elite_evidence_examples?: string[]
+          is_active?: boolean
+          is_default?: boolean
+          keywords?: string[]
+          mode_id: string
+          preferred_response_framework?: string
+          proof_examples?: string[]
+          research_needs?: string[]
+          role?: string | null
+          scoring_criteria?: Json | null
+          strong_evidence_examples?: string[]
+          tone_adjustments?: string | null
+          updated_at?: string
+          user_id: string
+          weak_evidence_examples?: string[]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          elite_evidence_examples?: string[]
+          is_active?: boolean
+          is_default?: boolean
+          keywords?: string[]
+          mode_id?: string
+          preferred_response_framework?: string
+          proof_examples?: string[]
+          research_needs?: string[]
+          role?: string | null
+          scoring_criteria?: Json | null
+          strong_evidence_examples?: string[]
+          tone_adjustments?: string | null
+          updated_at?: string
+          user_id?: string
+          weak_evidence_examples?: string[]
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

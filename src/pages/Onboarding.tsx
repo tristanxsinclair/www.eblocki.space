@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ArrowRight, CheckCircle2, Plus, Sparkles, Trash2 } from "lucide-react";
 import type { UserMode } from "@/lib/eblocki/modes";
-import Onboarding from "./pages/Onboarding.tsx";
 
 type Arena = {
   id: string;
