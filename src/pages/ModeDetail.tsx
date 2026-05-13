@@ -76,7 +76,7 @@ export default function ModeDetail() {
     };
 
     loadMode();
-  }, [user, modeKey, modeKeyUpper, mode?.display_name]);
+  }, [user, modeKey, modeKeyUpper]);
 
   const saveResearch = async () => {
     if (!user || !modeKey) return;
