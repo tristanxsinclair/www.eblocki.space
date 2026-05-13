@@ -101,7 +101,7 @@ function buildModeFromArena(arena: Arena) {
 
 function modeToArena(mode: UserMode): Arena {
   return {
-    id: mode.id ?? crypto.randomUUID(),
+    id: mode.mode_id ?? crypto.randomUUID(),
     name: mode.display_name,
     why: mode.description,
     success: mode.strong_evidence_examples?.[0] ?? "",
