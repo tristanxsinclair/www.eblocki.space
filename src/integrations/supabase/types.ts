@@ -356,7 +356,6 @@ export type Database = {
           preferred_response_framework: string
           proof_examples: string[]
           research_needs: string[]
-          role: string | null
           scoring_criteria: Json | null
           strong_evidence_examples: string[]
           tone_adjustments: string | null
@@ -376,7 +375,6 @@ export type Database = {
           preferred_response_framework?: string
           proof_examples?: string[]
           research_needs?: string[]
-          role?: string | null
           scoring_criteria?: Json | null
           strong_evidence_examples?: string[]
           tone_adjustments?: string | null
@@ -396,13 +394,48 @@ export type Database = {
           preferred_response_framework?: string
           proof_examples?: string[]
           research_needs?: string[]
-          role?: string | null
           scoring_criteria?: Json | null
           strong_evidence_examples?: string[]
           tone_adjustments?: string | null
           updated_at?: string
           user_id?: string
           weak_evidence_examples?: string[]
+        }
+        Relationships: []
+      }
+      user_research_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          last_researched_at: string | null
+          research_summary: string | null
+          source_quality_notes: string | null
+          topic: string
+          updated_at: string
+          user_id: string
+          verified_sources: Json[]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_researched_at?: string | null
+          research_summary?: string | null
+          source_quality_notes?: string | null
+          topic: string
+          updated_at?: string
+          user_id: string
+          verified_sources?: Json[]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_researched_at?: string | null
+          research_summary?: string | null
+          source_quality_notes?: string | null
+          topic?: string
+          updated_at?: string
+          user_id?: string
+          verified_sources?: Json[]
         }
         Relationships: []
       }
