@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { EvidenceStrengthBadge, ModeBadge, StateBadge } from "@/components/eblocki/Badges";
-import { ArrowRight, Crosshair, FileText, Gavel } from "lucide-react";
+import { ArrowRight, Crosshair, FileText, Gavel, MessageSquare } from "lucide-react";
 import { detectMode, type Mode } from "@/lib/eblocki/modes";
 import { detectState, type BehaviouralState, STATE_PRESCRIPTION } from "@/lib/eblocki/states";
 
@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [today, setToday] = useState<any>(null);
   const [pending, setPending] = useState<any[]>([]);
   const [recent, setRecent] = useState<any[]>([]);
+  const [recentCoach, setRecentCoach] = useState<any[]>([]);
   const [quick, setQuick] = useState("");
   const [mode, setMode] = useState<Mode | null>(null);
   const [state, setStateBadge] = useState<BehaviouralState | null>(null);
@@ -25,14 +26,16 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [{ data: dcs }, { data: pc }, { data: pa }] = await Promise.all([
+      const [{ data: dcs }, { data: pc }, { data: pa }, { data: ci }] = await Promise.all([
         supabase.from("daily_control_sheets").select("*").eq("user_id", user.id).eq("sheet_date", todayISO).maybeSingle(),
         supabase.from("proof_commitments").select("*").eq("user_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),
         supabase.from("proof_artifacts").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
+        supabase.from("coach_interactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
       ]);
       setToday(dcs);
       setPending(pc ?? []);
       setRecent(pa ?? []);
+      setRecentCoach(ci ?? []);
     })();
   }, [user, todayISO]);
 
@@ -143,7 +146,9 @@ export default function Dashboard() {
             <span className="font-mono text-[10px] uppercase tracking-widest">Recent proof in the Court of Evidence</span>
           </div>
           {recent.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">No artifacts yet. Submit one in the Court of Evidence.</p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              No proof logged yet. The Court of Evidence is empty. Create today's first artifact.
+            </p>
           ) : (
             <ul className="mt-3 divide-y divide-border">
               {recent.map((r) => (
@@ -153,6 +158,41 @@ export default function Dashboard() {
                     <div className="text-[10px] font-mono uppercase text-muted-foreground">{r.domain}</div>
                   </div>
                   {r.evidence_strength && <EvidenceStrengthBadge strength={r.evidence_strength} score={r.quality_score} />}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card className="panel p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-primary" />
+              <span className="font-mono text-[10px] uppercase tracking-widest">Recent coach interactions</span>
+            </div>
+            <Link to="/coach" className="text-xs font-mono text-muted-foreground hover:text-foreground">Open coach</Link>
+          </div>
+          {recentCoach.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              No diagnostics yet. Drop a real bottleneck into the AI Coach to start the loop.
+            </p>
+          ) : (
+            <ul className="mt-3 divide-y divide-border">
+              {recentCoach.map((c) => (
+                <li key={c.id} className="py-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                      {c.mode ?? "—"}
+                    </span>
+                    {c.state_detected && (
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-primary">
+                        {c.state_detected}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-foreground mt-0.5 truncate">
+                    {c.user_input.slice(0, 140)}{c.user_input.length > 140 ? "…" : ""}
+                  </div>
                 </li>
               ))}
             </ul>

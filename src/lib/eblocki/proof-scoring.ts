@@ -114,8 +114,6 @@ export function scoreProof(domain: string, content: string, mode?: Mode): ProofS
 
   return { score, strength, feedback, nextUpgrade };
 }
-export type EvidenceStrength = "weak" | "moderate" | "strong" | "elite";
-
 export type ProofDomain =
   | "law"
   | "psychology"

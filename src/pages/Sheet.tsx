@@ -10,19 +10,31 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import type { BehaviouralState } from "@/lib/eblocki/states";
 
-const FIELDS: { key: string; label: string; section: "core" | "audit" }[] = [
-  { key: "prime_objective", label: "Prime Objective", section: "core" },
-  { key: "law_proof", label: "Law Proof", section: "core" },
-  { key: "psychology_proof", label: "Psychology Proof", section: "core" },
-  { key: "eblocki_proof", label: "Eblocki Proof", section: "core" },
-  { key: "friction_task", label: "Friction Task", section: "core" },
-  { key: "avoidance_signal", label: "Avoidance Signal", section: "core" },
-  { key: "next_best_action", label: "Next Best Action", section: "core" },
-  { key: "end_output", label: "End Output", section: "audit" },
-  { key: "end_proof", label: "End Proof", section: "audit" },
-  { key: "end_avoidance", label: "End Avoidance", section: "audit" },
-  { key: "end_pattern", label: "End Pattern", section: "audit" },
-  { key: "tomorrow_first_move", label: "Tomorrow's First Move", section: "audit" },
+const FIELDS: { key: string; label: string; section: "core" | "audit"; placeholder: string }[] = [
+  { key: "prime_objective", label: "Prime Objective", section: "core",
+    placeholder: "What is the one objective that would make today count?" },
+  { key: "law_proof", label: "Law Proof", section: "core",
+    placeholder: "What concrete law artifact will you produce today (e.g. one IRAC answer)?" },
+  { key: "psychology_proof", label: "Psychology Proof", section: "core",
+    placeholder: "What CAEE paragraph or applied artifact will you produce?" },
+  { key: "eblocki_proof", label: "Eblocki Proof", section: "core",
+    placeholder: "What proof shows the Eblocki standard held today?" },
+  { key: "friction_task", label: "Friction Task", section: "core",
+    placeholder: "What is the highest-friction task you would normally avoid?" },
+  { key: "avoidance_signal", label: "Avoidance Signal", section: "core",
+    placeholder: "What behaviour would prove you are dodging the real task?" },
+  { key: "next_best_action", label: "Next Best Action", section: "core",
+    placeholder: "What is the smallest action that creates evidence right now?" },
+  { key: "end_output", label: "End Output", section: "audit",
+    placeholder: "What did you actually produce today?" },
+  { key: "end_proof", label: "End Proof", section: "audit",
+    placeholder: "What artifact would survive the Court of Evidence?" },
+  { key: "end_avoidance", label: "End Avoidance", section: "audit",
+    placeholder: "Where did avoidance show up today?" },
+  { key: "end_pattern", label: "End Pattern", section: "audit",
+    placeholder: "What pattern repeats and needs an upgrade?" },
+  { key: "tomorrow_first_move", label: "Tomorrow's First Move", section: "audit",
+    placeholder: "First controllable action for tomorrow morning." },
 ];
 
 const STATES: BehaviouralState[] = ["locked_in","momentum","strategic_build","scattered","avoidant","overloaded","low_energy","hype_drift","academic_displacement","recovery"];
@@ -86,7 +98,12 @@ export default function Sheet() {
           {FIELDS.filter(f => f.section === "core").map(f => (
             <div key={f.key}>
               <Label>{f.label}</Label>
-              <Textarea value={form[f.key] ?? ""} onChange={(e) => set(f.key, e.target.value)} className="mt-1" rows={2} />
+              <Textarea
+                value={form[f.key] ?? ""}
+                onChange={(e) => set(f.key, e.target.value)}
+                placeholder={f.placeholder}
+                className="mt-1" rows={2}
+              />
             </div>
           ))}
         </Card>
@@ -96,7 +113,12 @@ export default function Sheet() {
           {FIELDS.filter(f => f.section === "audit").map(f => (
             <div key={f.key}>
               <Label>{f.label}</Label>
-              <Textarea value={form[f.key] ?? ""} onChange={(e) => set(f.key, e.target.value)} className="mt-1" rows={2} />
+              <Textarea
+                value={form[f.key] ?? ""}
+                onChange={(e) => set(f.key, e.target.value)}
+                placeholder={f.placeholder}
+                className="mt-1" rows={2}
+              />
             </div>
           ))}
           <div>
