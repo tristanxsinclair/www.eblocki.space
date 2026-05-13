@@ -69,20 +69,28 @@ export default function ModeDetail() {
         setArtifacts(artifactsData ?? []);
         setCommitments(commitmentsData ?? []);
         setInteractions(interactionsData ?? []);
-        setResearchNotes(researchData?.notes ?? "");
+        setResearchNotes(researchData?.research_summary ?? "");
       } catch (error: any) {
         setModeError(error?.message || "Unable to load mode details.");
       }
     };
 
     loadMode();
-  }, [user, modeKey, modeKeyUpper]);
+  }, [user, modeKey, modeKeyUpper, mode?.display_name]);
 
   const saveResearch = async () => {
     if (!user || !modeKey) return;
     setResearchLoading(true);
     try {
-      const payload = { user_id: user.id, mode_id: modeKeyUpper, notes: researchNotes }; 
+      const payload = {
+        user_id: user.id,
+        mode_id: modeKeyUpper,
+        topic: mode?.display_name ?? modeKeyUpper,
+        research_summary: researchNotes || "Research integration pending. Add source links or notes manually for now.",
+        verified_sources: [],
+        source_quality_notes: "Source cannot be confirmed until research integration is connected.",
+        last_researched_at: new Date().toISOString(),
+      };
       const { error } = await supabase.from("user_research_profiles").upsert(payload, { onConflict: ["user_id", "mode_id"] });
       if (error) throw error;
       toast.success("Mode research saved.");
