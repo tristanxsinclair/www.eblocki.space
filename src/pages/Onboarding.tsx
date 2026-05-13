@@ -288,6 +288,17 @@ export default function Onboarding() {
           </p>
         </header>
 
+        {loadError && (
+          <Card className="panel border-destructive/30 p-4 bg-destructive/5">
+            <p className="text-sm text-destructive">
+              Error loading onboarding context: {loadError}
+            </p>
+            <p className="text-xs text-destructive/80 mt-2">
+              If personalisation fails, create your operating system again. The data tables may be missing or restricted.
+            </p>
+          </Card>
+        )}
+
         <Card className="panel p-4">
           <div className="grid grid-cols-5 gap-2">
             {[1, 2, 3, 4, 5].map((item) => (
@@ -547,9 +558,6 @@ export default function Onboarding() {
                 These modes will route your coach prompts before generic defaults.
               </p>
             </div>
-<Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
-<Route path="/onboarding" element={<Protected><Onboarding /></Protected>} />
-<Route path="/coach" element={<Protected><Coach /></Protected>} />
             {generatedModes.length === 0 ? (
               <Card className="p-4 bg-background/40">
                 <p className="text-sm text-muted-foreground">
