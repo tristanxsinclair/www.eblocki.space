@@ -10,6 +10,7 @@ import { EvidenceStrengthBadge, ModeBadge, StateBadge } from "@/components/ebloc
 import { ArrowRight, Crosshair, FileText, Gavel, MessageSquare, Layers, Sparkles, Activity, Cpu, ShieldAlert, TrendingUp } from "lucide-react";
 import { detectMode, MODE_LABELS, type Mode } from "@/lib/eblocki/modes";
 import { detectState, STATE_LABELS, STATE_PRESCRIPTION, type BehaviouralState } from "@/lib/eblocki/states";
+import { Seo } from "@/components/Seo";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -88,6 +89,11 @@ export default function Dashboard() {
 
   return (
     <AppShell>
+      <Seo
+        title="Dashboard | EBLOCKI"
+        description="Operating-system overview: compounding score, behavioural state, mode momentum, and pending proof contracts."
+        path="/dashboard"
+      />
       <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
         <header className="flex items-end justify-between flex-wrap gap-4">
           <div>
@@ -108,7 +114,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <Cpu className="h-4 w-4 text-primary" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Operating System Overview</span>
+              <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Operating System Overview</h2>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-mono text-[10px] uppercase text-muted-foreground">Compounding Progress</span>
@@ -156,7 +162,7 @@ export default function Dashboard() {
         <Card className="panel p-4 md:p-5">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
-            <span className="font-mono text-[10px] uppercase tracking-widest">Eblocki Intelligence Summary</span>
+            <h2 className="font-mono text-[10px] uppercase tracking-widest m-0">Eblocki Intelligence Summary</h2>
           </div>
           <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
             <Intel icon={<TrendingUp className="h-3.5 w-3.5 text-success" />}
@@ -249,7 +255,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" />
-                <span className="font-mono text-[10px] uppercase tracking-widest">Pending Proof Contracts</span>
+                <h2 className="font-mono text-[10px] uppercase tracking-widest m-0">Pending Proof Contracts</h2>
               </div>
               <Link to="/proof" className="text-xs font-mono text-muted-foreground hover:text-foreground">View all</Link>
             </div>
@@ -278,7 +284,7 @@ export default function Dashboard() {
         <Card className="panel p-4">
           <div className="flex items-center gap-2">
             <Gavel className="h-4 w-4 text-primary" />
-            <span className="font-mono text-[10px] uppercase tracking-widest">Recent Verdicts — Court of Evidence</span>
+            <h2 className="font-mono text-[10px] uppercase tracking-widest m-0">Recent Verdicts — Court of Evidence</h2>
           </div>
           {recent.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
@@ -303,7 +309,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-primary" />
-              <span className="font-mono text-[10px] uppercase tracking-widest">Recent Coach Diagnostics</span>
+              <h2 className="font-mono text-[10px] uppercase tracking-widest m-0">Recent Coach Diagnostics</h2>
             </div>
             <Link to="/coach" className="text-xs font-mono text-muted-foreground hover:text-foreground">Open Coach</Link>
           </div>
