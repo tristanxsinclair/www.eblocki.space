@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import type { BehaviouralState } from "@/lib/eblocki/states";
+import { Seo } from "@/components/Seo";
 
 const FIELDS: { key: string; label: string; section: "core" | "audit"; placeholder: string }[] = [
   { key: "prime_objective", label: "Prime Objective", section: "core",
@@ -81,6 +82,11 @@ export default function Sheet() {
 
   return (
     <AppShell>
+      <Seo
+        title="Daily Control Sheet | EBLOCKI"
+        description="Plan the day's prime objective and audit the receipts at end of day. The sheet feeds the proof loop."
+        path="/sheet"
+      />
       <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
         <header className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -97,8 +103,9 @@ export default function Sheet() {
           <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary">Day plan</h2>
           {FIELDS.filter(f => f.section === "core").map(f => (
             <div key={f.key}>
-              <Label>{f.label}</Label>
+              <Label htmlFor={`sheet-${f.key}`}>{f.label}</Label>
               <Textarea
+                id={`sheet-${f.key}`}
                 value={form[f.key] ?? ""}
                 onChange={(e) => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
@@ -112,8 +119,9 @@ export default function Sheet() {
           <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary">End-of-day audit</h2>
           {FIELDS.filter(f => f.section === "audit").map(f => (
             <div key={f.key}>
-              <Label>{f.label}</Label>
+              <Label htmlFor={`sheet-${f.key}`}>{f.label}</Label>
               <Textarea
+                id={`sheet-${f.key}`}
                 value={form[f.key] ?? ""}
                 onChange={(e) => set(f.key, e.target.value)}
                 placeholder={f.placeholder}
@@ -122,8 +130,8 @@ export default function Sheet() {
             </div>
           ))}
           <div>
-            <Label>State</Label>
-            <select value={form.state ?? ""} onChange={(e) => set("state", e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <Label htmlFor="sheet-state">State</Label>
+            <select id="sheet-state" value={form.state ?? ""} onChange={(e) => set("state", e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
               <option value="">—</option>
               {STATES.map(s => <option key={s} value={s}>{s}</option>)}
             </select>

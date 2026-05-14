@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { Seo } from "@/components/Seo";
 
 const MODELS = [
   "google/gemini-3-flash-preview",
@@ -136,6 +137,7 @@ export default function Settings() {
 
   return (
     <AppShell>
+      <Seo title="Settings | EBLOCKI" description="Operator config — model preferences, profile, and identity claims." path="/settings" />
       <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
         <header>
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Settings</span>

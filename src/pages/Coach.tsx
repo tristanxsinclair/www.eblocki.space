@@ -13,6 +13,7 @@ import type { Mode } from "@/lib/eblocki/modes";
 import type { BehaviouralState } from "@/lib/eblocki/states";
 import { toast } from "sonner";
 import { AlertCircle, ArrowRight, Loader2, Send } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 const SECTION_TITLES = [
   "Bottom Line Up Front",
@@ -142,6 +143,11 @@ export default function Coach() {
 
   return (
     <AppShell>
+      <Seo
+        title="AI Coach | EBLOCKI"
+        description="Diagnose the bottleneck. Detect the mode and behavioural state. Forge a Proof Contract you must close."
+        path="/coach"
+      />
       <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
         <header>
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -202,9 +208,9 @@ export default function Coach() {
             <div className="grid gap-3">
               {sections.map((s) => (
                 <Card key={s.title} className="panel p-4">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                  <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">
                     {s.title}
-                  </span>
+                  </h2>
                   <div className="mt-2 text-sm whitespace-pre-wrap leading-relaxed">
                     {s.body || <span className="text-muted-foreground italic">—</span>}
                   </div>
@@ -245,9 +251,9 @@ export default function Coach() {
         )}
 
         <Card className="panel p-4">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          <h2 className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground m-0">
             Recent interactions
-          </span>
+          </h2>
           {history.length === 0 ? (
             <p className="text-sm text-muted-foreground mt-2">
               No coach interactions yet. Drop a real bottleneck above to start the loop.
