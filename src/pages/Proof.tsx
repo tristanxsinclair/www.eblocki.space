@@ -13,6 +13,7 @@ import { scoreProof } from "@/lib/eblocki/proof-scoring";
 import type { UserMode } from "@/lib/eblocki/modes";
 import { toast } from "sonner";
 import { Gavel } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 export default function Proof() {
   const { user } = useAuth();
@@ -116,6 +117,11 @@ export default function Proof() {
 
   return (
     <AppShell>
+      <Seo
+        title="Court of Evidence | EBLOCKI"
+        description="Submit, score, and audit proof artifacts. Pending contracts, completed verdicts, and missed promises in one ledger."
+        path="/proof"
+      />
       <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
         <header>
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Court of Evidence</span>
@@ -147,8 +153,9 @@ export default function Proof() {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <Label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Domain</Label>
+              <Label htmlFor="proof-domain-filter" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Domain</Label>
               <select
+                id="proof-domain-filter"
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
                 className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
@@ -167,8 +174,9 @@ export default function Proof() {
             <div>
               <div className="grid gap-3">
                 <div>
-                  <Label>Mode</Label>
+                  <Label htmlFor="proof-mode-select">Mode</Label>
                   <select
+                    id="proof-mode-select"
                     value={selectedModeId}
                     onChange={(e) => setSelectedModeId(e.target.value)}
                     className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -180,12 +188,13 @@ export default function Proof() {
                   </select>
                 </div>
                 <div>
-                  <Label>Proof title</Label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short artifact title" />
+                  <Label htmlFor="proof-title">Proof title</Label>
+                  <Input id="proof-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short artifact title" />
                 </div>
                 <div>
-                  <Label>Proof content</Label>
+                  <Label htmlFor="proof-content">Proof content</Label>
                   <Textarea
+                    id="proof-content"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     rows={8}
@@ -193,12 +202,12 @@ export default function Proof() {
                   />
                 </div>
                 <div>
-                  <Label>Reflection</Label>
-                  <Textarea value={reflection} onChange={(e) => setReflection(e.target.value)} rows={2} placeholder="What did this expose? Where did it fall short?" />
+                  <Label htmlFor="proof-reflection">Reflection</Label>
+                  <Textarea id="proof-reflection" value={reflection} onChange={(e) => setReflection(e.target.value)} rows={2} placeholder="What did this expose? Where did it fall short?" />
                 </div>
                 <div>
-                  <Label>Next upgrade</Label>
-                  <Input value={nextUpgrade} onChange={(e) => setNextUpgrade(e.target.value)} placeholder="One concrete upgrade for next time." />
+                  <Label htmlFor="proof-next-upgrade">Next upgrade</Label>
+                  <Input id="proof-next-upgrade" value={nextUpgrade} onChange={(e) => setNextUpgrade(e.target.value)} placeholder="One concrete upgrade for next time." />
                 </div>
               </div>
             </div>
@@ -218,7 +227,7 @@ export default function Proof() {
         <Card className="panel p-4">
           <div className="flex items-center gap-2 mb-3">
             <Gavel className="h-4 w-4 text-primary" />
-            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Pending proof contracts</span>
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Pending proof contracts</h2>
           </div>
           {filteredPending.length === 0 ? (
             <p className="text-sm text-muted-foreground">No pending contracts in this domain. Open the AI Coach and define one.</p>
@@ -244,7 +253,7 @@ export default function Proof() {
         <Card className="panel p-4">
           <div className="flex items-center gap-2 mb-3">
             <Gavel className="h-4 w-4 text-primary" />
-            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Completed proof artifacts</span>
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Completed proof artifacts</h2>
           </div>
           {filteredCompleted.length === 0 ? (
             <p className="text-sm text-muted-foreground">No proof logged yet. The Court of Evidence is empty. Create your first artifact.</p>
@@ -268,7 +277,7 @@ export default function Proof() {
         <Card className="panel p-4">
           <div className="flex items-center gap-2 mb-3">
             <Gavel className="h-4 w-4 text-primary" />
-            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Missed proof contracts</span>
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Missed proof contracts</h2>
           </div>
           {filteredMissed.length === 0 ? (
             <p className="text-sm text-muted-foreground">No missed contracts.</p>
