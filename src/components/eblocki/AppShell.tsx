@@ -55,7 +55,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0">{children}</main>
+      <main className="flex-1 min-w-0" id="main">{children}</main>
     </div>
   );
 }
