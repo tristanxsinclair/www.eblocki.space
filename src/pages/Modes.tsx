@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
+import { Seo } from "@/components/Seo";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -207,6 +208,11 @@ export default function Modes() {
 
   return (
     <AppShell>
+      <Seo
+        title="Modes | EBLOCKI"
+        description="Configure the operating modes that route your coach, evidence rubrics, and proof contracts."
+        path="/modes"
+      />
       <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
         <header className="space-y-2">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
