@@ -291,6 +291,7 @@ export default function Onboarding() {
 
   return (
     <AppShell>
+      <Seo title="Setup OS | EBLOCKI" description="Configure your operating modes, identity claims, and arenas to start the proof loop." path="/onboarding" />
       <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
         <header className="space-y-2">
           <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
