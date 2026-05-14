@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Seo } from "@/components/Seo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
@@ -47,6 +48,11 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen grid-bg flex items-center justify-center p-6">
+      <Seo
+        title="Sign in | EBLOCKI"
+        description="Sign in to your EBLOCKI behavioural performance OS — coach, control sheet, and Court of Evidence."
+        path="/auth"
+      />
       <div className="w-full max-w-sm">
         <Link to="/" className="flex items-center gap-2 mb-6 justify-center">
           <div className="h-8 w-8 rounded-sm bg-primary flex items-center justify-center text-primary-foreground">
