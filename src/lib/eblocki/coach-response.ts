@@ -43,6 +43,7 @@ export interface NormalisedCoachResponse {
   proofQuestion: string;
   interactionId: string | null;
   commitmentId: string | null;
+  usedFallback: boolean;
 }
 
 const DEFAULT_PROOF_CONTRACT: ProofContract = {
@@ -107,6 +108,7 @@ export function normaliseCoachResponse(raw: unknown): NormalisedCoachResponse {
     ),
     interactionId: data.interactionId || data.interaction_id || null,
     commitmentId: data.commitmentId || data.commitment_id || null,
+    usedFallback: !!(data.debug && data.debug.usedFallback),
   };
 }
 
@@ -278,5 +280,6 @@ Do not measure whether you felt productive. Measure whether you created evidence
     proofQuestion: "What proof artifact will confirm completion?",
     interactionId: null,
     commitmentId: null,
+    usedFallback: true,
   };
 }
