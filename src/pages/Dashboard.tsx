@@ -109,12 +109,25 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mt-1">Proof beats intention. Every panel here feeds the loop.</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Link to="/sheet"><Button size="sm"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Start Today</Button></Link>
             <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
             <Link to="/proof"><Button size="sm" variant="outline"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit Proof</Button></Link>
-            <Link to="/sheet"><Button size="sm" variant="outline"><FileText className="h-3.5 w-3.5 mr-1.5" />Control Sheet</Button></Link>
             <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
+            <Link to="/proof"><Button size="sm" variant="outline"><Gavel className="h-3.5 w-3.5 mr-1.5" />Court of Evidence</Button></Link>
           </div>
         </header>
+
+        {modesCount === 0 && (
+          <Card className="panel p-4 border-primary/40 bg-primary/5">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Eblocki OS — Not Configured</div>
+                <p className="text-sm mt-1">No personalised modes found. Build your Eblocki OS so the system knows what evidence matters.</p>
+              </div>
+              <Link to="/modes"><Button size="sm">Configure Modes</Button></Link>
+            </div>
+          </Card>
+        )}
 
         {/* OS OVERVIEW */}
         <Card className="panel p-4 md:p-5 border-primary/30">
