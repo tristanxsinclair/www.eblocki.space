@@ -10,10 +10,18 @@ import { ModeBadge, StateBadge } from "@/components/eblocki/Badges";
 import { ProofContractCard } from "@/components/eblocki/ProofContractCard";
 import { normaliseCoachResponse, type NormalisedCoachResponse } from "@/lib/eblocki/coach-response";
 import type { Mode } from "@/lib/eblocki/modes";
-import type { BehaviouralState } from "@/lib/eblocki/states";
+import { STATE_LABELS, STATE_PRESCRIPTION, type BehaviouralState } from "@/lib/eblocki/states";
 import { toast } from "sonner";
-import { AlertCircle, ArrowRight, Loader2, Send } from "lucide-react";
+import { AlertCircle, ArrowRight, Crosshair, Info, Loader2, Send, Sparkles } from "lucide-react";
 import { Seo } from "@/components/Seo";
+
+const QUICK_PROMPTS = [
+  "Force this into a proof artifact.",
+  "Diagnose my avoidance.",
+  "Create a Proof Contract for this.",
+  "Review my latest proof.",
+  "Give me the next controllable action.",
+];
 
 const SECTION_TITLES = [
   "Bottom Line Up Front",
@@ -64,6 +72,7 @@ export default function Coach() {
   const [committing, setCommitting] = useState(false);
   const [localCommitmentId, setLocalCommitmentId] = useState<string | null>(null);
   const [history, setHistory] = useState<any[]>([]);
+  const [userModeIds, setUserModeIds] = useState<Set<string>>(new Set());
 
   const committedId = result?.commitmentId ?? localCommitmentId;
 
@@ -77,6 +86,16 @@ export default function Coach() {
       .limit(5)
       .then(({ data }) => setHistory(data ?? []));
   }, [user, result]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_modes")
+      .select("mode_id")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .then(({ data }) => setUserModeIds(new Set((data ?? []).map((m: any) => String(m.mode_id)))));
+  }, [user]);
 
   const send = async () => {
     if (!input.trim()) return;
@@ -141,6 +160,16 @@ export default function Coach() {
     [result]
   );
 
+  const nextControllable = useMemo(() => {
+    if (!result) return null;
+    const actionable = sections.find((s) => s.title === "Actionable System");
+    const source = actionable?.body || result.response;
+    const m = source.match(/(?:^|\n)\s*(?:[-*]|\d+\.)\s+(.+)/);
+    return m ? m[1].trim().replace(/\.$/, "") : null;
+  }, [result, sections]);
+
+  const isPersonalisedMode = result ? userModeIds.has(result.mode) : false;
+
   return (
     <AppShell>
       <Seo
@@ -197,13 +226,42 @@ export default function Coach() {
 
         {result && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              <ModeBadge
-                mode={result.mode as Mode}
-                hybrid={(result.hybrid ?? undefined) as Mode | undefined}
-              />
-              {result.state && <StateBadge state={result.state as BehaviouralState} />}
-            </div>
+            <Card className="panel p-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <ModeBadge
+                  mode={result.mode as Mode}
+                  hybrid={(result.hybrid ?? undefined) as Mode | undefined}
+                />
+                {isPersonalisedMode && (
+                  <span className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm border border-primary/40 text-primary">
+                    Personalised Mode
+                  </span>
+                )}
+                {result.state && <StateBadge state={result.state as BehaviouralState} />}
+              </div>
+              {result.state && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  <span className="text-foreground font-mono uppercase tracking-wider text-[10px]">{STATE_LABELS[result.state as BehaviouralState] ?? result.state}:</span>{" "}
+                  {STATE_PRESCRIPTION[result.state as BehaviouralState] ?? "Behavioural state detected."}
+                </p>
+              )}
+              {result.usedFallback && (
+                <div className="mt-3 flex items-start gap-2 text-[11px] text-muted-foreground border-t border-border pt-2">
+                  <Info className="h-3 w-3 mt-0.5 shrink-0" />
+                  <span>Fallback coach response used. Core proof logic still active.</span>
+                </div>
+              )}
+            </Card>
+
+            {nextControllable && (
+              <Card className="panel p-4 border-primary/30">
+                <div className="flex items-center gap-2">
+                  <Crosshair className="h-4 w-4 text-primary" />
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Next Controllable Action</span>
+                </div>
+                <p className="mt-2 text-sm">{nextControllable}</p>
+              </Card>
+            )}
 
             <div className="grid gap-3">
               {sections.map((s) => (
@@ -249,6 +307,26 @@ export default function Coach() {
             )}
           </div>
         )}
+
+        <Card className="panel p-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Quick prompts</span>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {QUICK_PROMPTS.map((p) => (
+              <Button
+                key={p}
+                size="sm"
+                variant="outline"
+                className="text-xs"
+                onClick={() => setInput((prev) => (prev.trim() ? `${prev.trim()}\n\n${p}` : p))}
+              >
+                {p}
+              </Button>
+            ))}
+          </div>
+        </Card>
 
         <Card className="panel p-4">
           <h2 className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground m-0">
