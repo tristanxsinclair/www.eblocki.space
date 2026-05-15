@@ -10,10 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { ArrowRight, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Search } from "lucide-react";
 import { ModeBadge } from "@/components/eblocki/Badges";
 import { calculateModeProgress } from "@/lib/eblocki/mode-progress";
-import { TRISTAN_DEFAULT_MODES, GENERAL_DEFAULT_MODES, type EblockiDefaultMode } from "@/lib/eblocki/default-modes";
+import { TRISTAN_DEFAULT_MODES, type EblockiDefaultMode } from "@/lib/eblocki/default-modes";
 import type { UserMode } from "@/lib/eblocki/modes";
 
 function isTristanUser(email?: string | null) {
@@ -93,22 +93,41 @@ export default function Modes() {
   const [newModeStandards, setNewModeStandards] = useState("");
   const [showAddMode, setShowAddMode] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const activeModes = useMemo(
     () => userModes.filter((mode) => mode.is_active !== false),
     [userModes]
   );
 
-  const fallbackModes = useMemo(() => {
-    if (isTristanUser(user?.email)) return TRISTAN_DEFAULT_MODES;
-    return GENERAL_DEFAULT_MODES;
-  }, [user?.email]);
+  // Tristan preserves preset modes as a preview if his account has none yet.
+  // All other users get a true empty state — no forced defaults.
+  const tristanPreview =
+    isTristanUser(user?.email) && activeModes.length === 0 ? TRISTAN_DEFAULT_MODES : [];
+  const baseModes: (UserMode | EblockiDefaultMode)[] =
+    activeModes.length > 0 ? activeModes : tristanPreview;
 
-  const displayModes = activeModes.length > 0 ? activeModes : fallbackModes;
+  const displayModes = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return baseModes;
+    return baseModes.filter((m) => {
+      const hay = [
+        m.display_name,
+        m.mode_id,
+        m.description,
+        ...(m.keywords ?? []),
+        ...(m.proof_examples ?? []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [baseModes, query]);
 
   const totalsByMode = useMemo(
     () =>
-      displayModes.reduce<Record<string, { pending: number; completed: number; strong: number; elite: number; score: number }>>((acc, mode) => {
+      displayModes.reduce<Record<string, { pending: number; completed: number; strong: number; elite: number; score: number; compounding: number }>>((acc, mode) => {
         const key = mode.mode_id;
         const modeDomain = key.toLowerCase();
         const matchingArtifacts = artifacts.filter(
@@ -124,7 +143,19 @@ export default function Modes() {
         const avgScore = matchingArtifacts.length
           ? matchingArtifacts.reduce((sum, a) => sum + (a.quality_score || 0), 0) / matchingArtifacts.length
           : 0;
-        acc[key] = { pending, completed, strong, elite, score: Number(avgScore.toFixed(1)) };
+        const progress = calculateModeProgress({
+          artifacts: matchingArtifacts,
+          commitments: matchingCommitments,
+          interactions: [],
+        });
+        acc[key] = {
+          pending,
+          completed,
+          strong,
+          elite,
+          score: Number(avgScore.toFixed(1)),
+          compounding: progress.compoundingScore,
+        };
         return acc;
       }, {}),
     [artifacts, commitments, displayModes]
@@ -204,7 +235,7 @@ export default function Modes() {
     navigate(`/coach?prompt=${encodeURIComponent(`I need coaching in ${mode.display_name}.`)}`);
   };
 
-  const emptyState = !loading && displayModes.length === 0;
+  const emptyState = !loading && activeModes.length === 0 && tristanPreview.length === 0;
 
   return (
     <AppShell>
@@ -241,14 +272,43 @@ export default function Modes() {
                 <Button>Setup My OS</Button>
               </Link>
               <Button variant="secondary" onClick={() => setShowAddMode(true)}>
-                Add Example Mode
+                Add a mode manually
               </Button>
             </div>
           </Card>
         ) : (
-          <div className="grid xl:grid-cols-2 gap-4">
+          <>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search modes by name, keyword, or description"
+                  className="pl-8"
+                />
+              </div>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                {displayModes.length}/{baseModes.length}
+              </span>
+            </div>
+
+            {tristanPreview.length > 0 && (
+              <Card className="panel p-3 border-primary/30 bg-primary/5">
+                <p className="text-xs text-muted-foreground">
+                  Showing your preset modes. Open onboarding to lock these into your personalised OS.
+                </p>
+              </Card>
+            )}
+
+            {displayModes.length === 0 ? (
+              <Card className="panel p-5 text-center text-sm text-muted-foreground">
+                No modes match "{query}".
+              </Card>
+            ) : (
+            <div className="grid xl:grid-cols-2 gap-4">
             {displayModes.map((mode) => {
-              const stats = totalsByMode[mode.mode_id] ?? { pending: 0, completed: 0, strong: 0, elite: 0, score: 0 };
+              const stats = totalsByMode[mode.mode_id] ?? { pending: 0, completed: 0, strong: 0, elite: 0, score: 0, compounding: 0 };
               return (
                 <Card key={mode.mode_id} className="panel p-5 border-primary/10">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -265,6 +325,37 @@ export default function Modes() {
                           {(mode as UserMode).is_active ? "Active" : "Inactive"}
                         </span>
                       )}
+                    </div>
+                  </div>
+
+                  {(mode.keywords?.length ?? 0) > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {mode.keywords!.slice(0, 8).map((k) => (
+                        <span key={k} className="font-mono text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm border border-border text-muted-foreground">
+                          {k}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {(mode.proof_examples?.length ?? 0) > 0 && (
+                    <div className="mt-3">
+                      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof examples</div>
+                      <ul className="mt-1 text-xs text-foreground space-y-0.5 list-disc list-inside">
+                        {mode.proof_examples!.slice(0, 3).map((p, i) => (
+                          <li key={i} className="line-clamp-2">{p}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Compounding progress</span>
+                      <span className="font-mono text-xs text-primary">{stats.compounding}<span className="text-muted-foreground">/100</span></span>
+                    </div>
+                    <div className="mt-1 h-1 w-full bg-muted/50 rounded-sm overflow-hidden">
+                      <div className="h-full bg-primary transition-all" style={{ width: `${stats.compounding}%` }} />
                     </div>
                   </div>
 
@@ -320,7 +411,9 @@ export default function Modes() {
                 </Card>
               );
             })}
-          </div>
+            </div>
+            )}
+          </>
         )}
 
         <Card className="panel p-5">
