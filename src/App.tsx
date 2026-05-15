@@ -15,6 +15,7 @@ import ModeDetail from "./pages/ModeDetail.tsx";
 import Settings from "./pages/Settings.tsx";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Onboarding from "./pages/Onboarding.tsx";
+import StartToday from "./pages/StartToday.tsx";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
             <Route path="/coach" element={<Protected><Coach /></Protected>} />
             <Route path="/sheet" element={<Protected><Sheet /></Protected>} />
+            <Route path="/start" element={<Protected><StartToday /></Protected>} />
             <Route path="/proof" element={<Protected><Proof /></Protected>} />
             <Route path="/modes" element={<Protected><Modes /></Protected>} />
             <Route path="/modes/:modeId" element={<Protected><ModeDetail /></Protected>} />

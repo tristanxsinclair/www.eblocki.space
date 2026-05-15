@@ -109,7 +109,7 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mt-1">Proof beats intention. Every panel here feeds the loop.</p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Link to="/sheet"><Button size="sm"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Start Today</Button></Link>
+            <Link to="/start"><Button size="sm"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Start Today</Button></Link>
             <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
             <Link to="/proof"><Button size="sm" variant="outline"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit Proof</Button></Link>
             <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>

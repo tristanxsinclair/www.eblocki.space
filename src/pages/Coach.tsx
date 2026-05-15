@@ -182,9 +182,16 @@ export default function Coach() {
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             AI Coach
           </span>
-          <h1 className="text-2xl md:text-3xl font-semibold mt-1">
-            Diagnose. Prescribe. Prove.
-          </h1>
+          <div className="flex items-end justify-between gap-3 flex-wrap">
+            <h1 className="text-2xl md:text-3xl font-semibold mt-1">
+              Diagnose. Prescribe. Prove.
+            </h1>
+            <Link to="/start">
+              <Button size="sm" variant="outline">
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Start Today
+              </Button>
+            </Link>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             Drop the task. The system routes to the right mode, diagnoses the state, and forces a Proof Contract.
           </p>
