@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
@@ -9,38 +9,59 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
-import { scoreProof } from "@/lib/eblocki/proof-scoring";
+import { scoreProofArtifact } from "@/lib/eblocki/proof-scoring";
 import type { UserMode } from "@/lib/eblocki/modes";
 import { toast } from "sonner";
-import { Gavel } from "lucide-react";
+import { CheckCircle2, Gavel, Scale } from "lucide-react";
 import { Seo } from "@/components/Seo";
+
+const ARTIFACT_TYPES = [
+  "written answer",
+  "reflection",
+  "script",
+  "training log",
+  "decision memo",
+  "summary",
+  "post / publication",
+  "other",
+];
+
+interface Verdict {
+  qualityScore: number;
+  evidenceStrength: "weak" | "moderate" | "strong" | "elite";
+  feedback: string;
+  nextUpgrade: string;
+  why: string;
+  missingStandard: string;
+  eliteVersion: string;
+  artifactId: string;
+  contractClosed: boolean;
+}
 
 export default function Proof() {
   const { user } = useAuth();
   const [params] = useSearchParams();
+
   const [pending, setPending] = useState<any[]>([]);
   const [completed, setCompleted] = useState<any[]>([]);
   const [missed, setMissed] = useState<any[]>([]);
   const [userModes, setUserModes] = useState<UserMode[]>([]);
-  const [selectedModeId, setSelectedModeId] = useState<string>("all");
-  const [submitFor, setSubmitFor] = useState<any | null>(null);
-  const [content, setContent] = useState("");
+
+  const [selectedModeId, setSelectedModeId] = useState<string>("");
+  const [linkedContractId, setLinkedContractId] = useState<string>("");
   const [title, setTitle] = useState("");
+  const [artifactType, setArtifactType] = useState<string>(ARTIFACT_TYPES[0]);
+  const [content, setContent] = useState("");
   const [reflection, setReflection] = useState("");
   const [nextUpgrade, setNextUpgrade] = useState("");
-  const [domain, setDomain] = useState<string>("all");
+  const [submitting, setSubmitting] = useState(false);
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
+  const [filterDomain, setFilterDomain] = useState("all");
 
   const activeModes = useMemo(
-    () => userModes.filter((mode) => mode.is_active !== false),
+    () => userModes.filter((m) => m.is_active !== false),
     [userModes]
   );
-
-  useEffect(() => {
-    const requestedMode = params.get("mode");
-    if (requestedMode) {
-      setSelectedModeId(requestedMode);
-    }
-  }, [params]);
 
   const reload = async () => {
     if (!user) return;
@@ -59,53 +80,164 @@ export default function Proof() {
     reload();
   }, [user]);
 
-  const selectedMode = activeModes.find((mode) => mode.mode_id === selectedModeId) ?? null;
+  // Honour ?mode=… and ?contract=… deep links
+  useEffect(() => {
+    const m = params.get("mode");
+    if (m) setSelectedModeId(m.toUpperCase());
+    const c = params.get("contract");
+    if (c) setLinkedContractId(c);
+  }, [params]);
 
-  const submit = async () => {
-    if (!user || !submitFor || !content.trim()) return;
-    const modeId = selectedMode?.mode_id ?? submitFor.mode ?? submitFor.domain?.toUpperCase() ?? "GENERAL_EXECUTION";
-    const domainValue = selectedMode ? selectedMode.mode_id.toLowerCase() : submitFor.domain;
-    const score = scoreProof(domainValue, content);
-    const composedFeedback = [score.feedback, reflection.trim() && `Reflection: ${reflection.trim()}`]
-      .filter(Boolean)
-      .join(" ");
-    const composedNextUpgrade = nextUpgrade.trim() || score.nextUpgrade;
-    const { data: artifact, error } = await supabase.from("proof_artifacts").insert({
-      user_id: user.id,
-      domain: domainValue,
-      title: title || submitFor.title,
-      artifact_type: submitFor.required_artifact,
-      content,
-      quality_score: score.score,
-      evidence_strength: score.strength,
-      feedback: composedFeedback,
-      next_upgrade: composedNextUpgrade,
-    }).select().single();
-    if (error) return toast.error(error.message);
-    await supabase.from("proof_commitments").update({
-      status: "completed",
-      proof_artifact_id: artifact!.id,
-      completed_at: new Date().toISOString(),
-      completion_reflection: reflection.trim() || null,
-    }).eq("id", submitFor.id);
-    toast.success(`Scored ${score.score}/10 — ${score.strength}`);
-    setSubmitFor(null);
-    setContent("");
+  const selectedMode = useMemo(
+    () => activeModes.find((m) => m.mode_id === selectedModeId) ?? null,
+    [activeModes, selectedModeId]
+  );
+
+  const linkedContract = useMemo(
+    () => pending.find((p) => p.id === linkedContractId) ?? null,
+    [pending, linkedContractId]
+  );
+
+  // When linking a contract, prefill mode/title/artifact type if empty
+  useEffect(() => {
+    if (!linkedContract) return;
+    if (!title) setTitle(linkedContract.title || "");
+    if (!selectedModeId && linkedContract.mode) setSelectedModeId(linkedContract.mode);
+    if (linkedContract.required_artifact && artifactType === ARTIFACT_TYPES[0]) {
+      setArtifactType(linkedContract.required_artifact.length > 60 ? "other" : linkedContract.required_artifact);
+    }
+  }, [linkedContract]);
+
+  const resetForm = () => {
     setTitle("");
+    setContent("");
     setReflection("");
     setNextUpgrade("");
-    reload();
+    setLinkedContractId("");
+    setArtifactType(ARTIFACT_TYPES[0]);
+  };
+
+  const buildPersonalisedExtras = (
+    mode: UserMode | null,
+    score: { qualityScore: number; evidenceStrength: string; feedback: string; nextUpgrade: string }
+  ) => {
+    const why = `Scored ${score.qualityScore}/10 (${score.evidenceStrength}). ${score.feedback}`;
+    const standardExamples = mode?.strong_evidence_examples?.[0] || mode?.proof_examples?.[0];
+    const eliteExample = mode?.elite_evidence_examples?.[0];
+    const criteria = mode?.scoring_criteria
+      ? Object.values(mode.scoring_criteria).flat().filter(Boolean).join(", ")
+      : "";
+
+    const missingStandard =
+      score.evidenceStrength === "elite"
+        ? "None — meets elite standard for this mode."
+        : standardExamples
+        ? `Aim for: ${standardExamples}${criteria ? ` (criteria: ${criteria})` : ""}`
+        : "Add concrete artifact + applied detail + reflection + next upgrade.";
+
+    const eliteVersion =
+      eliteExample ||
+      "Artifact shows action, applied detail, honest critique, correction, and a next upgrade that survives the Court of Evidence.";
+
+    return { why, missingStandard, eliteVersion };
+  };
+
+  const submit = async () => {
+    if (!user) return;
+    if (!content.trim()) return toast.error("Add the artifact content first.");
+    if (!title.trim()) return toast.error("Give the proof a title.");
+
+    // Prevent duplicate completion
+    if (linkedContract && linkedContract.proof_artifact_id) {
+      return toast.error("This contract is already closed by another artifact.");
+    }
+
+    setSubmitting(true);
+    try {
+      const modeId = selectedMode?.mode_id ?? linkedContract?.mode ?? "GENERAL_EXECUTION";
+      const domainValue = (selectedMode?.mode_id ?? linkedContract?.domain ?? modeId).toLowerCase();
+
+      const score = scoreProofArtifact({
+        domain: domainValue,
+        title,
+        artifactType,
+        content,
+        reflection,
+        nextUpgrade,
+      });
+
+      const composedFeedback = [
+        score.feedback,
+        reflection.trim() && `Reflection: ${reflection.trim()}`,
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      const { data: artifact, error } = await supabase
+        .from("proof_artifacts")
+        .insert({
+          user_id: user.id,
+          domain: domainValue,
+          title: title.trim(),
+          artifact_type: artifactType,
+          content,
+          quality_score: score.qualityScore,
+          evidence_strength: score.evidenceStrength,
+          feedback: composedFeedback,
+          next_upgrade: nextUpgrade.trim() || score.nextUpgrade,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+
+      let contractClosed = false;
+      if (linkedContract && !linkedContract.proof_artifact_id) {
+        const { error: upErr } = await supabase
+          .from("proof_commitments")
+          .update({
+            status: "completed",
+            proof_artifact_id: artifact!.id,
+            completed_at: new Date().toISOString(),
+            completion_reflection: reflection.trim() || null,
+          })
+          .eq("id", linkedContract.id)
+          .is("proof_artifact_id", null);
+        if (!upErr) contractClosed = true;
+      }
+
+      const extras = buildPersonalisedExtras(selectedMode, score);
+
+      setVerdict({
+        qualityScore: score.qualityScore,
+        evidenceStrength: score.evidenceStrength,
+        feedback: score.feedback,
+        nextUpgrade: nextUpgrade.trim() || score.nextUpgrade,
+        why: extras.why,
+        missingStandard: extras.missingStandard,
+        eliteVersion: extras.eliteVersion,
+        artifactId: artifact!.id,
+        contractClosed,
+      });
+
+      toast.success(`Verdict: ${score.qualityScore}/10 — ${score.evidenceStrength}`);
+      resetForm();
+      reload();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to submit proof.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const filterByDomain = <T extends { domain: string; mode?: string }>(items: T[]) =>
-    domain === "all"
+    filterDomain === "all"
       ? items
       : items.filter(
           (i) =>
-            i.domain === domain ||
-            i.mode === domain ||
-            i.mode?.toLowerCase() === domain ||
-            i.domain === domain.toLowerCase()
+            i.domain === filterDomain ||
+            i.mode === filterDomain ||
+            i.mode?.toLowerCase() === filterDomain ||
+            i.domain === filterDomain.toLowerCase()
         );
 
   const filteredPending = filterByDomain(pending);
@@ -119,7 +251,7 @@ export default function Proof() {
     <AppShell>
       <Seo
         title="Court of Evidence | EBLOCKI"
-        description="Submit, score, and audit proof artifacts. Pending contracts, completed verdicts, and missed promises in one ledger."
+        description="Submit proof artifacts, score evidence strength, and close pending Proof Contracts."
         path="/proof"
       />
       <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
@@ -130,21 +262,23 @@ export default function Proof() {
 
         <Card className="panel p-4 border-primary/20">
           <div className="flex items-start gap-3">
-            <Gavel className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <div>
               <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                The Court of Evidence
+                Definitions
               </span>
               <p className="text-sm text-muted-foreground mt-1">
-                Every identity claim needs evidence. This dashboard shows what has actually been produced, not what was intended. A Proof Contract is a promise of evidence. A Proof Artifact is completed evidence.
+                A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
+                A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
               </p>
             </div>
           </div>
         </Card>
 
+        {/* Strength tally */}
         <Card className="panel p-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="grid grid-cols-4 gap-2 flex-1 min-w-[260px]">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="grid grid-cols-4 gap-2 flex-1">
               {(["weak", "moderate", "strong", "elite"] as const).map((s) => (
                 <div key={s} className="rounded-sm border border-border p-2 text-center">
                   <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{s}</div>
@@ -153,14 +287,14 @@ export default function Proof() {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <Label htmlFor="proof-domain-filter" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Domain</Label>
+              <Label htmlFor="proof-domain-filter" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Filter</Label>
               <select
                 id="proof-domain-filter"
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
+                value={filterDomain}
+                onChange={(e) => setFilterDomain(e.target.value)}
                 className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
               >
-                <option value="all">all</option>
+                <option value="all">all modes</option>
                 {activeModes.map((mode) => (
                   <option key={mode.mode_id} value={mode.mode_id.toLowerCase()}>{mode.display_name}</option>
                 ))}
@@ -169,68 +303,182 @@ export default function Proof() {
           </div>
         </Card>
 
-        <Card className="panel p-4">
-          <div className="grid gap-3 md:grid-cols-[1fr,280px]">
-            <div>
-              <div className="grid gap-3">
-                <div>
-                  <Label htmlFor="proof-mode-select">Mode</Label>
+        {/* Verdict card */}
+        {verdict && (
+          <Card className="panel p-4 md:p-5 border-primary/40">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Court of Evidence — Verdict</span>
+              </div>
+              <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
+            </div>
+            <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
+              <VerdictRow label="Why it scored that way" value={verdict.why} />
+              <VerdictRow label="Missing standard" value={verdict.missingStandard} />
+              <VerdictRow label="Next upgrade" value={verdict.nextUpgrade} />
+              <VerdictRow label="Elite version" value={verdict.eliteVersion} />
+            </div>
+            {verdict.contractClosed && (
+              <div className="mt-3 rounded-sm border border-primary/40 bg-primary/5 p-2.5 text-xs text-primary font-mono">
+                ✓ Linked Proof Contract marked completed.
+              </div>
+            )}
+            <div className="mt-4 flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setVerdict(null)}>Submit another</Button>
+              <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
+            </div>
+          </Card>
+        )}
+
+        {/* Submission form */}
+        <Card className="panel p-4 md:p-5">
+          <div className="flex items-center gap-2">
+            <Gavel className="h-4 w-4 text-primary" />
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Submit a Proof Artifact</h2>
+          </div>
+
+          <div className="mt-4 grid gap-3">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="proof-mode-select">Mode</Label>
+                {activeModes.length === 0 ? (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    No personalised modes yet. <Link to="/modes" className="text-primary hover:underline">Setup My OS</Link> so artifacts route correctly.
+                  </div>
+                ) : (
                   <select
                     id="proof-mode-select"
                     value={selectedModeId}
                     onChange={(e) => setSelectedModeId(e.target.value)}
                     className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
-                    <option value="all">All modes</option>
+                    <option value="">— pick a mode —</option>
                     {activeModes.map((mode) => (
                       <option key={mode.mode_id} value={mode.mode_id}>{mode.display_name}</option>
                     ))}
                   </select>
-                </div>
-                <div>
-                  <Label htmlFor="proof-title">Proof title</Label>
-                  <Input id="proof-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Short artifact title" />
-                </div>
-                <div>
-                  <Label htmlFor="proof-content">Proof content</Label>
-                  <Textarea
-                    id="proof-content"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    rows={8}
-                    placeholder="Paste the artifact — IRAC answer, CAEE paragraph, sales reflection, training log, script, etc."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="proof-reflection">Reflection</Label>
-                  <Textarea id="proof-reflection" value={reflection} onChange={(e) => setReflection(e.target.value)} rows={2} placeholder="What did this expose? Where did it fall short?" />
-                </div>
-                <div>
-                  <Label htmlFor="proof-next-upgrade">Next upgrade</Label>
-                  <Input id="proof-next-upgrade" value={nextUpgrade} onChange={(e) => setNextUpgrade(e.target.value)} placeholder="One concrete upgrade for next time." />
-                </div>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="proof-contract-link">Link a pending Proof Contract (optional)</Label>
+                <select
+                  id="proof-contract-link"
+                  value={linkedContractId}
+                  onChange={(e) => setLinkedContractId(e.target.value)}
+                  className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">— none —</option>
+                  {pending.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.mode ?? p.domain} · {p.title}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-            <div className="space-y-4">
-              <div className="rounded-xl border border-border p-4 bg-background/40">
-                <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Selected mode</p>
-                <p className="mt-2 text-sm font-semibold">{selectedMode?.display_name ?? "None selected"}</p>
-                <p className="text-sm text-muted-foreground mt-1">{selectedMode?.description ?? "Choose a personalised mode to tie this artifact to the right arena."}</p>
+
+            {linkedContract && (
+              <div className="rounded-sm border border-primary/30 bg-primary/5 p-3 text-xs">
+                <div className="font-mono uppercase tracking-widest text-primary">Linked contract</div>
+                <div className="mt-1 text-foreground">{linkedContract.title}</div>
+                {linkedContract.required_artifact && (
+                  <div className="mt-0.5 text-muted-foreground">Required: {linkedContract.required_artifact}</div>
+                )}
+                {linkedContract.evidence_standard && (
+                  <div className="mt-0.5 text-muted-foreground">Standard: {linkedContract.evidence_standard}</div>
+                )}
+                {linkedContract.proof_artifact_id && (
+                  <div className="mt-1 text-destructive">Already closed — submitting will create a new artifact but won't reopen.</div>
+                )}
               </div>
-              <Button onClick={submit} className="w-full" disabled={!user || !submitFor || !content.trim()}>
-                Score & File
-              </Button>
+            )}
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="proof-title">Title</Label>
+                <Input
+                  id="proof-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="What did you produce?"
+                />
+              </div>
+              <div>
+                <Label htmlFor="proof-artifact-type">Artifact type</Label>
+                <select
+                  id="proof-artifact-type"
+                  value={artifactType}
+                  onChange={(e) => setArtifactType(e.target.value)}
+                  className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {ARTIFACT_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
             </div>
+
+            <div>
+              <Label htmlFor="proof-content">Content</Label>
+              <Textarea
+                id="proof-content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={8}
+                placeholder="Paste the artifact or summarise the completed output."
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="proof-reflection">Reflection</Label>
+              <Textarea
+                id="proof-reflection"
+                value={reflection}
+                onChange={(e) => setReflection(e.target.value)}
+                rows={3}
+                placeholder="What did this prove? What weakness did it reveal?"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="proof-next-upgrade">Next upgrade</Label>
+              <Input
+                id="proof-next-upgrade"
+                value={nextUpgrade}
+                onChange={(e) => setNextUpgrade(e.target.value)}
+                placeholder="What is the next correction?"
+              />
+            </div>
+
+            {selectedMode && (
+              <div className="rounded-sm border border-border p-3 text-xs text-muted-foreground">
+                Scoring against <span className="text-foreground font-mono">{selectedMode.display_name}</span>.
+                {selectedMode.elite_evidence_examples?.[0] && (
+                  <div className="mt-1">Elite target: <span className="text-foreground">{selectedMode.elite_evidence_examples[0]}</span></div>
+                )}
+              </div>
+            )}
+
+            <Button
+              onClick={submit}
+              disabled={submitting || !content.trim() || !title.trim()}
+              className="w-full sm:w-auto"
+            >
+              {submitting ? "Filing…" : "Score & File Proof Artifact"}
+            </Button>
           </div>
         </Card>
 
+        {/* Pending contracts */}
         <Card className="panel p-4">
           <div className="flex items-center gap-2 mb-3">
             <Gavel className="h-4 w-4 text-primary" />
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Pending proof contracts</h2>
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Pending Proof Contracts</h2>
           </div>
           {filteredPending.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No pending contracts in this domain. Open the AI Coach and define one.</p>
+            <p className="text-sm text-muted-foreground">No pending contracts. Open the Coach to forge one.</p>
           ) : (
             <div className="space-y-2">
               {filteredPending.map((p) => (
@@ -238,10 +486,18 @@ export default function Proof() {
                   <div className="min-w-0 flex-1">
                     <div className="font-mono text-[10px] uppercase text-muted-foreground">{p.domain} · {p.mode}</div>
                     <div className="text-sm font-medium">{p.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{p.required_artifact}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Standard: {p.evidence_standard}</div>
+                    {p.required_artifact && <div className="text-xs text-muted-foreground mt-1">Required: {p.required_artifact}</div>}
+                    {p.evidence_standard && <div className="text-xs text-muted-foreground mt-0.5">Standard: {p.evidence_standard}</div>}
                   </div>
-                  <Button size="sm" onClick={() => { setSubmitFor(p); setTitle(p.title); setSelectedModeId(p.mode ?? p.domain?.toUpperCase() ?? "all"); }}>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setLinkedContractId(p.id);
+                      setTitle(p.title);
+                      if (p.mode) setSelectedModeId(p.mode);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  >
                     Submit Proof
                   </Button>
                 </Card>
@@ -250,19 +506,24 @@ export default function Proof() {
           )}
         </Card>
 
+        {/* Completed artifacts */}
         <Card className="panel p-4">
           <div className="flex items-center gap-2 mb-3">
             <Gavel className="h-4 w-4 text-primary" />
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Completed proof artifacts</h2>
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Completed Proof Artifacts</h2>
           </div>
           {filteredCompleted.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No proof logged yet. The Court of Evidence is empty. Create your first artifact.</p>
+            <p className="text-sm text-muted-foreground">
+              The Court of Evidence is empty. Create one artifact to start compounding.
+            </p>
           ) : (
             <div className="space-y-3">
               {filteredCompleted.map((a) => (
                 <Card key={a.id} className="panel p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="font-mono text-[10px] uppercase text-muted-foreground">{a.domain} · {a.mode}</div>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="font-mono text-[10px] uppercase text-muted-foreground">
+                      {a.domain} · {a.artifact_type ?? "artifact"} · {a.created_at?.slice(0, 10)}
+                    </div>
                     {a.evidence_strength && <EvidenceStrengthBadge strength={a.evidence_strength} score={a.quality_score} />}
                   </div>
                   <div className="text-sm font-medium mt-1">{a.title}</div>
@@ -274,10 +535,11 @@ export default function Proof() {
           )}
         </Card>
 
+        {/* Missed */}
         <Card className="panel p-4">
           <div className="flex items-center gap-2 mb-3">
             <Gavel className="h-4 w-4 text-primary" />
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Missed proof contracts</h2>
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Missed Proof Contracts</h2>
           </div>
           {filteredMissed.length === 0 ? (
             <p className="text-sm text-muted-foreground">No missed contracts.</p>
@@ -289,5 +551,14 @@ export default function Proof() {
         </Card>
       </div>
     </AppShell>
+  );
+}
+
+function VerdictRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-sm border border-border p-3">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <p className="mt-1 text-sm">{value}</p>
+    </div>
   );
 }
