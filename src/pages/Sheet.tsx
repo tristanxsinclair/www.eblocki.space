@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import type { BehaviouralState } from "@/lib/eblocki/states";
 import { Seo } from "@/components/Seo";
+import { Link } from "react-router-dom";
 
 const FIELDS: { key: string; label: string; section: "core" | "audit"; placeholder: string }[] = [
   { key: "prime_objective", label: "Prime Objective", section: "core",
@@ -94,6 +95,7 @@ export default function Sheet() {
             <h1 className="text-2xl md:text-3xl font-semibold mt-1">{today}</h1>
           </div>
           <div className="flex gap-2">
+            <Link to="/start"><Button variant="outline">Start Today</Button></Link>
             <Button variant="outline" onClick={createContract}>Contract from Objective</Button>
             <Button onClick={save} disabled={saving}>{saving ? "Saving…" : "Save Sheet"}</Button>
           </div>
