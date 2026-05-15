@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [recent, setRecent] = useState<any[]>([]);
   const [recentCoach, setRecentCoach] = useState<any[]>([]);
   const [allArtifacts, setAllArtifacts] = useState<any[]>([]);
+  const [modesCount, setModesCount] = useState<number>(0);
   const [quick, setQuick] = useState("");
   const [mode, setMode] = useState<Mode | null>(null);
   const [state, setStateBadge] = useState<BehaviouralState | null>(null);
@@ -28,24 +29,30 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [{ data: dcs }, { data: pc }, { data: pa }, { data: ci }, { data: paAll }] = await Promise.all([
+      const [{ data: dcs }, { data: pc }, { data: pa }, { data: ci }, { data: paAll }, { count: umCount }] = await Promise.all([
         supabase.from("daily_control_sheets").select("*").eq("user_id", user.id).eq("sheet_date", todayISO).maybeSingle(),
         supabase.from("proof_commitments").select("*").eq("user_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),
         supabase.from("proof_artifacts").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
         supabase.from("coach_interactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
         supabase.from("proof_artifacts").select("domain,evidence_strength,quality_score,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(200),
+        supabase.from("user_modes").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("is_active", true),
       ]);
       setToday(dcs);
       setPending(pc ?? []);
       setRecent(pa ?? []);
       setRecentCoach(ci ?? []);
       setAllArtifacts(paAll ?? []);
+      setModesCount(umCount ?? 0);
     })();
   }, [user, todayISO]);
 
   const week = recent.filter((r) => new Date(r.created_at) > new Date(Date.now() - 7 * 864e5));
   const eliteCount = week.filter((r) => r.evidence_strength === "elite").length;
   const strongCount = week.filter((r) => r.evidence_strength === "strong").length;
+  const weekScored = week.filter((r) => typeof r.quality_score === "number");
+  const weekAvgScore = weekScored.length
+    ? Math.round((weekScored.reduce((s, r) => s + (r.quality_score ?? 0), 0) / weekScored.length) * 10) / 10
+    : 0;
 
   const intel = useMemo(() => {
     const weekArtifacts = allArtifacts.filter((a) => new Date(a.created_at) > new Date(Date.now() - 7 * 864e5));
