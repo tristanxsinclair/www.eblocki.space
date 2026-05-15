@@ -237,7 +237,7 @@ export default function Dashboard() {
               <Metric label="Strong" value={strongCount} />
               <Metric label="Pending" value={pending.length} />
               <Metric label="Avg Score" value={weekAvgScore} />
-              <Metric label="Closed" value={week.length} />
+              <Metric label="Modes" value={modesCount} />
             </div>
           </Card>
         </div>
