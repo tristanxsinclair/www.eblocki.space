@@ -178,7 +178,7 @@ export default function Onboarding() {
         if (modeError) {
           setLoadError((prev) => prev ? `${prev}; ${modeError.message}` : modeError.message);
         } else if (modeData && modeData.length > 0) {
-          setArenas(modeData.map(modeToArena));(modeData ?? []).map(modeToArena)
+          setArenas(modeData.map(modeToArena));
         }
       } catch (e: any) {
         setLoadError(e?.message || "Failed to load onboarding profile.");
