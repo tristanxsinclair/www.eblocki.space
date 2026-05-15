@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [recent, setRecent] = useState<any[]>([]);
   const [recentCoach, setRecentCoach] = useState<any[]>([]);
   const [allArtifacts, setAllArtifacts] = useState<any[]>([]);
+  const [modesCount, setModesCount] = useState<number>(0);
   const [quick, setQuick] = useState("");
   const [mode, setMode] = useState<Mode | null>(null);
   const [state, setStateBadge] = useState<BehaviouralState | null>(null);
@@ -28,24 +29,30 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [{ data: dcs }, { data: pc }, { data: pa }, { data: ci }, { data: paAll }] = await Promise.all([
+      const [{ data: dcs }, { data: pc }, { data: pa }, { data: ci }, { data: paAll }, { count: umCount }] = await Promise.all([
         supabase.from("daily_control_sheets").select("*").eq("user_id", user.id).eq("sheet_date", todayISO).maybeSingle(),
         supabase.from("proof_commitments").select("*").eq("user_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),
         supabase.from("proof_artifacts").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
         supabase.from("coach_interactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
         supabase.from("proof_artifacts").select("domain,evidence_strength,quality_score,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(200),
+        supabase.from("user_modes").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("is_active", true),
       ]);
       setToday(dcs);
       setPending(pc ?? []);
       setRecent(pa ?? []);
       setRecentCoach(ci ?? []);
       setAllArtifacts(paAll ?? []);
+      setModesCount(umCount ?? 0);
     })();
   }, [user, todayISO]);
 
   const week = recent.filter((r) => new Date(r.created_at) > new Date(Date.now() - 7 * 864e5));
   const eliteCount = week.filter((r) => r.evidence_strength === "elite").length;
   const strongCount = week.filter((r) => r.evidence_strength === "strong").length;
+  const weekScored = week.filter((r) => typeof r.quality_score === "number");
+  const weekAvgScore = weekScored.length
+    ? Math.round((weekScored.reduce((s, r) => s + (r.quality_score ?? 0), 0) / weekScored.length) * 10) / 10
+    : 0;
 
   const intel = useMemo(() => {
     const weekArtifacts = allArtifacts.filter((a) => new Date(a.created_at) > new Date(Date.now() - 7 * 864e5));
@@ -102,12 +109,25 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mt-1">Proof beats intention. Every panel here feeds the loop.</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Link to="/sheet"><Button size="sm"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Start Today</Button></Link>
             <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
             <Link to="/proof"><Button size="sm" variant="outline"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit Proof</Button></Link>
-            <Link to="/sheet"><Button size="sm" variant="outline"><FileText className="h-3.5 w-3.5 mr-1.5" />Control Sheet</Button></Link>
             <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
+            <Link to="/proof"><Button size="sm" variant="outline"><Gavel className="h-3.5 w-3.5 mr-1.5" />Court of Evidence</Button></Link>
           </div>
         </header>
+
+        {modesCount === 0 && (
+          <Card className="panel p-4 border-primary/40 bg-primary/5">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Eblocki OS — Not Configured</div>
+                <p className="text-sm mt-1">No personalised modes found. Build your Eblocki OS so the system knows what evidence matters.</p>
+              </div>
+              <Link to="/modes"><Button size="sm">Configure Modes</Button></Link>
+            </div>
+          </Card>
+        )}
 
         {/* OS OVERVIEW */}
         <Card className="panel p-4 md:p-5 border-primary/30">
@@ -216,6 +236,8 @@ export default function Dashboard() {
               <Metric label="Elite" value={eliteCount} accent />
               <Metric label="Strong" value={strongCount} />
               <Metric label="Pending" value={pending.length} />
+              <Metric label="Avg Score" value={weekAvgScore} />
+              <Metric label="Modes" value={modesCount} />
             </div>
           </Card>
         </div>
@@ -293,10 +315,15 @@ export default function Dashboard() {
           ) : (
             <ul className="mt-3 divide-y divide-border">
               {recent.map((r) => (
-                <li key={r.id} className="py-2 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
+                <li key={r.id} className="py-2.5 flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm truncate">{r.title}</div>
                     <div className="text-[10px] font-mono uppercase text-muted-foreground">{r.domain}</div>
+                    {r.next_upgrade && (
+                      <div className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
+                        <span className="text-foreground font-mono">Next upgrade:</span> {r.next_upgrade}
+                      </div>
+                    )}
                   </div>
                   {r.evidence_strength && <EvidenceStrengthBadge strength={r.evidence_strength} score={r.quality_score} />}
                 </li>
