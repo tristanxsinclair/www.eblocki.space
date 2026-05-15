@@ -315,10 +315,15 @@ export default function Dashboard() {
           ) : (
             <ul className="mt-3 divide-y divide-border">
               {recent.map((r) => (
-                <li key={r.id} className="py-2 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
+                <li key={r.id} className="py-2.5 flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm truncate">{r.title}</div>
                     <div className="text-[10px] font-mono uppercase text-muted-foreground">{r.domain}</div>
+                    {r.next_upgrade && (
+                      <div className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
+                        <span className="text-foreground font-mono">Next upgrade:</span> {r.next_upgrade}
+                      </div>
+                    )}
                   </div>
                   {r.evidence_strength && <EvidenceStrengthBadge strength={r.evidence_strength} score={r.quality_score} />}
                 </li>
