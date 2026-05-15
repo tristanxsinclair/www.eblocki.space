@@ -280,5 +280,6 @@ Do not measure whether you felt productive. Measure whether you created evidence
     proofQuestion: "What proof artifact will confirm completion?",
     interactionId: null,
     commitmentId: null,
+    usedFallback: true,
   };
 }
