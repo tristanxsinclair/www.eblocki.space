@@ -187,6 +187,138 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_objectives: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          focus_minutes: number
+          id: string
+          identity_alignment: number
+          kind: string
+          mode_id: string | null
+          objective_date: string
+          position: number
+          proof_artifact_id: string | null
+          proof_commitment_id: string | null
+          proof_required: boolean
+          resistance_level: number
+          reward_value: number
+          status: string
+          streak_impact: number
+          title: string
+          updated_at: string
+          user_id: string
+          why_it_matters: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          focus_minutes?: number
+          id?: string
+          identity_alignment?: number
+          kind?: string
+          mode_id?: string | null
+          objective_date?: string
+          position?: number
+          proof_artifact_id?: string | null
+          proof_commitment_id?: string | null
+          proof_required?: boolean
+          resistance_level?: number
+          reward_value?: number
+          status?: string
+          streak_impact?: number
+          title: string
+          updated_at?: string
+          user_id: string
+          why_it_matters?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          focus_minutes?: number
+          id?: string
+          identity_alignment?: number
+          kind?: string
+          mode_id?: string | null
+          objective_date?: string
+          position?: number
+          proof_artifact_id?: string | null
+          proof_commitment_id?: string | null
+          proof_required?: boolean
+          resistance_level?: number
+          reward_value?: number
+          status?: string
+          streak_impact?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+          why_it_matters?: string | null
+        }
+        Relationships: []
+      }
+      momentum_state: {
+        Row: {
+          avg_quality: number | null
+          created_at: string
+          freeze_tokens: number
+          freeze_tokens_earned_total: number
+          freeze_tokens_used_total: number
+          id: string
+          identity_signal: string | null
+          last_proof_at: string | null
+          longest_streak: number
+          momentum_score: number
+          proofs_today: number
+          resistance_overcome: number
+          state: string
+          state_date: string
+          streak_days: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_quality?: number | null
+          created_at?: string
+          freeze_tokens?: number
+          freeze_tokens_earned_total?: number
+          freeze_tokens_used_total?: number
+          id?: string
+          identity_signal?: string | null
+          last_proof_at?: string | null
+          longest_streak?: number
+          momentum_score?: number
+          proofs_today?: number
+          resistance_overcome?: number
+          state?: string
+          state_date?: string
+          streak_days?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_quality?: number | null
+          created_at?: string
+          freeze_tokens?: number
+          freeze_tokens_earned_total?: number
+          freeze_tokens_used_total?: number
+          id?: string
+          identity_signal?: string | null
+          last_proof_at?: string | null
+          longest_streak?: number
+          momentum_score?: number
+          proofs_today?: number
+          resistance_overcome?: number
+          state?: string
+          state_date?: string
+          streak_days?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       performance_os_config: {
         Row: {
           auto_create_proof_contracts: boolean | null
