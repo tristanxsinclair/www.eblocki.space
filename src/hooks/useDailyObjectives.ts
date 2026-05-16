@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { normaliseModeKey, pickTemplatesForMode } from "@/lib/eblocki/mode-templates";
+import { logEvent } from "@/lib/eblocki/analytics";
 
 export type ObjectiveKind = "mission" | "streak_save" | "recovery" | "boss" | "quick_win";
 export type ObjectiveStatus = "pending" | "active" | "completed" | "skipped" | "failed";
@@ -178,6 +179,7 @@ async function seedIfNeededInner(userId: string) {
 
   if (rows.length > 0) {
     await supabase.from("daily_objectives").insert(rows);
+    void logEvent("objective_created", { count: rows.length, mode: modeKey });
   }
 }
 
@@ -254,6 +256,7 @@ export function useDailyObjectives() {
         await refresh();
         throw error;
       }
+      void logEvent("objective_completed", { kind: "mission" });
       await refresh();
     },
     [refresh],
@@ -265,6 +268,7 @@ export function useDailyObjectives() {
         prev.map((o) => (o.id === id ? { ...o, status: "skipped" } : o)),
       );
       await supabase.from("daily_objectives").update({ status: "skipped" }).eq("id", id);
+      void logEvent("objective_skipped");
       await refresh();
     },
     [refresh],

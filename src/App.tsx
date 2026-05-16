@@ -17,6 +17,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Onboarding from "./pages/Onboarding.tsx";
 import StartToday from "./pages/StartToday.tsx";
 import Install from "./pages/Install.tsx";
+import EngineDebug from "./pages/EngineDebug.tsx";
 import Privacy from "./pages/legal/Privacy.tsx";
 import Terms from "./pages/legal/Terms.tsx";
 import DataHandling from "./pages/legal/DataHandling.tsx";
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/modes" element={<Protected><Modes /></Protected>} />
             <Route path="/modes/:modeId" element={<Protected><ModeDetail /></Protected>} />
             <Route path="/settings" element={<Protected><Settings /></Protected>} />
+            <Route path="/dev/engine" element={<Protected><EngineDebug /></Protected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

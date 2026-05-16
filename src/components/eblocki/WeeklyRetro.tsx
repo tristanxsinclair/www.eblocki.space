@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { InfoTip } from "./InfoTip";
+import { logEvent } from "@/lib/eblocki/analytics";
 import {
   analyseReflections,
   strategicRecommendation,
@@ -81,6 +83,8 @@ export function WeeklyRetro({ className }: Props) {
       setArtifacts(pa ?? []);
       setObjectives(dos ?? []);
       setLoading(false);
+      // Privacy-safe: count + presence only, no reflection text.
+      void logEvent("retro_generated", { count: (dos ?? []).length });
     })();
     return () => {
       cancelled = true;
@@ -184,8 +188,11 @@ export function WeeklyRetro({ className }: Props) {
   return (
     <Card className={cn("panel p-4 md:p-5 border-primary/30", className)}>
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-primary">
+        <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-primary inline-flex items-center gap-1">
           Weekly Retrospective
+          <InfoTip>
+            Pure read over the last 7 days of proofs, objectives, and reflections. Patterns only appear when data supports them.
+          </InfoTip>
         </span>
         <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
           7 days
@@ -233,8 +240,8 @@ export function WeeklyRetro({ className }: Props) {
       <div className="mt-4 space-y-2 text-sm">
         {insight.strategic && (
           <p className="border-l-2 border-primary pl-3">
-            <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-primary mr-2">
-              Strategic
+            <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-primary mr-2 inline-flex items-center gap-1">
+              Strategic <InfoTip>One evidence-based recommendation derived from your reflections, scores, and focus minutes. Not motivational copy.</InfoTip>
             </span>
             {insight.strategic}
           </p>

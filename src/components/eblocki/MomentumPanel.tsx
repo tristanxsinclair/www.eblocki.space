@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { MomentumRing } from "./MomentumRing";
 import { MissionCard } from "./MissionCard";
+import { InfoTip } from "./InfoTip";
 import { useMomentum } from "@/hooks/useMomentum";
 import { useDailyObjectives } from "@/hooks/useDailyObjectives";
 import { STATE_COPY, nextBestAction } from "@/lib/eblocki/momentum";
@@ -51,6 +52,9 @@ export function MomentumPanel() {
   const done = objectives.filter((o) => o.status === "completed").length;
   const coachLine = nextBestAction(safeSnap);
 
+  // Fresh-user signal: no proofs ever AND no objectives seeded yet.
+  const isFresh = !safeSnap.last_proof_at && objectives.length === 0;
+
   // Only show streak-risk badge when it's actually true today.
   const showStreakRisk =
     safeSnap.state === "at_risk" && safeSnap.streak_days >= 2 && safeSnap.proofs_today === 0;
@@ -75,10 +79,16 @@ export function MomentumPanel() {
             )}>
               {stateMeta.label}
             </span>
+            <InfoTip>
+              State is derived from your momentum score (0–100), current streak, and hours since last proof. It updates whenever you complete an objective.
+            </InfoTip>
             {safeSnap.freeze_tokens > 0 && (
               <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-primary">
                 <Snowflake className="h-3 w-3" />
                 {safeSnap.freeze_tokens} freeze{safeSnap.freeze_tokens > 1 ? "s" : ""}
+                <InfoTip label="How do freeze tokens work?">
+                  You earn one freeze token every 5 streak days (cap 3). A token covers a single missed day so the streak survives one slip.
+                </InfoTip>
               </span>
             )}
             {safeSnap.streak_days >= 3 && (
@@ -111,7 +121,7 @@ export function MomentumPanel() {
         )}
       >
         <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground mr-2">
-          Coach
+          Coach <InfoTip>This recommendation is generated locally from your current state — it does not call the AI coach and contains no fluff.</InfoTip>
         </span>
         {coachLine}
       </div>
@@ -131,9 +141,17 @@ export function MomentumPanel() {
         </div>
       )}
       {objectives.length === 0 && (
-        <div className="mt-3 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-          No objectives seeded yet. Open the Coach to forge one.
-        </div>
+        isFresh ? (
+          <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm space-y-2">
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-primary">Start here</div>
+            <p className="text-foreground">Eblocki rewards <strong>proof</strong>, not activity. Submit one real artifact (a paragraph, a fix, a log entry) to ignite the loop.</p>
+            <p className="text-xs text-muted-foreground">No analytics will appear until you have actual data — we don't fake numbers.</p>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+            No objectives seeded yet. Open the Coach to forge one.
+          </div>
+        )
       )}
 
       <div className="mt-3 space-y-3">
