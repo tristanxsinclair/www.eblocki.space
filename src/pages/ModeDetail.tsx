@@ -219,6 +219,19 @@ export default function ModeDetail() {
           </p>
         </Card>
 
+        {!isActiveMode && (
+          <Card className="panel p-4 border-amber-500/30 bg-amber-500/5">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-amber-500">Mode inactive</span>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This mode is currently disabled. Proof you submit won't route here and the coach
+              won't use this mode's evidence standards. Reactivate from Modes to bring it back online.
+            </p>
+            <div className="mt-3">
+              <Button size="sm" variant="outline" onClick={() => navigate("/modes")}>Manage modes</Button>
+            </div>
+          </Card>
+        )}
+
         {/* Mode Identity */}
         <Card className="panel p-4">
           <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Mode Identity</span>
