@@ -223,6 +223,11 @@ export type Database = {
       proof_artifacts: {
         Row: {
           artifact_type: string | null
+          attachment_name: string | null
+          attachment_path: string | null
+          attachment_size: number | null
+          attachment_type: string | null
+          attachment_url: string | null
           content: string | null
           created_at: string
           domain: string
@@ -236,6 +241,11 @@ export type Database = {
         }
         Insert: {
           artifact_type?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           content?: string | null
           created_at?: string
           domain: string
@@ -249,6 +259,11 @@ export type Database = {
         }
         Update: {
           artifact_type?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           content?: string | null
           created_at?: string
           domain?: string

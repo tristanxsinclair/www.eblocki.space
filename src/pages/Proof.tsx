@@ -12,7 +12,7 @@ import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
 import { scoreProofArtifact } from "@/lib/eblocki/proof-scoring";
 import type { UserMode } from "@/lib/eblocki/modes";
 import { toast } from "sonner";
-import { CheckCircle2, Gavel, Scale } from "lucide-react";
+import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText } from "lucide-react";
 import { Seo } from "@/components/Seo";
 
 const ARTIFACT_TYPES = [
@@ -36,7 +36,12 @@ interface Verdict {
   eliteVersion: string;
   artifactId: string;
   contractClosed: boolean;
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
 }
+
+const ACCEPTED_TYPES = "application/pdf,image/png,image/jpeg,image/webp,image/gif,text/plain,text/markdown,text/csv";
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10MB
 
 export default function Proof() {
   const { user } = useAuth();
@@ -57,6 +62,8 @@ export default function Proof() {
   const [submitting, setSubmitting] = useState(false);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [filterDomain, setFilterDomain] = useState("all");
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachmentText, setAttachmentText] = useState<string>("");
 
   const activeModes = useMemo(
     () => userModes.filter((m) => m.is_active !== false),
@@ -115,6 +122,8 @@ export default function Proof() {
     setNextUpgrade("");
     setLinkedContractId("");
     setArtifactType(ARTIFACT_TYPES[0]);
+    setAttachment(null);
+    setAttachmentText("");
   };
 
   const buildPersonalisedExtras = (
@@ -157,11 +166,16 @@ export default function Proof() {
       const modeId = selectedMode?.mode_id ?? linkedContract?.mode ?? "GENERAL_EXECUTION";
       const domainValue = (selectedMode?.mode_id ?? linkedContract?.domain ?? modeId).toLowerCase();
 
+      // Combine attachment-extracted text (e.g. .txt/.md/.csv) into scoring context
+      const scoringContent = attachmentText
+        ? `${content}\n\n--- Attached file (${attachment?.name}) ---\n${attachmentText}`
+        : content;
+
       const score = scoreProofArtifact({
         domain: domainValue,
         title,
         artifactType,
-        content,
+        content: scoringContent,
         reflection,
         nextUpgrade,
       });
@@ -169,9 +183,30 @@ export default function Proof() {
       const composedFeedback = [
         score.feedback,
         reflection.trim() && `Reflection: ${reflection.trim()}`,
+        attachment && `Attachment: ${attachment.name} (${attachment.type || "file"})`,
       ]
         .filter(Boolean)
         .join(" ");
+
+      // Upload attachment first (if any) so the artifact row can store the path
+      let attachmentPath: string | null = null;
+      let attachmentUrl: string | null = null;
+      if (attachment) {
+        if (attachment.size > MAX_ATTACHMENT_BYTES) {
+          throw new Error("Attachment exceeds 10MB limit.");
+        }
+        const safeName = attachment.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = `${user.id}/${Date.now()}_${safeName}`;
+        const { error: upErr } = await supabase.storage
+          .from("proof-attachments")
+          .upload(path, attachment, { contentType: attachment.type || undefined, upsert: false });
+        if (upErr) throw upErr;
+        attachmentPath = path;
+        const { data: signed } = await supabase.storage
+          .from("proof-attachments")
+          .createSignedUrl(path, 60 * 60 * 24 * 7);
+        attachmentUrl = signed?.signedUrl ?? null;
+      }
 
       const { data: artifact, error } = await supabase
         .from("proof_artifacts")
@@ -185,6 +220,11 @@ export default function Proof() {
           evidence_strength: score.evidenceStrength,
           feedback: composedFeedback,
           next_upgrade: nextUpgrade.trim() || score.nextUpgrade,
+          attachment_path: attachmentPath,
+          attachment_url: attachmentUrl,
+          attachment_type: attachment?.type ?? null,
+          attachment_name: attachment?.name ?? null,
+          attachment_size: attachment?.size ?? null,
         })
         .select()
         .single();
@@ -217,6 +257,8 @@ export default function Proof() {
         eliteVersion: extras.eliteVersion,
         artifactId: artifact!.id,
         contractClosed,
+        attachmentUrl,
+        attachmentName: attachment?.name ?? null,
       });
 
       toast.success(`Verdict: ${score.qualityScore}/10 — ${score.evidenceStrength}`);
@@ -226,6 +268,29 @@ export default function Proof() {
       toast.error(e.message || "Failed to submit proof.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleAttachmentChange = async (file: File | null) => {
+    setAttachmentText("");
+    if (!file) {
+      setAttachment(null);
+      return;
+    }
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      toast.error("File exceeds 10MB limit.");
+      return;
+    }
+    setAttachment(file);
+    // For plain-text files, read content so scoring/verdict can use it as evidence context
+    const isText = file.type.startsWith("text/") || /\.(md|txt|csv)$/i.test(file.name);
+    if (isText) {
+      try {
+        const text = await file.text();
+        setAttachmentText(text.slice(0, 20000)); // cap context
+      } catch {
+        /* ignore */
+      }
     }
   };
 
@@ -322,6 +387,15 @@ export default function Proof() {
             {verdict.contractClosed && (
               <div className="mt-3 rounded-sm border border-primary/40 bg-primary/5 p-2.5 text-xs text-primary font-mono">
                 ✓ Linked Proof Contract marked completed.
+              </div>
+            )}
+            {verdict.attachmentUrl && (
+              <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
+                <Paperclip className="h-3 w-3 text-primary" />
+                <span className="text-muted-foreground">Attached evidence:</span>
+                <a href={verdict.attachmentUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate">
+                  {verdict.attachmentName ?? "view file"}
+                </a>
               </div>
             )}
             <div className="mt-4 flex gap-2">
@@ -452,6 +526,48 @@ export default function Proof() {
               />
             </div>
 
+            <div>
+              <Label htmlFor="proof-attachment" className="flex items-center gap-2">
+                <Paperclip className="h-3.5 w-3.5 text-primary" />
+                Attach supporting evidence (optional)
+              </Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                PDF, image, or text file up to 10MB. Text files are pulled into the verdict context.
+              </p>
+              {!attachment ? (
+                <Input
+                  id="proof-attachment"
+                  type="file"
+                  accept={ACCEPTED_TYPES}
+                  onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
+                  className="mt-2"
+                />
+              ) : (
+                <div className="mt-2 flex items-center justify-between gap-2 rounded-sm border border-primary/30 bg-primary/5 p-2.5 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="truncate text-foreground">{attachment.name}</span>
+                    <span className="text-muted-foreground shrink-0">
+                      {(attachment.size / 1024).toFixed(1)} KB
+                    </span>
+                    {attachmentText && (
+                      <span className="font-mono uppercase tracking-widest text-[9px] text-primary shrink-0">
+                        text indexed
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleAttachmentChange(null)}
+                    className="h-7 px-2"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
             {selectedMode && (
               <div className="rounded-sm border border-border p-3 text-xs text-muted-foreground">
                 Scoring against <span className="text-foreground font-mono">{selectedMode.display_name}</span>.
@@ -529,6 +645,17 @@ export default function Proof() {
                   <div className="text-sm font-medium mt-1">{a.title}</div>
                   {a.feedback && <p className="text-xs text-muted-foreground mt-2">{a.feedback}</p>}
                   {a.next_upgrade && <p className="text-xs text-primary mt-1">Next upgrade: {a.next_upgrade}</p>}
+                  {a.attachment_url && (
+                    <a
+                      href={a.attachment_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                    >
+                      <Paperclip className="h-3 w-3" />
+                      {a.attachment_name ?? "attached evidence"}
+                    </a>
+                  )}
                 </Card>
               ))}
             </div>
