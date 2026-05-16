@@ -17,12 +17,17 @@ export type EngineEvent =
   | "notification_sent"
   | "notification_suppressed"
   | "retro_generated"
-  | "fixture_seeded";
+  | "fixture_seeded"
+  | "proof_capture_opened"
+  | "proof_capture_completed"
+  | "proof_capture_rejected"
+  | "proof_capture_abandoned";
 
 /** Whitelist of property keys — anything else is dropped. */
 const ALLOWED_KEYS = new Set([
   "kind", "mode", "state", "score", "streak", "resistance", "depth",
   "result", "reason", "dedup_key", "escalation_level", "count", "fixture",
+  "quality", "proof_len", "has_upgrade", "has_hard",
 ]);
 
 function sanitise(props: Record<string, unknown>): Record<string, unknown> {
