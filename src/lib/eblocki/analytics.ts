@@ -41,7 +41,8 @@ export async function logEvent(event: EngineEvent, props: Record<string, unknown
     await supabase.from("analytics_events").insert({
       user_id: user?.id ?? null,
       event,
-      properties: sanitise(props),
+      // Cast to satisfy generated Json typing — content is already sanitised.
+      properties: sanitise(props) as unknown as Record<string, never>,
       platform: "web",
     });
   } catch {
