@@ -262,6 +262,28 @@ export default function BetaAdmin() {
           </div>
         </Card>
 
+        {retention && (
+          <Card className="panel p-4">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Retention observation (read-only)</span>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              No auto-tuning. We watch, we don't optimise until 30+ days of data.
+            </p>
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <Stat label="Nudges sent" v={retention.nudgesSent} />
+              <Stat label="Delivered" v={retention.nudgesDelivered} />
+              <Stat label="Failed" v={retention.nudgesFailed} />
+              <Stat label="Suppressed" v={retention.nudgesSuppressed} />
+              <Stat label="Proof within 2h" v={retention.proofWithin2h} />
+              <Stat label="Proof within 24h" v={retention.proofWithin24h} />
+              <Stat label="Follow-through" v={retention.followThroughRate !== null ? `${Math.round(retention.followThroughRate * 100)}%` : "—"} />
+              <Stat label="Avg min → proof" v={retention.avgMinutesToProof ?? "—"} />
+              <Stat label="Fatigue (vs cap)" v={retention.fatigueRatio !== null ? `${Math.round(retention.fatigueRatio * 100)}%` : "—"} />
+              <Stat label="Rescue success" v={retention.rescueSuccess !== null ? `${Math.round(retention.rescueSuccess * 100)}%` : "—"} />
+              <Stat label="Recovery success" v={retention.recoverySuccess !== null ? `${Math.round(retention.recoverySuccess * 100)}%` : "—"} />
+            </div>
+          </Card>
+        )}
+
         <Card className="panel p-4">
           <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Calibration flags (users affected)</span>
           <ul className="mt-3 space-y-1.5 text-sm">
