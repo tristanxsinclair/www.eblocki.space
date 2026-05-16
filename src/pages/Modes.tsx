@@ -232,7 +232,9 @@ export default function Modes() {
   };
 
   const openModePrompt = (mode: UserMode | EblockiDefaultMode) => {
-    navigate(`/coach?prompt=${encodeURIComponent(`I need coaching in ${mode.display_name}.`)}`);
+    navigate(
+      `/coach?mode=${encodeURIComponent(mode.mode_id)}&prompt=${encodeURIComponent(`I need coaching in ${mode.display_name}.`)}`,
+    );
   };
 
   const emptyState = !loading && activeModes.length === 0 && tristanPreview.length === 0;
