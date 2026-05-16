@@ -97,6 +97,8 @@ export default function Proof() {
   const [filterDomain, setFilterDomain] = useState("all");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentText, setAttachmentText] = useState<string>("");
+  const [originalExtractedText, setOriginalExtractedText] = useState<string>("");
+  const [extractedEdited, setExtractedEdited] = useState(false);
   const [attachState, setAttachState] = useState<AttachmentState>(INITIAL_ATTACH);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -160,6 +162,8 @@ export default function Proof() {
     setArtifactType(ARTIFACT_TYPES[0]);
     setAttachment(null);
     setAttachmentText("");
+    setOriginalExtractedText("");
+    setExtractedEdited(false);
     setAttachState(INITIAL_ATTACH);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -312,6 +316,8 @@ export default function Proof() {
   const clearAttachment = () => {
     setAttachment(null);
     setAttachmentText("");
+    setOriginalExtractedText("");
+    setExtractedEdited(false);
     setAttachState(INITIAL_ATTACH);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -330,6 +336,8 @@ export default function Proof() {
 
   const handleAttachmentChange = async (file: File | null) => {
     setAttachmentText("");
+    setOriginalExtractedText("");
+    setExtractedEdited(false);
     if (!file) {
       clearAttachment();
       return;
@@ -358,6 +366,8 @@ export default function Proof() {
         const text = await file.text();
         const clipped = text.slice(0, 20000);
         setAttachmentText(clipped);
+        setOriginalExtractedText(clipped);
+        setExtractedEdited(false);
         setAttachState({
           file, status: "ready", progress: 100,
           message: `Text indexed — ${clipped.length.toLocaleString()} chars added to verdict context.`,
@@ -384,6 +394,8 @@ export default function Proof() {
         const extracted: string = (data as any)?.textPreview ?? (data as any)?.text ?? "";
         const truncated: boolean = !!(data as any)?.truncated;
         setAttachmentText(extracted);
+        setOriginalExtractedText(extracted);
+        setExtractedEdited(false);
 
         if (!extracted.trim()) {
           setAttachState({
@@ -750,6 +762,61 @@ export default function Proof() {
                   {attachState.status === "ready" && attachState.message && (
                     <div className="mt-2 text-muted-foreground">{attachState.message}</div>
                   )}
+                </div>
+              )}
+
+              {attachment && attachState.status === "ready" && attachState.extractedSource !== "none" && (
+                <div className="mt-2 rounded-sm border border-border bg-muted/20 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs">
+                      <ScanLine className="h-3.5 w-3.5 text-primary" />
+                      <span className="font-mono uppercase tracking-widest text-[10px] text-muted-foreground">
+                        Extracted text {attachState.extractedSource === "ocr" ? "(OCR)" : "(text file)"} — editable
+                      </span>
+                      {extractedEdited && (
+                        <span className="font-mono uppercase tracking-widest text-[9px] text-primary">edited</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {extractedEdited && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => {
+                            setAttachmentText(originalExtractedText);
+                            setExtractedEdited(false);
+                          }}
+                        >
+                          Reset
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-[11px]"
+                        onClick={() => {
+                          setAttachmentText("");
+                          setExtractedEdited(originalExtractedText.length > 0);
+                        }}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                  <Textarea
+                    value={attachmentText}
+                    onChange={(e) => {
+                      setAttachmentText(e.target.value);
+                      setExtractedEdited(e.target.value !== originalExtractedText);
+                    }}
+                    placeholder="Extracted text will appear here. Correct OCR mistakes before scoring."
+                    className="mt-2 min-h-[140px] max-h-[280px] font-mono text-xs leading-relaxed"
+                  />
+                  <div className="mt-1 flex justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <span>{attachmentText.length.toLocaleString()} chars · fed into verdict</span>
+                    {attachState.ocrTruncated && <span className="text-primary">truncated at 20k</span>}
+                  </div>
                 </div>
               )}
 
