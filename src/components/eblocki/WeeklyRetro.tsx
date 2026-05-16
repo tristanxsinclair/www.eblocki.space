@@ -3,6 +3,12 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import {
+  analyseReflections,
+  strategicRecommendation,
+  mostResistedTitleHint,
+  type ReflectionInput,
+} from "@/lib/eblocki/reflection-insights";
 
 interface Props {
   className?: string;
@@ -29,7 +35,12 @@ export function WeeklyRetro({ className }: Props) {
     {
       mode_id: string | null;
       status: string;
+      title: string | null;
       completion_hard_part: string | null;
+      completion_proof_text: string | null;
+      completion_upgrade: string | null;
+      resistance_level: number | null;
+      focus_minutes: number | null;
       objective_date: string;
     }[]
   >([]);
@@ -55,7 +66,7 @@ export function WeeklyRetro({ className }: Props) {
           .gte("created_at", new Date(Date.now() - 7 * 86_400_000).toISOString()),
         supabase
           .from("daily_objectives")
-          .select("mode_id, status, completion_hard_part, objective_date")
+          .select("mode_id, status, title, completion_hard_part, completion_proof_text, completion_upgrade, resistance_level, focus_minutes, objective_date")
           .eq("user_id", user.id)
           .gte("objective_date", weekAgo),
       ]);
@@ -132,8 +143,33 @@ export function WeeklyRetro({ className }: Props) {
     else if (weakest && weakest !== strongest) upgrade = `Reinvest in ${weakest.toUpperCase()} — it lagged this week.`;
     else upgrade = "Sustain. Protect the streak with one early proof tomorrow.";
 
-    return { totalProofs, avgQuality, strongest, weakest, avoidance, identityClaim, upgrade, activeDays };
-  }, [artifacts, objectives]);
+    // Reflection intelligence — pure analyser over the three reflection fields.
+    const reflections: ReflectionInput[] = objectives as ReflectionInput[];
+    const reflInsights = analyseReflections(reflections);
+    const avgFocus = reflections.length
+      ? reflections.reduce((s, r) => s + (r.focus_minutes ?? 0), 0) / reflections.length
+      : null;
+
+    // Highest depth day = day with max momentum_score.
+    const highestDepthDay = [...days].sort((a, b) => b.score - a.score)[0]?.date ?? null;
+    // Lowest consistency trigger = day with 0 proofs in last 7 → first such day.
+    const lowestDay = days.find((d) => d.proofs === 0)?.date ?? null;
+    // Most resisted task type = recurring noun in pending titles.
+    const resistedHint = mostResistedTitleHint(reflections);
+    // Most effective recovery behaviour = upgrade theme that follows a 0-proof day.
+    const recoveryBehaviour = reflInsights.topUpgradeTheme;
+
+    const strategic = strategicRecommendation({
+      insights: reflInsights,
+      dailyScores: days,
+      avgFocusMinutes: avgFocus,
+    });
+
+    return {
+      totalProofs, avgQuality, strongest, weakest, avoidance, identityClaim, upgrade, activeDays,
+      reflInsights, highestDepthDay, lowestDay, resistedHint, recoveryBehaviour, strategic,
+    };
+  }, [artifacts, objectives, days]);
 
   if (loading) {
     return (
@@ -184,7 +220,25 @@ export function WeeklyRetro({ className }: Props) {
         <Stat label="Weakest" value={insight.weakest ?? "—"} />
       </div>
 
+      {/* Behavioural pattern grid — only shown when data supports it. */}
+      {(insight.resistedHint || insight.highestDepthDay || insight.lowestDay || insight.recoveryBehaviour) && (
+        <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          <Stat label="Most resisted" value={insight.resistedHint ?? "—"} />
+          <Stat label="Top avoidance" value={insight.reflInsights.topResistancePhrase ?? "—"} />
+          <Stat label="Highest depth" value={insight.highestDepthDay?.slice(5) ?? "—"} />
+          <Stat label="Recovery move" value={insight.recoveryBehaviour ?? "—"} />
+        </div>
+      )}
+
       <div className="mt-4 space-y-2 text-sm">
+        {insight.strategic && (
+          <p className="border-l-2 border-primary pl-3">
+            <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-primary mr-2">
+              Strategic
+            </span>
+            {insight.strategic}
+          </p>
+        )}
         {insight.identityClaim && (
           <p className="border-l-2 border-primary/50 pl-3">
             <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-primary mr-2">
