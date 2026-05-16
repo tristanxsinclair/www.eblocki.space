@@ -16,6 +16,7 @@ import Settings from "./pages/Settings.tsx";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Onboarding from "./pages/Onboarding.tsx";
 import StartToday from "./pages/StartToday.tsx";
+import Install from "./pages/Install.tsx";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/onboarding" element={<Protected><Onboarding /></Protected>} />
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/install" element={<Install />} />
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
             <Route path="/coach" element={<Protected><Coach /></Protected>} />
             <Route path="/sheet" element={<Protected><Sheet /></Protected>} />
