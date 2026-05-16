@@ -225,7 +225,7 @@ export function useDailyObjectives() {
   const complete = useCallback(
     async (
       id: string,
-      reflection?: { proof: string; hard: string | null; upgrade: string | null },
+      reflection?: { proof: string; hard: string | null; upgrade: string | null; qualityRating?: number | null },
     ) => {
       // Optimistic update — UI feels instant, refresh syncs truth.
       setObjectives((prev) =>
@@ -243,6 +243,7 @@ export function useDailyObjectives() {
               completion_proof_text: reflection.proof,
               completion_hard_part: reflection.hard ?? undefined,
               completion_upgrade: reflection.upgrade ?? undefined,
+              completion_quality_self_rating: reflection.qualityRating ?? undefined,
             }
           : {}),
       };

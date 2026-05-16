@@ -15,6 +15,10 @@ import { toast } from "sonner";
 import { AlertCircle, ArrowRight, Crosshair, Info, Loader2, Send, Sparkles } from "lucide-react";
 import { Seo } from "@/components/Seo";
 
+function prettyMode(m: string): string {
+  return m.replace(/_/g, " ");
+}
+
 const QUICK_PROMPTS = [
   "Force this into a proof artifact.",
   "Diagnose my avoidance.",
@@ -66,6 +70,7 @@ export default function Coach() {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const [input, setInput] = useState(params.get("prompt") ?? "");
+  const requestedMode = params.get("mode") ?? null;
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<NormalisedCoachResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +109,10 @@ export default function Coach() {
     setLocalCommitmentId(null);
     try {
       const { data, error: invokeError } = await supabase.functions.invoke("coach", {
-        body: { message: input.trim() },
+        body: {
+          message: input.trim(),
+          mode: requestedMode || undefined,
+        },
       });
       if (invokeError) {
         setError(invokeError.message || "Coach request failed.");
@@ -169,6 +177,7 @@ export default function Coach() {
   }, [result, sections]);
 
   const isPersonalisedMode = result ? userModeIds.has(result.mode) : false;
+  const headerModeLabel = result?.mode ?? requestedMode;
 
   return (
     <AppShell>
@@ -195,6 +204,17 @@ export default function Coach() {
           <p className="text-sm text-muted-foreground mt-1">
             Drop the task. The system routes to the right mode, diagnoses the state, and forces a Proof Contract.
           </p>
+          {requestedMode && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1">
+              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">
+                Coaching inside
+              </span>
+              <ModeBadge mode={requestedMode as Mode} />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                {prettyMode(requestedMode)}
+              </span>
+            </div>
+          )}
         </header>
 
         <Card className="panel p-4">

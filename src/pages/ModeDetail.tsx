@@ -105,6 +105,7 @@ export default function ModeDetail() {
 
   const proofLink = `/proof?mode=${encodeURIComponent(modeKeyUpper)}`;
   const coachPrompt = encodeURIComponent(`Help me execute in ${mode?.display_name ?? modeKeyUpper} with a proof-first outcome.`);
+  const coachLink = `/coach?mode=${encodeURIComponent(modeKeyUpper)}&prompt=${coachPrompt}`;
 
   const isActiveMode = "is_active" in (mode ?? {}) ? (mode as UserMode).is_active !== false : true;
 
@@ -192,7 +193,7 @@ export default function ModeDetail() {
             <h1 className="text-3xl font-semibold mt-3">{mode.display_name}</h1>
             <p className="mt-3 text-sm text-muted-foreground max-w-3xl">{mode.description}</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link to={`/coach?prompt=${coachPrompt}`}>
+              <Link to={coachLink}>
                 <Button size="sm"><MessageSquare className="h-3 w-3 mr-1.5" />Coach in this Mode</Button>
               </Link>
               <Link to={proofLink}>
