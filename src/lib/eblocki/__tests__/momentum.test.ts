@@ -44,10 +44,12 @@ describe("momentum scoring", () => {
     expect(snap.freeze_tokens).toBeLessThanOrEqual(3);
   });
 
-  it("LAW_MAX mode boosts IRAC proof effective quality", () => {
-    const withMode = computeMomentumScore(FIXTURES.strong_streak.proofs, new Date(), "LAW_MAX");
-    const noMode = computeMomentumScore(FIXTURES.strong_streak.proofs, new Date());
-    expect(withMode.avgQuality).toBeGreaterThanOrEqual(noMode.avgQuality);
+  it("LAW_MAX mode rewards IRAC-style proofs at the per-proof level", async () => {
+    const { effectiveQuality } = await import("../mode-scoring");
+    const proof = FIXTURES.strong_streak.proofs[0];
+    const boosted = effectiveQuality(proof, "LAW_MAX");
+    const raw = proof.quality_score ?? 0;
+    expect(boosted).toBeGreaterThan(raw);
   });
 
   it("score never exceeds 100", () => {
