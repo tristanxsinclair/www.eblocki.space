@@ -328,6 +328,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_log: {
+        Row: {
+          created_at: string
+          dedup_key: string
+          delivered: number | null
+          id: string
+          kind: string
+          payload: Json
+          sent_at: string
+          total_targets: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dedup_key: string
+          delivered?: number | null
+          id?: string
+          kind: string
+          payload?: Json
+          sent_at?: string
+          total_targets?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dedup_key?: string
+          delivered?: number | null
+          id?: string
+          kind?: string
+          payload?: Json
+          sent_at?: string
+          total_targets?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       performance_os_config: {
         Row: {
           auto_create_proof_contracts: boolean | null
@@ -623,6 +659,7 @@ export type Database = {
           prefers_detailed_analysis: boolean | null
           roles: string[] | null
           strictness_level: number | null
+          timezone: string
           updated_at: string | null
           user_id: string
         }
@@ -638,6 +675,7 @@ export type Database = {
           prefers_detailed_analysis?: boolean | null
           roles?: string[] | null
           strictness_level?: number | null
+          timezone?: string
           updated_at?: string | null
           user_id: string
         }
@@ -653,6 +691,7 @@ export type Database = {
           prefers_detailed_analysis?: boolean | null
           roles?: string[] | null
           strictness_level?: number | null
+          timezone?: string
           updated_at?: string | null
           user_id?: string
         }
