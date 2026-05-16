@@ -221,7 +221,10 @@ export function useDailyObjectives() {
   }, [refresh]);
 
   const complete = useCallback(
-    async (id: string) => {
+    async (
+      id: string,
+      reflection?: { proof: string; hard: string | null; upgrade: string | null },
+    ) => {
       // Optimistic update — UI feels instant, refresh syncs truth.
       setObjectives((prev) =>
         prev.map((o) =>
@@ -230,9 +233,18 @@ export function useDailyObjectives() {
             : o,
         ),
       );
+      const patch: Record<string, unknown> = {
+        status: "completed",
+        completed_at: new Date().toISOString(),
+      };
+      if (reflection) {
+        patch.completion_proof_text = reflection.proof;
+        patch.completion_hard_part = reflection.hard;
+        patch.completion_upgrade = reflection.upgrade;
+      }
       const { error } = await supabase
         .from("daily_objectives")
-        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .update(patch)
         .eq("id", id)
         .eq("status", "pending"); // idempotency guard — no double-complete
       if (error) {
