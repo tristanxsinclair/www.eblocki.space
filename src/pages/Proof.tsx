@@ -97,6 +97,8 @@ export default function Proof() {
   const [filterDomain, setFilterDomain] = useState("all");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentText, setAttachmentText] = useState<string>("");
+  const [originalExtractedText, setOriginalExtractedText] = useState<string>("");
+  const [extractedEdited, setExtractedEdited] = useState(false);
   const [attachState, setAttachState] = useState<AttachmentState>(INITIAL_ATTACH);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
