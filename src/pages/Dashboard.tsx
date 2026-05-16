@@ -12,6 +12,7 @@ import { detectMode, MODE_LABELS, type Mode } from "@/lib/eblocki/modes";
 import { detectState, STATE_LABELS, STATE_PRESCRIPTION, type BehaviouralState } from "@/lib/eblocki/states";
 import { Seo } from "@/components/Seo";
 import { MomentumPanel } from "@/components/eblocki/MomentumPanel";
+import { WeeklyRetro } from "@/components/eblocki/WeeklyRetro";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -131,6 +132,7 @@ export default function Dashboard() {
         )}
 
         <MomentumPanel />
+        <WeeklyRetro />
 
         {/* OS OVERVIEW */}
         <Card className="panel p-4 md:p-5 border-primary/30">
