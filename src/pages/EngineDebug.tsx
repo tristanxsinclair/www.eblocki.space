@@ -87,7 +87,7 @@ export default function EngineDebug() {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
-      <Seo title="Engine Debug" description="Behavioural engine inspector" />
+        <Seo title="Engine Debug" description="Behavioural engine inspector" path="/dev/engine" />
       <div className="max-w-4xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <Link to="/dashboard" className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground">
