@@ -51,6 +51,24 @@ function localDateKey(now: Date, tz: string): string {
 type Notif = { kind: string; title: string; body: string; dedupKey: string };
 
 /**
+ * Mirror of src/lib/eblocki/integrity-rules.ts.
+ * Keep these constants in sync — they are the contract between product and user.
+ */
+const INTEGRITY = {
+  MAX_NUDGES_PER_DAY: 3,
+  MIN_HOURS_BETWEEN_NUDGES: 4,
+  DEFAULT_QUIET_START: 22, // hour ≥ this → quiet
+  DEFAULT_QUIET_END: 9,    // hour < this → quiet
+};
+
+function inQuietHours(hour: number, quietStart: number, quietEnd: number): boolean {
+  // Window wraps midnight when start > end (e.g. 22→9).
+  return quietStart > quietEnd
+    ? (hour >= quietStart || hour < quietEnd)
+    : (hour >= quietStart && hour < quietEnd);
+}
+
+/**
  * Rule pipeline — first matching rule wins. Each rule must produce a body
  * that references actual state, not generic copy.
  */
@@ -74,8 +92,8 @@ function pickNotification(args: {
   const proofsToday = m.proofs_today ?? 0;
   const quality = m.avg_quality ?? 0;
 
-  // Quiet hours — never notify before 09:00 or after 21:30 local.
-  if (args.hour < 9 || args.hour >= 22) return null;
+  // Default quiet hours; user prefs may tighten this further upstream.
+  if (args.hour < INTEGRITY.DEFAULT_QUIET_END || args.hour >= INTEGRITY.DEFAULT_QUIET_START) return null;
 
   // Rule 1: streak at risk → fire after 19:00 if no proof today.
   if (m.state === "at_risk" && proofsToday === 0 && streak >= 2 && args.hour >= 19) {
@@ -137,6 +155,7 @@ Deno.serve(async (req) => {
   const { data: tokenUsers, error: tuErr } = await supabase
     .from("push_tokens")
     .select("user_id")
+    .eq("is_active", true)
     .limit(5000);
   if (tuErr) {
     return new Response(JSON.stringify({ error: tuErr.message }), {
@@ -164,7 +183,7 @@ Deno.serve(async (req) => {
           .limit(2),
         supabase
           .from("notification_log")
-          .select("id, dedup_key")
+          .select("id, dedup_key, sent_at, last_attempt_at")
           .eq("user_id", userId)
           .gte("sent_at", new Date(now.getTime() - 24 * 3600 * 1000).toISOString()),
       ]);
@@ -175,11 +194,42 @@ Deno.serve(async (req) => {
       const dailyCount = logRes.data?.length ?? 0;
       const existingKeys = new Set((logRes.data ?? []).map((r) => r.dedup_key));
 
-      // Hard cap: max 2 notifications / 24h.
-      if (dailyCount >= 2) { results.skipped = (results.skipped as number) + 1; continue; }
+      // Hard cap (integrity-rules.ts): MAX_NUDGES_PER_DAY.
+      if (dailyCount >= INTEGRITY.MAX_NUDGES_PER_DAY) { results.skipped = (results.skipped as number) + 1; continue; }
+
+      // Min spacing between nudges.
+      const lastSentAt = (logRes.data ?? [])
+        .map((r) => new Date((r as any).last_attempt_at ?? r.sent_at).getTime())
+        .reduce((max, t) => (Number.isFinite(t) && t > max ? t : max), 0);
+      if (lastSentAt) {
+        const hoursSince = (now.getTime() - lastSentAt) / 3_600_000;
+        if (hoursSince < INTEGRITY.MIN_HOURS_BETWEEN_NUDGES) {
+          results.skipped = (results.skipped as number) + 1;
+          continue;
+        }
+      }
+
+      // Pull preferences (may be missing → defaults).
+      const { data: prefs } = await supabase
+        .from("notification_preferences")
+        .select("notifications_enabled, streak_rescue, depth_nudge, recovery_reminder, milestone, coach_prompt, quiet_hours_start, quiet_hours_end")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (prefs && prefs.notifications_enabled === false) {
+        results.skipped = (results.skipped as number) + 1;
+        continue;
+      }
 
       const hour = localHour(now, tz);
       const dateKey = localDateKey(now, tz);
+
+      // User-overridden quiet hours take precedence over defaults.
+      const quietStart = prefs?.quiet_hours_start ?? INTEGRITY.DEFAULT_QUIET_START;
+      const quietEnd = prefs?.quiet_hours_end ?? INTEGRITY.DEFAULT_QUIET_END;
+      if (inQuietHours(hour, quietStart, quietEnd)) {
+        results.skipped = (results.skipped as number) + 1;
+        continue;
+      }
 
       const notif = pickNotification({
         hour, dateKey,
@@ -189,13 +239,26 @@ Deno.serve(async (req) => {
       if (!notif) { results.skipped = (results.skipped as number) + 1; continue; }
       if (existingKeys.has(notif.dedupKey)) { results.skipped = (results.skipped as number) + 1; continue; }
 
+      // Per-kind preference gate.
+      const kindToPref: Record<string, keyof NonNullable<typeof prefs>> = {
+        streak_at_risk: "streak_rescue",
+        depth_nudge: "depth_nudge",
+        recovery: "recovery_reminder",
+        freeze_milestone: "milestone",
+      };
+      const prefKey = kindToPref[notif.kind];
+      if (prefs && prefKey && prefs[prefKey] === false) {
+        results.skipped = (results.skipped as number) + 1;
+        continue;
+      }
+
       // Persist FIRST so a downstream failure doesn't allow respamming.
-      const { error: logErr } = await supabase.from("notification_log").insert({
+      const { data: logInsert, error: logErr } = await supabase.from("notification_log").insert({
         user_id: userId,
         kind: notif.kind,
         dedup_key: notif.dedupKey,
         payload: { title: notif.title, body: notif.body, hour, tz },
-      });
+      }).select("id").maybeSingle();
       if (logErr) {
         // Unique constraint hit means we already logged — treat as dedup skip.
         results.skipped = (results.skipped as number) + 1;
@@ -213,6 +276,8 @@ Deno.serve(async (req) => {
           user_id: userId,
           title: notif.title,
           body: notif.body,
+          kind: notif.kind,
+          notification_log_id: logInsert?.id,
           data: { kind: notif.kind, dedup_key: notif.dedupKey },
         }),
       });
