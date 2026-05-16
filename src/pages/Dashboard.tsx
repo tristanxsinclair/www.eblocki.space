@@ -11,6 +11,7 @@ import { ArrowRight, Crosshair, FileText, Gavel, MessageSquare, Layers, Sparkles
 import { detectMode, MODE_LABELS, type Mode } from "@/lib/eblocki/modes";
 import { detectState, STATE_LABELS, STATE_PRESCRIPTION, type BehaviouralState } from "@/lib/eblocki/states";
 import { Seo } from "@/components/Seo";
+import { MomentumPanel } from "@/components/eblocki/MomentumPanel";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -128,6 +129,8 @@ export default function Dashboard() {
             </div>
           </Card>
         )}
+
+        <MomentumPanel />
 
         {/* OS OVERVIEW */}
         <Card className="panel p-4 md:p-5 border-primary/30">
