@@ -18,6 +18,8 @@ export type MomentumStateName =
   | "recovery"
   | "elite";
 
+import { effectiveQuality as modeEffectiveQuality } from "./mode-scoring";
+
 export interface ProofSample {
   created_at: string;
   quality_score: number | null;
@@ -134,10 +136,7 @@ export function computeMomentumScore(
   // Mode-aware effective quality is computed lazily — falls back to raw.
   const effQuality = (p: ProofSample): number => {
     if (!activeMode) return p.quality_score ?? 0;
-    // Lazy require to avoid circular import surface; mode-scoring is pure.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { effectiveQuality } = require("./mode-scoring") as typeof import("./mode-scoring");
-    return effectiveQuality(p, activeMode);
+    return modeEffectiveQuality(p, activeMode);
   };
   const qualified = week.filter((p) => effQuality(p) >= 4);
   const residual = week.length - qualified.length;
