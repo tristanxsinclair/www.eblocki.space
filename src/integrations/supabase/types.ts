@@ -192,6 +192,7 @@ export type Database = {
           completed_at: string | null
           completion_hard_part: string | null
           completion_proof_text: string | null
+          completion_quality_self_rating: number | null
           completion_upgrade: string | null
           created_at: string
           description: string | null
@@ -218,6 +219,7 @@ export type Database = {
           completed_at?: string | null
           completion_hard_part?: string | null
           completion_proof_text?: string | null
+          completion_quality_self_rating?: number | null
           completion_upgrade?: string | null
           created_at?: string
           description?: string | null
@@ -244,6 +246,7 @@ export type Database = {
           completed_at?: string | null
           completion_hard_part?: string | null
           completion_proof_text?: string | null
+          completion_quality_self_rating?: number | null
           completion_upgrade?: string | null
           created_at?: string
           description?: string | null
