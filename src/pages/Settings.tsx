@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { Shield, Download, Trash2, FileText as FileTextIcon } from "lucide-react";
 import { track, reset as resetAnalytics, EVENTS } from "@/lib/analytics";
 import { BetaFeedback } from "@/components/eblocki/BetaFeedback";
+import { NotificationPreferences } from "@/components/eblocki/NotificationPreferences";
 
 const MODELS = [
   "google/gemini-3-flash-preview",
