@@ -17,6 +17,10 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Onboarding from "./pages/Onboarding.tsx";
 import StartToday from "./pages/StartToday.tsx";
 import Install from "./pages/Install.tsx";
+import Privacy from "./pages/legal/Privacy.tsx";
+import Terms from "./pages/legal/Terms.tsx";
+import DataHandling from "./pages/legal/DataHandling.tsx";
+import AIDisclosure from "./pages/legal/AIDisclosure.tsx";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +43,10 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/install" element={<Install />} />
+            <Route path="/legal/privacy" element={<Privacy />} />
+            <Route path="/legal/terms" element={<Terms />} />
+            <Route path="/legal/data-handling" element={<DataHandling />} />
+            <Route path="/legal/ai-disclosure" element={<AIDisclosure />} />
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
             <Route path="/coach" element={<Protected><Coach /></Protected>} />
             <Route path="/sheet" element={<Protected><Sheet /></Protected>} />

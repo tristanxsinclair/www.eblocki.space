@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, MessageSquare, FileText, Gavel, Layers, Settings, LogOut, Crosshair, Sparkles } from "lucide-react";
+import { usePushRegistration } from "@/hooks/usePushRegistration";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -16,11 +17,12 @@ const NAV = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const nav = useNavigate();
+  usePushRegistration();
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      <aside className="md:w-60 md:min-h-screen border-b md:border-b-0 md:border-r border-border bg-card/40 flex md:flex-col">
-        <Link to="/dashboard" className="flex items-center gap-2 px-4 py-4 border-b border-border md:w-full">
+    <div className="min-h-screen-safe flex flex-col md:flex-row">
+      <aside className="md:w-60 md:min-h-screen border-b md:border-b-0 md:border-r border-border bg-card/40 flex md:flex-col safe-top safe-x md:safe-bottom">
+        <Link to="/dashboard" className="flex items-center gap-2 px-4 py-4 border-b border-border md:w-full native-tap">
           <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground">
             <Crosshair className="h-4 w-4" />
           </div>
