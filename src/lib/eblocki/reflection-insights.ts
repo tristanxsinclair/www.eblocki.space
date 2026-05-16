@@ -24,6 +24,7 @@ export interface ReflectionInput {
   completion_upgrade: string | null;
   objective_date: string;
   resistance_level?: number | null;
+  focus_minutes?: number | null;
   title?: string | null;
 }
 
