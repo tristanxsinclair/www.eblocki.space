@@ -190,6 +190,9 @@ export type Database = {
       daily_objectives: {
         Row: {
           completed_at: string | null
+          completion_hard_part: string | null
+          completion_proof_text: string | null
+          completion_upgrade: string | null
           created_at: string
           description: string | null
           focus_minutes: number
@@ -213,6 +216,9 @@ export type Database = {
         }
         Insert: {
           completed_at?: string | null
+          completion_hard_part?: string | null
+          completion_proof_text?: string | null
+          completion_upgrade?: string | null
           created_at?: string
           description?: string | null
           focus_minutes?: number
@@ -236,6 +242,9 @@ export type Database = {
         }
         Update: {
           completed_at?: string | null
+          completion_hard_part?: string | null
+          completion_proof_text?: string | null
+          completion_upgrade?: string | null
           created_at?: string
           description?: string | null
           focus_minutes?: number
