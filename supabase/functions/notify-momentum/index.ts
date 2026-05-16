@@ -51,6 +51,24 @@ function localDateKey(now: Date, tz: string): string {
 type Notif = { kind: string; title: string; body: string; dedupKey: string };
 
 /**
+ * Mirror of src/lib/eblocki/integrity-rules.ts.
+ * Keep these constants in sync — they are the contract between product and user.
+ */
+const INTEGRITY = {
+  MAX_NUDGES_PER_DAY: 3,
+  MIN_HOURS_BETWEEN_NUDGES: 4,
+  DEFAULT_QUIET_START: 22, // hour ≥ this → quiet
+  DEFAULT_QUIET_END: 9,    // hour < this → quiet
+};
+
+function inQuietHours(hour: number, quietStart: number, quietEnd: number): boolean {
+  // Window wraps midnight when start > end (e.g. 22→9).
+  return quietStart > quietEnd
+    ? (hour >= quietStart || hour < quietEnd)
+    : (hour >= quietStart && hour < quietEnd);
+}
+
+/**
  * Rule pipeline — first matching rule wins. Each rule must produce a body
  * that references actual state, not generic copy.
  */
