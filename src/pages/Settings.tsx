@@ -14,6 +14,7 @@ import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Shield, Download, Trash2, FileText as FileTextIcon } from "lucide-react";
 import { track, reset as resetAnalytics, EVENTS } from "@/lib/analytics";
+import { BetaFeedback } from "@/components/eblocki/BetaFeedback";
 
 const MODELS = [
   "google/gemini-3-flash-preview",
@@ -372,6 +373,8 @@ export default function Settings() {
             <Link to="/legal/ai-disclosure" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><Shield className="h-3 w-3" /> AI disclosure</Link>
           </div>
         </Card>
+
+        <BetaFeedback />
       </div>
     </AppShell>
   );

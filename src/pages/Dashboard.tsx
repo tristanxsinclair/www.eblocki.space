@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
@@ -16,6 +16,7 @@ import { WeeklyRetro } from "@/components/eblocki/WeeklyRetro";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
   const [today, setToday] = useState<any>(null);
   const [pending, setPending] = useState<any[]>([]);
   const [recent, setRecent] = useState<any[]>([]);
@@ -27,6 +28,23 @@ export default function Dashboard() {
   const [state, setStateBadge] = useState<BehaviouralState | null>(null);
 
   const todayISO = new Date().toISOString().slice(0, 10);
+
+  // Welcome gate — first-time users get redirected once.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("user_onboarding_profiles")
+        .select("seen_welcome")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      // Treat missing row as "needs welcome" — first-touch users.
+      setWelcomeCheck(data?.seen_welcome ? "ok" : "needs");
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -47,6 +65,10 @@ export default function Dashboard() {
       setModesCount(umCount ?? 0);
     })();
   }, [user, todayISO]);
+
+  if (welcomeCheck === "needs") {
+    return <Navigate to="/welcome" replace />;
+  }
 
   const week = recent.filter((r) => new Date(r.created_at) > new Date(Date.now() - 7 * 864e5));
   const eliteCount = week.filter((r) => r.evidence_strength === "elite").length;

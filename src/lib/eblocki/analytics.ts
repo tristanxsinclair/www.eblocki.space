@@ -21,13 +21,20 @@ export type EngineEvent =
   | "proof_capture_opened"
   | "proof_capture_completed"
   | "proof_capture_rejected"
-  | "proof_capture_abandoned";
+  | "proof_capture_abandoned"
+  | "welcome_started"
+  | "welcome_step_viewed"
+  | "welcome_completed"
+  | "welcome_skipped"
+  | "why_viewed"
+  | "feedback_submitted";
 
 /** Whitelist of property keys — anything else is dropped. */
 const ALLOWED_KEYS = new Set([
   "kind", "mode", "state", "score", "streak", "resistance", "depth",
   "result", "reason", "dedup_key", "escalation_level", "count", "fixture",
   "quality", "proof_len", "has_upgrade", "has_hard",
+  "step", "route",
 ]);
 
 function sanitise(props: Record<string, unknown>): Record<string, unknown> {

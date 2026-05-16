@@ -18,6 +18,9 @@ import Onboarding from "./pages/Onboarding.tsx";
 import StartToday from "./pages/StartToday.tsx";
 import Install from "./pages/Install.tsx";
 import EngineDebug from "./pages/EngineDebug.tsx";
+import BetaAdmin from "./pages/BetaAdmin.tsx";
+import Welcome from "./pages/Welcome.tsx";
+import Why from "./pages/Why.tsx";
 import Privacy from "./pages/legal/Privacy.tsx";
 import Terms from "./pages/legal/Terms.tsx";
 import DataHandling from "./pages/legal/DataHandling.tsx";
@@ -48,6 +51,8 @@ const App = () => (
             <Route path="/legal/terms" element={<Terms />} />
             <Route path="/legal/data-handling" element={<DataHandling />} />
             <Route path="/legal/ai-disclosure" element={<AIDisclosure />} />
+            <Route path="/why" element={<Why />} />
+            <Route path="/welcome" element={<Protected><Welcome /></Protected>} />
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
             <Route path="/coach" element={<Protected><Coach /></Protected>} />
             <Route path="/sheet" element={<Protected><Sheet /></Protected>} />
@@ -57,6 +62,7 @@ const App = () => (
             <Route path="/modes/:modeId" element={<Protected><ModeDetail /></Protected>} />
             <Route path="/settings" element={<Protected><Settings /></Protected>} />
             <Route path="/dev/engine" element={<Protected><EngineDebug /></Protected>} />
+            <Route path="/dev/beta" element={<Protected><BetaAdmin /></Protected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

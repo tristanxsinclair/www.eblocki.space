@@ -80,6 +80,33 @@ export type Database = {
         }
         Relationships: []
       }
+      beta_feedback: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          route: string | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          kind: string
+          route?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          route?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       coach_interactions: {
         Row: {
           assistant_output: string | null
@@ -661,6 +688,7 @@ export type Database = {
           identity_summary: string | null
           prefers_detailed_analysis: boolean | null
           roles: string[] | null
+          seen_welcome: boolean
           strictness_level: number | null
           timezone: string
           updated_at: string | null
@@ -677,6 +705,7 @@ export type Database = {
           identity_summary?: string | null
           prefers_detailed_analysis?: boolean | null
           roles?: string[] | null
+          seen_welcome?: boolean
           strictness_level?: number | null
           timezone?: string
           updated_at?: string | null
@@ -693,6 +722,7 @@ export type Database = {
           identity_summary?: string | null
           prefers_detailed_analysis?: boolean | null
           roles?: string[] | null
+          seen_welcome?: boolean
           strictness_level?: number | null
           timezone?: string
           updated_at?: string | null
