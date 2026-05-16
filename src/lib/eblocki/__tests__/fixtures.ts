@@ -33,7 +33,7 @@ export const FIXTURES: Record<FixtureKey, { proofs: ProofSample[]; modeId: strin
       quality_score: 7 + (i % 2),
       evidence_strength: i % 2 === 0 ? "elite" : "strong",
       domain: "law",
-      content: "IRAC paragraph addressing issue, rule, application, conclusion. Cites s.5 of the Act.",
+      content: "IRAC paragraph addressing the negligence issue under tort law, applying the rule from Donoghue v Stevenson [1932] AC 562 to the facts of the tutorial problem, with full application showing duty, breach, causation, and damage, then a conclusion that the defendant is liable on these facts. Authority cited: s.5 of the Act and v. comparable case law.",
     })),
     modeId: "LAW_MAX",
     note: "8 day streak, high quality. Should classify 'elite' or 'momentum'.",
