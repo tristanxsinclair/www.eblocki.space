@@ -23,6 +23,8 @@ export interface ProofSample {
   quality_score: number | null;
   evidence_strength: string | null;
   domain?: string | null;
+  /** Optional raw content — used by mode-specific scoring rules. */
+  content?: string | null;
 }
 
 export interface MomentumSnapshot {
@@ -116,6 +118,12 @@ export function computeStreak(
 export function computeMomentumScore(
   proofs: ProofSample[],
   now: Date = new Date(),
+  /**
+   * Optional active mode key. When supplied, each proof's quality is
+   * re-scored through mode-specific rules (e.g. IRAC bonus for LAW_MAX)
+   * before aggregation. See mode-scoring.ts.
+   */
+  activeMode?: string | null,
 ): { score: number; avgQuality: number; resistanceOvercome: number } {
   const weekAgo = now.getTime() - 7 * DAY_MS;
   const week = proofs.filter((p) => new Date(p.created_at).getTime() >= weekAgo);
@@ -123,14 +131,22 @@ export function computeMomentumScore(
   // Quality-aware velocity: only proofs scored >= 4 count fully. Unscored or
   // low-quality work counts at a residual rate so the curve still moves a
   // little for "I did something" but never dominates.
-  const qualified = week.filter((p) => (p.quality_score ?? 0) >= 4);
+  // Mode-aware effective quality is computed lazily — falls back to raw.
+  const effQuality = (p: ProofSample): number => {
+    if (!activeMode) return p.quality_score ?? 0;
+    // Lazy require to avoid circular import surface; mode-scoring is pure.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { effectiveQuality } = require("./mode-scoring") as typeof import("./mode-scoring");
+    return effectiveQuality(p, activeMode);
+  };
+  const qualified = week.filter((p) => effQuality(p) >= 4);
   const residual = week.length - qualified.length;
   const velocityRaw = qualified.length * 5 + Math.min(residual, 8) * 1;
   let velocity = Math.min(velocityRaw, 30);
 
   const scored = week.filter((p) => typeof p.quality_score === "number");
   const avgQuality = scored.length
-    ? scored.reduce((s, p) => s + (p.quality_score ?? 0), 0) / scored.length
+    ? scored.reduce((s, p) => s + effQuality(p), 0) / scored.length
     : 0;
 
   // Halve velocity contribution if average work is poor — prevents the
@@ -260,10 +276,16 @@ export function buildSnapshot(input: {
     freezeTokensUsedTotal: number;
   };
   strongestDomain?: string | null;
+  /** Active mode_id — drives mode-specific scoring multipliers. */
+  activeMode?: string | null;
   now?: Date;
 }): MomentumSnapshot {
   const now = input.now ?? new Date();
-  const { score, avgQuality, resistanceOvercome } = computeMomentumScore(input.proofs, now);
+  const { score, avgQuality, resistanceOvercome } = computeMomentumScore(
+    input.proofs,
+    now,
+    input.activeMode,
+  );
 
   const { tokens: tokensBefore } = computeFreezeTokens(
     input.prior.longestStreak,

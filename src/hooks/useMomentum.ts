@@ -25,7 +25,7 @@ export function useMomentum() {
       const [{ data: proofRows }, { data: priorRows }] = await Promise.all([
         supabase
           .from("proof_artifacts")
-          .select("created_at, quality_score, evidence_strength, domain")
+          .select("created_at, quality_score, evidence_strength, domain, content")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
           .limit(200),
@@ -36,6 +36,16 @@ export function useMomentum() {
           .order("state_date", { ascending: false })
           .limit(1),
       ]);
+
+      // Active mode drives mode-specific scoring multipliers.
+      const { data: activeModes } = await supabase
+        .from("user_modes")
+        .select("mode_id, is_default")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .order("is_default", { ascending: false })
+        .limit(1);
+      const activeMode = activeModes?.[0]?.mode_id ?? null;
 
       const proofs: ProofSample[] = (proofRows ?? []) as ProofSample[];
       const prior = priorRows?.[0] ?? {
@@ -60,6 +70,7 @@ export function useMomentum() {
           freezeTokensUsedTotal: prior.freeze_tokens_used_total,
         },
         strongestDomain: strongest,
+        activeMode,
       });
 
       setSnapshot(snap);
