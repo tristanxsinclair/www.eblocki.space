@@ -1,5 +1,15 @@
 import { useRef, useState } from "react";
-import { Check, ChevronsRight, Flame, Shield, Sparkles, Zap, Target } from "lucide-react";
+import {
+  Check,
+  ChevronsRight,
+  Clock,
+  Flame,
+  Shield,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { haptics } from "@/hooks/useHaptics";
 import { toast } from "sonner";
@@ -35,16 +45,19 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const holdTimer = useRef<number | null>(null);
   const holdStart = useRef<number>(0);
+  const firedRef = useRef(false); // hard guard against double-fire (swipe + hold)
   const HOLD_MS = 1400;
   const meta = KIND_META[objective.kind];
   const Icon = meta.icon;
 
   const isDone = objective.status === "completed";
   const isSkipped = objective.status === "skipped";
+  const isLocked = objective.status === "failed";
+  const isInteractive = !isDone && !isSkipped && !isLocked && !completing;
 
   /* ---------- swipe-to-complete ---------- */
   const onPointerDown = (e: React.PointerEvent) => {
-    if (isDone || isSkipped || completing) return;
+    if (!isInteractive) return;
     startX.current = e.clientX;
     width.current = cardRef.current?.offsetWidth ?? 320;
     (e.target as Element).setPointerCapture?.(e.pointerId);
@@ -58,7 +71,7 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
   const onPointerUp = async () => {
     if (startX.current == null) return;
     const threshold = width.current * 0.45;
-    if (dragX > threshold) {
+    if (dragX > threshold && isInteractive) {
       await triggerComplete();
     } else {
       setDragX(0);
@@ -68,7 +81,7 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
 
   /* ---------- hold-to-confirm-deep-work ---------- */
   const startHold = () => {
-    if (isDone || isSkipped || completing) return;
+    if (!isInteractive) return;
     haptics.medium();
     holdStart.current = Date.now();
     const tick = () => {
@@ -92,29 +105,36 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
 
   /* ---------- completion ---------- */
   const triggerComplete = async () => {
+    if (firedRef.current) return; // belt-and-braces: hold + swipe race
+    firedRef.current = true;
     setCompleting(true);
-    haptics.success();
     const reward = rollVariableReward({
       seed: objective.id,
       resistanceLevel: objective.resistance_level,
     });
-    if (reward.label) {
-      toast.success(reward.label, {
-        description: `+${objective.reward_value + reward.bonus} momentum`,
-        duration: reward.rare ? 5000 : 3000,
-      });
-      if (reward.rare) haptics.heavy();
-    } else {
-      toast.success("Proof logged.", {
-        description: `+${objective.reward_value} momentum`,
-      });
-    }
     setDragX(width.current * 0.9);
-    setTimeout(async () => {
+    try {
       await onComplete(objective.id);
-      setCompleting(false);
+      // Only fire haptics + toast on confirmed write success.
+      haptics.success();
+      if (reward.label) {
+        toast.success(reward.label, {
+          description: `+${objective.reward_value + reward.bonus} momentum`,
+          duration: reward.rare ? 5000 : 3000,
+        });
+        if (reward.rare) haptics.heavy();
+      } else {
+        toast.success("Proof logged.", {
+          description: `+${objective.reward_value} momentum`,
+        });
+      }
+    } catch {
+      firedRef.current = false;
+      toast.error("Could not save. Try again.");
       setDragX(0);
-    }, 320);
+    } finally {
+      setCompleting(false);
+    }
   };
 
   return (
@@ -122,8 +142,9 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
       ref={cardRef}
       className={cn(
         "relative overflow-hidden rounded-xl border bg-card transition-all touch-none select-none",
-        isDone && "opacity-60 border-primary/40",
+        isDone && "opacity-70 border-primary/50 bg-primary/[0.03]",
         isSkipped && "opacity-40",
+        isLocked && "opacity-50 border-dashed",
         completing && "border-primary",
       )}
     >
@@ -144,14 +165,14 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
       />
 
       <div
-        className="relative p-4"
+        className="relative p-4 sm:p-5"
         style={{
           transform: `translateX(${dragX}px)`,
           transition: startX.current == null ? "transform 220ms cubic-bezier(.2,.8,.2,1)" : "none",
         }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
+        onPointerDown={isInteractive ? onPointerDown : undefined}
+        onPointerMove={isInteractive ? onPointerMove : undefined}
+        onPointerUp={isInteractive ? onPointerUp : undefined}
         onPointerCancel={() => { setDragX(0); startX.current = null; }}
       >
         <div className="flex items-start justify-between gap-3">
@@ -187,23 +208,42 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
           </p>
         )}
 
-        <div className="mt-3 flex items-center justify-between gap-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-          <div className="flex items-center gap-3">
-            <span>{objective.focus_minutes}m focus</span>
-            <span>+{objective.reward_value}</span>
-            <span title="Identity alignment">id × {objective.identity_alignment}</span>
-          </div>
-          {!isDone && !isSkipped && (
-            <ChevronsRight className="h-3.5 w-3.5 text-primary animate-pulse" />
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <Clock className="h-3 w-3" />{objective.focus_minutes}m
+          </span>
+          <span className="inline-flex items-center gap-1 text-primary">
+            <Sparkles className="h-3 w-3" />+{objective.reward_value}
+          </span>
+          <span
+            className="inline-flex items-center gap-1"
+            title="Streak impact — how much this protects/grows your streak"
+          >
+            <Flame className="h-3 w-3" />×{objective.streak_impact}
+          </span>
+          <span
+            className="inline-flex items-center gap-1"
+            title="Identity alignment 1–5"
+          >
+            <TrendingUp className="h-3 w-3" />id {objective.identity_alignment}/5
+          </span>
+          {!isDone && !isSkipped && !isLocked && (
+            <ChevronsRight className="ml-auto h-3.5 w-3.5 text-primary animate-pulse" />
           )}
-          {isDone && <Check className="h-3.5 w-3.5 text-primary" />}
+          {isDone && (
+            <span className="ml-auto inline-flex items-center gap-1 text-primary">
+              <Check className="h-3.5 w-3.5" /> closed
+            </span>
+          )}
+          {isSkipped && <span className="ml-auto">skipped</span>}
+          {isLocked && <span className="ml-auto">locked</span>}
         </div>
 
-        {!isDone && !isSkipped && (
-          <div className="mt-3 flex items-center gap-2">
+        {isInteractive && (
+          <div className="mt-4 flex items-center gap-2">
             <button
               type="button"
-              className="flex-1 h-10 rounded-md border border-primary/40 bg-primary/5 text-xs font-mono uppercase tracking-widest text-primary active:scale-[0.99]"
+              className="flex-1 h-11 rounded-md border border-primary/40 bg-primary/5 text-xs font-mono uppercase tracking-widest text-primary active:scale-[0.99] touch-manipulation"
               onPointerDown={(e) => { e.stopPropagation(); startHold(); }}
               onPointerUp={(e) => { e.stopPropagation(); cancelHold(); }}
               onPointerLeave={cancelHold}
@@ -215,7 +255,7 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); void onSkip(objective.id); }}
-                className="h-10 px-3 rounded-md text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                className="h-11 px-3 rounded-md text-xs font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground touch-manipulation"
               >
                 Skip
               </button>
