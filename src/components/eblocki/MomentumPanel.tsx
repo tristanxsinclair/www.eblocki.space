@@ -3,24 +3,28 @@ import { MomentumRing } from "./MomentumRing";
 import { MissionCard } from "./MissionCard";
 import { useMomentum } from "@/hooks/useMomentum";
 import { useDailyObjectives } from "@/hooks/useDailyObjectives";
-import { STATE_COPY } from "@/lib/eblocki/momentum";
+import { STATE_COPY, nextBestAction } from "@/lib/eblocki/momentum";
 import { Snowflake, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function MomentumPanel() {
   const { snapshot, refresh: refreshMomentum } = useMomentum();
-  const { objectives, complete, skip, refresh: refreshObj } = useDailyObjectives();
+  const { objectives, complete, skip, refresh: refreshObj, loading } = useDailyObjectives();
 
   const handleComplete = async (id: string) => {
-    await complete(id);
-    await refreshMomentum();
+    try {
+      await complete(id);
+      await refreshMomentum();
+    } catch {
+      // Surfaced by MissionCard via its own toast; nothing to do here.
+    }
   };
   const handleSkip = async (id: string) => {
     await skip(id);
     await refreshObj();
   };
 
-  if (!snapshot) {
+  if (!snapshot && loading) {
     return (
       <Card className="panel p-5 border-primary/20">
         <div className="h-32 animate-pulse bg-muted/30 rounded" />
@@ -28,51 +32,88 @@ export function MomentumPanel() {
     );
   }
 
-  const stateMeta = STATE_COPY[snapshot.state];
+  // Fallback so a missing snapshot never crashes the dashboard.
+  const safeSnap = snapshot ?? {
+    state: "cold" as const,
+    momentum_score: 0,
+    streak_days: 0,
+    longest_streak: 0,
+    freeze_tokens: 0,
+    proofs_today: 0,
+    resistance_overcome: 0,
+    avg_quality: 0,
+    identity_signal: "Submit one artifact to begin.",
+    last_proof_at: null,
+    hours_since_proof: Infinity,
+  };
+  const stateMeta = STATE_COPY[safeSnap.state];
   const open = objectives.filter((o) => o.status === "pending" || o.status === "active");
   const done = objectives.filter((o) => o.status === "completed").length;
+  const coachLine = nextBestAction(safeSnap);
+
+  // Only show streak-risk badge when it's actually true today.
+  const showStreakRisk =
+    safeSnap.state === "at_risk" && safeSnap.streak_days >= 2 && safeSnap.proofs_today === 0;
 
   return (
     <Card className="panel p-4 md:p-5 border-primary/30 overflow-hidden">
       <div className="flex items-center gap-4 md:gap-6 flex-wrap">
         <MomentumRing
-          score={snapshot.momentum_score}
-          state={snapshot.state}
-          streak={snapshot.streak_days}
+          score={safeSnap.momentum_score}
+          state={safeSnap.state}
+          streak={safeSnap.streak_days}
         />
         <div className="flex-1 min-w-[180px]">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={cn(
               "font-mono text-[10px] uppercase tracking-[0.25em] px-2 py-1 rounded-sm",
-              snapshot.state === "at_risk" && "bg-destructive/15 text-destructive",
-              snapshot.state === "elite" && "bg-primary/15 text-primary",
-              snapshot.state === "momentum" && "bg-primary/10 text-primary",
-              (snapshot.state === "cold" || snapshot.state === "warming" || snapshot.state === "recovery") &&
+              safeSnap.state === "at_risk" && "bg-destructive/15 text-destructive",
+              safeSnap.state === "elite" && "bg-primary/15 text-primary",
+              safeSnap.state === "momentum" && "bg-primary/10 text-primary",
+              (safeSnap.state === "cold" || safeSnap.state === "warming" || safeSnap.state === "recovery") &&
                 "bg-muted text-muted-foreground",
             )}>
               {stateMeta.label}
             </span>
-            {snapshot.freeze_tokens > 0 && (
+            {safeSnap.freeze_tokens > 0 && (
               <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-primary">
                 <Snowflake className="h-3 w-3" />
-                {snapshot.freeze_tokens} freeze{snapshot.freeze_tokens > 1 ? "s" : ""}
+                {safeSnap.freeze_tokens} freeze{safeSnap.freeze_tokens > 1 ? "s" : ""}
               </span>
             )}
-            {snapshot.streak_days >= 3 && (
-              <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest text-destructive">
+            {safeSnap.streak_days >= 3 && (
+              <span className={cn(
+                "inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest",
+                showStreakRisk ? "text-destructive" : "text-primary",
+              )}>
                 <Flame className="h-3 w-3" />
-                {snapshot.streak_days}d
+                {safeSnap.streak_days}d
               </span>
             )}
           </div>
-          <p className="mt-2 text-sm font-medium leading-snug">{snapshot.identity_signal}</p>
+          <p className="mt-2 text-sm font-medium leading-snug">{safeSnap.identity_signal}</p>
           <p className="mt-1 text-xs text-muted-foreground">{stateMeta.tone}</p>
           <div className="mt-3 grid grid-cols-3 gap-3 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            <Stat label="Today" value={snapshot.proofs_today} />
-            <Stat label="Resistance" value={snapshot.resistance_overcome} />
-            <Stat label="Quality" value={snapshot.avg_quality.toFixed(1)} />
+            <Stat label="Today" value={safeSnap.proofs_today} />
+            <Stat label="Resistance" value={safeSnap.resistance_overcome} />
+            <Stat label="Quality" value={(safeSnap.avg_quality ?? 0).toFixed(1)} />
           </div>
         </div>
+      </div>
+
+      {/* Lightweight momentum-aware coach line. Direct, strategic, no fluff. */}
+      <div
+        className={cn(
+          "mt-4 rounded-md border px-3 py-2 text-[12px] leading-snug",
+          safeSnap.state === "at_risk"
+            ? "border-destructive/40 bg-destructive/5 text-destructive"
+            : "border-primary/30 bg-primary/5 text-foreground/90",
+        )}
+      >
+        <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground mr-2">
+          Coach
+        </span>
+        {coachLine}
       </div>
 
       <div className="mt-5 flex items-center justify-between">
@@ -86,7 +127,7 @@ export function MomentumPanel() {
 
       {open.length === 0 && done > 0 && (
         <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
-          All objectives closed. Sustained execution earns the next freeze token at day {Math.ceil((snapshot.streak_days + 1) / 5) * 5}.
+          All objectives closed. Next freeze token at day {Math.max(5, Math.ceil((safeSnap.streak_days + 1) / 5) * 5)}.
         </div>
       )}
       {objectives.length === 0 && (
