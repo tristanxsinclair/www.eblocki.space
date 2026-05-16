@@ -765,6 +765,61 @@ export default function Proof() {
                 </div>
               )}
 
+              {attachment && attachState.status === "ready" && attachState.extractedSource !== "none" && (
+                <div className="mt-2 rounded-sm border border-border bg-muted/20 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs">
+                      <ScanLine className="h-3.5 w-3.5 text-primary" />
+                      <span className="font-mono uppercase tracking-widest text-[10px] text-muted-foreground">
+                        Extracted text {attachState.extractedSource === "ocr" ? "(OCR)" : "(text file)"} — editable
+                      </span>
+                      {extractedEdited && (
+                        <span className="font-mono uppercase tracking-widest text-[9px] text-primary">edited</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {extractedEdited && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => {
+                            setAttachmentText(originalExtractedText);
+                            setExtractedEdited(false);
+                          }}
+                        >
+                          Reset
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-[11px]"
+                        onClick={() => {
+                          setAttachmentText("");
+                          setExtractedEdited(originalExtractedText.length > 0);
+                        }}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
+                  <Textarea
+                    value={attachmentText}
+                    onChange={(e) => {
+                      setAttachmentText(e.target.value);
+                      setExtractedEdited(e.target.value !== originalExtractedText);
+                    }}
+                    placeholder="Extracted text will appear here. Correct OCR mistakes before scoring."
+                    className="mt-2 min-h-[140px] max-h-[280px] font-mono text-xs leading-relaxed"
+                  />
+                  <div className="mt-1 flex justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <span>{attachmentText.length.toLocaleString()} chars · fed into verdict</span>
+                    {attachState.ocrTruncated && <span className="text-primary">truncated at 20k</span>}
+                  </div>
+                </div>
+              )}
+
               {attachState.status === "failed" && (
                 <div className="mt-2 flex items-start justify-between gap-2 rounded-sm border border-destructive/40 bg-destructive/10 p-3 text-xs">
                   <div className="flex items-start gap-2 min-w-0">
