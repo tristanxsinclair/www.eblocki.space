@@ -363,8 +363,11 @@ export type Database = {
           created_at: string
           dedup_key: string
           delivered: number | null
+          delivery_status: string
+          failure_reason: string | null
           id: string
           kind: string
+          last_attempt_at: string | null
           payload: Json
           sent_at: string
           total_targets: number | null
@@ -374,8 +377,11 @@ export type Database = {
           created_at?: string
           dedup_key: string
           delivered?: number | null
+          delivery_status?: string
+          failure_reason?: string | null
           id?: string
           kind: string
+          last_attempt_at?: string | null
           payload?: Json
           sent_at?: string
           total_targets?: number | null
@@ -385,11 +391,59 @@ export type Database = {
           created_at?: string
           dedup_key?: string
           delivered?: number | null
+          delivery_status?: string
+          failure_reason?: string | null
           id?: string
           kind?: string
+          last_attempt_at?: string | null
           payload?: Json
           sent_at?: string
           total_targets?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          coach_prompt: boolean
+          created_at: string
+          depth_nudge: boolean
+          id: string
+          milestone: boolean
+          notifications_enabled: boolean
+          quiet_hours_end: number
+          quiet_hours_start: number
+          recovery_reminder: boolean
+          streak_rescue: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coach_prompt?: boolean
+          created_at?: string
+          depth_nudge?: boolean
+          id?: string
+          milestone?: boolean
+          notifications_enabled?: boolean
+          quiet_hours_end?: number
+          quiet_hours_start?: number
+          recovery_reminder?: boolean
+          streak_rescue?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coach_prompt?: boolean
+          created_at?: string
+          depth_nudge?: boolean
+          id?: string
+          milestone?: boolean
+          notifications_enabled?: boolean
+          quiet_hours_end?: number
+          quiet_hours_start?: number
+          recovery_reminder?: boolean
+          streak_rescue?: boolean
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -583,11 +637,48 @@ export type Database = {
           },
         ]
       }
+      push_delivery_log: {
+        Row: {
+          attempted_at: string
+          failure_reason: string | null
+          id: string
+          notification_log_id: string | null
+          platform: string | null
+          push_token_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          failure_reason?: string | null
+          id?: string
+          notification_log_id?: string | null
+          platform?: string | null
+          push_token_id?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          failure_reason?: string | null
+          id?: string
+          notification_log_id?: string | null
+          platform?: string | null
+          push_token_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       push_tokens: {
         Row: {
           created_at: string
           device_id: string | null
           id: string
+          is_active: boolean
+          last_failure_at: string | null
+          last_failure_reason: string | null
+          last_success_at: string | null
           platform: string
           token: string
           updated_at: string
@@ -597,6 +688,10 @@ export type Database = {
           created_at?: string
           device_id?: string | null
           id?: string
+          is_active?: boolean
+          last_failure_at?: string | null
+          last_failure_reason?: string | null
+          last_success_at?: string | null
           platform: string
           token: string
           updated_at?: string
@@ -606,6 +701,10 @@ export type Database = {
           created_at?: string
           device_id?: string | null
           id?: string
+          is_active?: boolean
+          last_failure_at?: string | null
+          last_failure_reason?: string | null
+          last_success_at?: string | null
           platform?: string
           token?: string
           updated_at?: string
@@ -691,6 +790,8 @@ export type Database = {
           seen_welcome: boolean
           strictness_level: number | null
           timezone: string
+          timezone_source: string
+          timezone_updated_at: string | null
           updated_at: string | null
           user_id: string
         }
@@ -708,6 +809,8 @@ export type Database = {
           seen_welcome?: boolean
           strictness_level?: number | null
           timezone?: string
+          timezone_source?: string
+          timezone_updated_at?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -725,6 +828,8 @@ export type Database = {
           seen_welcome?: boolean
           strictness_level?: number | null
           timezone?: string
+          timezone_source?: string
+          timezone_updated_at?: string | null
           updated_at?: string | null
           user_id?: string
         }
