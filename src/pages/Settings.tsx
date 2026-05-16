@@ -10,6 +10,10 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
+import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { Shield, Download, Trash2, FileText as FileTextIcon } from "lucide-react";
+import { track, reset as resetAnalytics, EVENTS } from "@/lib/analytics";
 
 const MODELS = [
   "google/gemini-3-flash-preview",
@@ -21,6 +25,9 @@ const MODELS = [
 
 export default function Settings() {
   const { user } = useAuth();
+  const nav = useNavigate();
+  const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [cfg, setCfg] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [modes, setModes] = useState<any[]>([]);
@@ -133,6 +140,52 @@ export default function Settings() {
     navigator.clipboard.writeText(text).then(() => {
       toast.success("Eblocki profile copied to clipboard.");
     });
+  };
+
+  const exportAllData = async () => {
+    if (!user) return;
+    setExporting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/export-data`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `eblocki-export-${user.id}.json`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      void track(EVENTS.data_exported);
+      toast.success("Export downloaded.");
+    } catch (e: any) {
+      toast.error(e?.message || "Export failed.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (!user) return;
+    const phrase = window.prompt(
+      "Deleting your account erases every artifact, control sheet, mode and attachment. This cannot be undone.\n\nType DELETE to confirm.",
+    );
+    if (phrase !== "DELETE") return;
+    setDeleting(true);
+    try {
+      void track(EVENTS.account_deletion_requested);
+      const { error } = await supabase.functions.invoke("delete-account", { method: "POST" });
+      if (error) throw error;
+      resetAnalytics();
+      await supabase.auth.signOut();
+      toast.success("Account deleted.");
+      nav("/", { replace: true });
+    } catch (e: any) {
+      toast.error(e?.message || "Delete failed.");
+      setDeleting(false);
+    }
   };
 
   return (
