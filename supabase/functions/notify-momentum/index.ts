@@ -92,8 +92,8 @@ function pickNotification(args: {
   const proofsToday = m.proofs_today ?? 0;
   const quality = m.avg_quality ?? 0;
 
-  // Quiet hours — never notify before 09:00 or after 21:30 local.
-  if (args.hour < 9 || args.hour >= 22) return null;
+  // Default quiet hours; user prefs may tighten this further upstream.
+  if (args.hour < INTEGRITY.DEFAULT_QUIET_END || args.hour >= INTEGRITY.DEFAULT_QUIET_START) return null;
 
   // Rule 1: streak at risk → fire after 19:00 if no proof today.
   if (m.state === "at_risk" && proofsToday === 0 && streak >= 2 && args.hour >= 19) {
