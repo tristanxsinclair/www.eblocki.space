@@ -645,6 +645,17 @@ export default function Proof() {
                   <div className="text-sm font-medium mt-1">{a.title}</div>
                   {a.feedback && <p className="text-xs text-muted-foreground mt-2">{a.feedback}</p>}
                   {a.next_upgrade && <p className="text-xs text-primary mt-1">Next upgrade: {a.next_upgrade}</p>}
+                  {a.attachment_url && (
+                    <a
+                      href={a.attachment_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                    >
+                      <Paperclip className="h-3 w-3" />
+                      {a.attachment_name ?? "attached evidence"}
+                    </a>
+                  )}
                 </Card>
               ))}
             </div>
