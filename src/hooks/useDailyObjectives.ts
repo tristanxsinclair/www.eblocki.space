@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -29,22 +29,33 @@ export interface DailyObjective {
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
+/** Module-scoped guard so seeding cannot double-fire across hook instances. */
+const seedingInFlight = new Map<string, Promise<void>>();
+
 /**
  * Adaptive objective seeding rules:
  *  1. Pull any open proof commitments → become missions with resistance
  *     derived from seriousness markers.
  *  2. If no commitments exist yet, seed one quick_win to break inertia.
  *  3. If streak >= 2 and no proof today, inject a streak_save mission.
+ *
+ * Idempotent per (user, day): if any row exists for today this is a no-op.
+ * Streak-save injection still runs on subsequent calls if no streak_save
+ * row exists yet today AND the user is at risk.
  */
-async function seedIfNeeded(userId: string) {
+async function seedIfNeededInner(userId: string) {
   const date = todayISO();
   const { data: existing } = await supabase
     .from("daily_objectives")
-    .select("id")
+    .select("id, kind, proof_commitment_id")
     .eq("user_id", userId)
-    .eq("objective_date", date)
-    .limit(1);
-  if (existing && existing.length > 0) return;
+    .eq("objective_date", date);
+  const existingRows = existing ?? [];
+  const hasAny = existingRows.length > 0;
+  const existingCommitmentIds = new Set(
+    existingRows.map((r) => r.proof_commitment_id).filter(Boolean) as string[],
+  );
+  const hasStreakSave = existingRows.some((r) => r.kind === "streak_save");
 
   const { data: pending } = await supabase
     .from("proof_commitments")
@@ -74,8 +85,10 @@ async function seedIfNeeded(userId: string) {
   };
   const rows: InsertRow[] = [];
 
-  if (pending && pending.length > 0) {
+  // Only seed mission/quick_win rows if no rows exist for today yet.
+  if (!hasAny && pending && pending.length > 0) {
     pending.forEach((p, i) => {
+      if (p.id && existingCommitmentIds.has(p.id)) return;
       const resistance = Math.min(5, 2 + Math.floor((p.title?.length ?? 0) / 60));
       rows.push({
         user_id: userId,
@@ -96,7 +109,7 @@ async function seedIfNeeded(userId: string) {
         position: i,
       });
     });
-  } else {
+  } else if (!hasAny) {
     rows.push({
       user_id: userId,
       objective_date: date,
@@ -115,7 +128,7 @@ async function seedIfNeeded(userId: string) {
     });
   }
 
-  // Streak save injection
+  // Streak save injection — runs even on later refreshes if not yet present.
   const { data: momentum } = await supabase
     .from("momentum_state")
     .select("streak_days, proofs_today")
@@ -123,7 +136,7 @@ async function seedIfNeeded(userId: string) {
     .order("state_date", { ascending: false })
     .limit(1);
   const ms = momentum?.[0];
-  if (ms && ms.streak_days >= 2 && ms.proofs_today === 0) {
+  if (!hasStreakSave && ms && ms.streak_days >= 2 && ms.proofs_today === 0) {
     rows.push({
       user_id: userId,
       objective_date: date,
@@ -138,7 +151,7 @@ async function seedIfNeeded(userId: string) {
       proof_required: true,
       why_it_matters: "Identity is built by what you defend on hard days.",
       status: "pending",
-      position: rows.length,
+      position: existingRows.length + rows.length,
     });
   }
 
@@ -147,13 +160,25 @@ async function seedIfNeeded(userId: string) {
   }
 }
 
+async function seedIfNeeded(userId: string) {
+  const key = `${userId}:${todayISO()}`;
+  const existing = seedingInFlight.get(key);
+  if (existing) return existing;
+  const p = seedIfNeededInner(userId).finally(() => seedingInFlight.delete(key));
+  seedingInFlight.set(key, p);
+  return p;
+}
+
 export function useDailyObjectives() {
   const { user } = useAuth();
   const [objectives, setObjectives] = useState<DailyObjective[]>([]);
   const [loading, setLoading] = useState(true);
+  const refreshing = useRef(false);
 
   const refresh = useCallback(async () => {
     if (!user) return;
+    if (refreshing.current) return;
+    refreshing.current = true;
     setLoading(true);
     try {
       await seedIfNeeded(user.id);
@@ -166,6 +191,7 @@ export function useDailyObjectives() {
       setObjectives((data ?? []) as DailyObjective[]);
     } finally {
       setLoading(false);
+      refreshing.current = false;
     }
   }, [user]);
 
@@ -175,10 +201,24 @@ export function useDailyObjectives() {
 
   const complete = useCallback(
     async (id: string) => {
-      await supabase
+      // Optimistic update — UI feels instant, refresh syncs truth.
+      setObjectives((prev) =>
+        prev.map((o) =>
+          o.id === id
+            ? { ...o, status: "completed", completed_at: new Date().toISOString() }
+            : o,
+        ),
+      );
+      const { error } = await supabase
         .from("daily_objectives")
         .update({ status: "completed", completed_at: new Date().toISOString() })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("status", "pending"); // idempotency guard — no double-complete
+      if (error) {
+        // Roll back optimistic update on failure.
+        await refresh();
+        throw error;
+      }
       await refresh();
     },
     [refresh],
@@ -186,6 +226,9 @@ export function useDailyObjectives() {
 
   const skip = useCallback(
     async (id: string) => {
+      setObjectives((prev) =>
+        prev.map((o) => (o.id === id ? { ...o, status: "skipped" } : o)),
+      );
       await supabase.from("daily_objectives").update({ status: "skipped" }).eq("id", id);
       await refresh();
     },
