@@ -389,6 +389,15 @@ export default function Proof() {
                 ✓ Linked Proof Contract marked completed.
               </div>
             )}
+            {verdict.attachmentUrl && (
+              <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
+                <Paperclip className="h-3 w-3 text-primary" />
+                <span className="text-muted-foreground">Attached evidence:</span>
+                <a href={verdict.attachmentUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate">
+                  {verdict.attachmentName ?? "view file"}
+                </a>
+              </div>
+            )}
             <div className="mt-4 flex gap-2">
               <Button size="sm" variant="outline" onClick={() => setVerdict(null)}>Submit another</Button>
               <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
