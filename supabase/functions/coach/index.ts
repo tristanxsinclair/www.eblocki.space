@@ -220,10 +220,12 @@ serve(async (req) => {
     let objectives: ObjectiveRow[] = [];
     let commitments: CommitmentRow[] = [];
     let activeModeRaw: string | null = null;
+    // Coach memory — last 3 exchanges, used to detect repetition + escalate.
+    let recentInteractions: { user_input: string; assistant_output: string | null; created_at: string }[] = [];
 
     if (userId) {
       const todayISO = new Date().toISOString().slice(0, 10);
-      const [mRes, oRes, cRes, modesRes] = await Promise.all([
+      const [mRes, oRes, cRes, modesRes, hRes] = await Promise.all([
         supabase
           .from("momentum_state")
           .select("momentum_score, state, streak_days, freeze_tokens, proofs_today, avg_quality, resistance_overcome, last_proof_at, identity_signal")
@@ -248,11 +250,18 @@ serve(async (req) => {
           .eq("is_active", true)
           .order("is_default", { ascending: false })
           .limit(1),
+        supabase
+          .from("coach_interactions")
+          .select("user_input, assistant_output, created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(3),
       ]);
       momentum = (mRes.data?.[0] as MomentumRow | undefined) ?? null;
       objectives = (oRes.data ?? []) as ObjectiveRow[];
       commitments = (cRes.data ?? []) as CommitmentRow[];
       activeModeRaw = modesRes.data?.[0]?.mode_id ?? null;
+      recentInteractions = (hRes.data ?? []) as typeof recentInteractions;
     }
 
     const mode: Mode = activeModeRaw
@@ -271,6 +280,35 @@ serve(async (req) => {
       ? `Recent commitments: ${commitments.slice(0, 3).map((c) => `[${c.status}] ${c.title}`).join(" | ")}`
       : "No recent proof commitments.";
 
+    // -------- repetition + escalation detection --------
+    // If the user is raising the same issue repeatedly, the coach must
+    // escalate specificity rather than repeat the previous instruction.
+    function tokenSet(s: string): Set<string> {
+      return new Set((s.toLowerCase().match(/\b[a-z]{4,}\b/g) ?? []).filter((w) => !["that","this","just","really","keep","kept","feel","felt"].includes(w)));
+    }
+    const currentTokens = tokenSet(message);
+    let repetitionScore = 0;
+    for (const prev of recentInteractions) {
+      const overlap = [...tokenSet(prev.user_input)].filter((t) => currentTokens.has(t)).length;
+      if (overlap >= 2) repetitionScore += 1;
+    }
+    const escalationLevel: "first" | "repeat" | "stuck" =
+      repetitionScore >= 2 ? "stuck" : repetitionScore === 1 ? "repeat" : "first";
+
+    const memorySummary = recentInteractions.length
+      ? "Recent coach exchanges (most recent first):\n" +
+        recentInteractions
+          .map((r, i) => `(${i + 1}) USER: ${r.user_input.slice(0, 160)}\n    COACH: ${(r.assistant_output ?? "").slice(0, 180)}`)
+          .join("\n")
+      : "No prior coach exchanges.";
+
+    const escalationDirective =
+      escalationLevel === "stuck"
+        ? "ESCALATION REQUIRED: The user is repeating the same avoidance pattern. Do NOT restate a previous instruction. Reduce the task to its smallest physical action (e.g. 'open the document and write only the issue section')."
+        : escalationLevel === "repeat"
+        ? "ESCALATION SOFT: This topic recurred. Add specificity that was missing last time — name the document, the first line, or the timer length."
+        : "First mention of this topic — set the standard, prescribe the smallest valid proof artifact.";
+
     const systemPrompt = `You are Eblocki Coach. You produce short, strategic, behaviourally-aware instructions for a user training disciplined identity through proof artifacts.
 
 HARD RULES:
@@ -280,6 +318,7 @@ HARD RULES:
 - Always end with a single, specific next action that produces a proof artifact.
 - If data is sparse, say so honestly and prescribe the smallest valid next step.
 - Tone: direct, strategic, calm. Not therapist, not cheerleader.
+- NEVER repeat verbatim an instruction from the recent exchanges below.
 
 USER CONTEXT:
 - Active mode: ${mode}
@@ -287,6 +326,11 @@ USER CONTEXT:
 - ${ctxSummary}
 - ${objSummary}
 - ${commitSummary}
+
+MEMORY:
+${memorySummary}
+
+${escalationDirective}
 
 Examples of acceptable outputs:
 - "You are one real proof artifact away from preserving the streak. Do the smallest valid task now."
@@ -352,6 +396,9 @@ Now respond to the user's message.`;
     }
 
     const proofContract = buildContract(message, assistantOutput, mode);
+    // Surface escalation to UI/debug so the client can render context if it wants.
+    (debug as Record<string, unknown>).escalationLevel = escalationLevel;
+    (debug as Record<string, unknown>).repetitionScore = repetitionScore;
 
     // ----- persist (best-effort) -----
     let interactionId: string | null = null;
