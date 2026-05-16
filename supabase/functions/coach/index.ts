@@ -192,6 +192,10 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => null);
     const message: string | undefined = body?.message;
+    const requestedMode: string | undefined =
+      typeof body?.mode === "string" && body.mode.length > 0 && body.mode.length < 64
+        ? body.mode
+        : undefined;
     if (!message || typeof message !== "string" || message.length > 5000) {
       return new Response(
         JSON.stringify({ success: false, error: "Invalid message" }),
@@ -264,7 +268,10 @@ serve(async (req) => {
       recentInteractions = (hRes.data ?? []) as typeof recentInteractions;
     }
 
-    const mode: Mode = activeModeRaw
+    // Priority: explicit request from UI (mode coach button) > active user mode > text detection.
+    const mode: Mode = requestedMode
+      ? normaliseMode(requestedMode)
+      : activeModeRaw
       ? normaliseMode(activeModeRaw)
       : detectModeFromText(message);
     const state = detectState(message);
