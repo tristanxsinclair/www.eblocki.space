@@ -375,6 +375,7 @@ export default function Settings() {
           </div>
         </Card>
 
+        <NotificationPreferences />
         <BetaFeedback />
       </div>
     </AppShell>
