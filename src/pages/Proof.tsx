@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
 import { scoreProofArtifact } from "@/lib/eblocki/proof-scoring";
 import type { UserMode } from "@/lib/eblocki/modes";
 import { toast } from "sonner";
-import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText } from "lucide-react";
+import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLine, AlertTriangle } from "lucide-react";
 import { Seo } from "@/components/Seo";
 
 const ARTIFACT_TYPES = [
@@ -42,6 +43,38 @@ interface Verdict {
 
 const ACCEPTED_TYPES = "application/pdf,image/png,image/jpeg,image/webp,image/gif,text/plain,text/markdown,text/csv";
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_MIME_LIST = ACCEPTED_TYPES.split(",");
+
+type AttachStatus = "idle" | "validating" | "reading" | "extracting" | "ready" | "failed";
+
+interface AttachmentState {
+  file: File | null;
+  status: AttachStatus;
+  progress: number; // 0-100
+  message: string;
+  error: string | null;
+  extractedSource: "none" | "text-file" | "ocr";
+  ocrTruncated: boolean;
+}
+
+const INITIAL_ATTACH: AttachmentState = {
+  file: null,
+  status: "idle",
+  progress: 0,
+  message: "",
+  error: null,
+  extractedSource: "none",
+  ocrTruncated: false,
+};
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onerror = () => reject(fr.error || new Error("Read failed"));
+    fr.onload = () => resolve(String(fr.result));
+    fr.readAsDataURL(file);
+  });
+}
 
 export default function Proof() {
   const { user } = useAuth();
@@ -64,6 +97,9 @@ export default function Proof() {
   const [filterDomain, setFilterDomain] = useState("all");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentText, setAttachmentText] = useState<string>("");
+  const [attachState, setAttachState] = useState<AttachmentState>(INITIAL_ATTACH);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeModes = useMemo(
     () => userModes.filter((m) => m.is_active !== false),
@@ -124,6 +160,8 @@ export default function Proof() {
     setArtifactType(ARTIFACT_TYPES[0]);
     setAttachment(null);
     setAttachmentText("");
+    setAttachState(INITIAL_ATTACH);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const buildPersonalisedExtras = (
@@ -271,28 +309,122 @@ export default function Proof() {
     }
   };
 
+  const clearAttachment = () => {
+    setAttachment(null);
+    setAttachmentText("");
+    setAttachState(INITIAL_ATTACH);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const validateFile = (file: File): string | null => {
+    if (file.size === 0) return "File is empty.";
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      return `File is ${(file.size / 1024 / 1024).toFixed(1)} MB — limit is 10 MB.`;
+    }
+    const isTextByName = /\.(md|txt|csv)$/i.test(file.name);
+    const mime = file.type || (isTextByName ? "text/plain" : "");
+    const matches = ACCEPTED_MIME_LIST.includes(mime) || isTextByName;
+    if (!matches) return `Unsupported file type${file.type ? ` (${file.type})` : ""}. Allowed: PDF, image, or text.`;
+    return null;
+  };
+
   const handleAttachmentChange = async (file: File | null) => {
     setAttachmentText("");
     if (!file) {
+      clearAttachment();
+      return;
+    }
+
+    setAttachState({ ...INITIAL_ATTACH, file, status: "validating", progress: 5, message: "Validating…" });
+
+    const err = validateFile(file);
+    if (err) {
       setAttachment(null);
+      setAttachState({ ...INITIAL_ATTACH, file: null, status: "failed", error: err, message: err });
+      toast.error(err);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-    if (file.size > MAX_ATTACHMENT_BYTES) {
-      toast.error("File exceeds 10MB limit.");
-      return;
-    }
+
     setAttachment(file);
-    // For plain-text files, read content so scoring/verdict can use it as evidence context
+
     const isText = file.type.startsWith("text/") || /\.(md|txt|csv)$/i.test(file.name);
-    if (isText) {
-      try {
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+
+    try {
+      if (isText) {
+        setAttachState((s) => ({ ...s, status: "reading", progress: 40, message: "Reading text file…" }));
         const text = await file.text();
-        setAttachmentText(text.slice(0, 20000)); // cap context
-      } catch {
-        /* ignore */
+        const clipped = text.slice(0, 20000);
+        setAttachmentText(clipped);
+        setAttachState({
+          file, status: "ready", progress: 100,
+          message: `Text indexed — ${clipped.length.toLocaleString()} chars added to verdict context.`,
+          error: null, extractedSource: "text-file", ocrTruncated: text.length > 20000,
+        });
+        return;
       }
+
+      if (isImage || isPdf) {
+        setAttachState((s) => ({ ...s, status: "reading", progress: 25, message: "Reading file…" }));
+        const dataUrl = await readFileAsDataUrl(file);
+
+        setAttachState((s) => ({
+          ...s, status: "extracting", progress: 60,
+          message: isPdf ? "OCR extracting from PDF…" : "OCR extracting from image…",
+        }));
+
+        const { data, error } = await supabase.functions.invoke("ocr-extract", {
+          body: { dataUrl, mimeType: file.type, fileName: file.name },
+        });
+        if (error) throw new Error(error.message || "OCR call failed.");
+        if ((data as any)?.error) throw new Error((data as any).error);
+
+        const extracted: string = (data as any)?.textPreview ?? (data as any)?.text ?? "";
+        const truncated: boolean = !!(data as any)?.truncated;
+        setAttachmentText(extracted);
+
+        if (!extracted.trim()) {
+          setAttachState({
+            file, status: "ready", progress: 100,
+            message: "No readable text detected. File will still be attached as evidence.",
+            error: null, extractedSource: "ocr", ocrTruncated: false,
+          });
+        } else {
+          setAttachState({
+            file, status: "ready", progress: 100,
+            message: `OCR captured ${extracted.length.toLocaleString()} chars${truncated ? " (truncated)" : ""} — added to verdict context.`,
+            error: null, extractedSource: "ocr", ocrTruncated: truncated,
+          });
+        }
+        return;
+      }
+
+      // Fallback (shouldn't hit due to validate)
+      setAttachState({
+        file, status: "ready", progress: 100,
+        message: "Attached. No text extraction available for this format.",
+        error: null, extractedSource: "none", ocrTruncated: false,
+      });
+    } catch (e: any) {
+      const msg = e?.message || "Failed to process attachment.";
+      setAttachState({
+        file, status: "failed", progress: 100, message: msg, error: msg,
+        extractedSource: "none", ocrTruncated: false,
+      });
+      toast.error(msg);
     }
   };
+
+  const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleAttachmentChange(file);
+  };
+
+  const attachmentBusy = attachState.status === "validating" || attachState.status === "reading" || attachState.status === "extracting";
 
   const filterByDomain = <T extends { domain: string; mode?: string }>(items: T[]) =>
     filterDomain === "all"
@@ -532,36 +664,105 @@ export default function Proof() {
                 Attach supporting evidence (optional)
               </Label>
               <p className="mt-1 text-xs text-muted-foreground">
-                PDF, image, or text file up to 10MB. Text files are pulled into the verdict context.
+                PDF, image, or text up to 10MB. Images & PDFs are run through OCR; text files are read directly. Extracted text is added to the verdict context.
               </p>
-              {!attachment ? (
-                <Input
-                  id="proof-attachment"
-                  type="file"
-                  accept={ACCEPTED_TYPES}
-                  onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
-                  className="mt-2"
-                />
-              ) : (
-                <div className="mt-2 flex items-center justify-between gap-2 rounded-sm border border-primary/30 bg-primary/5 p-2.5 text-xs">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span className="truncate text-foreground">{attachment.name}</span>
-                    <span className="text-muted-foreground shrink-0">
-                      {(attachment.size / 1024).toFixed(1)} KB
-                    </span>
-                    {attachmentText && (
-                      <span className="font-mono uppercase tracking-widest text-[9px] text-primary shrink-0">
-                        text indexed
-                      </span>
-                    )}
+
+              <input
+                ref={fileInputRef}
+                id="proof-attachment"
+                type="file"
+                accept={ACCEPTED_TYPES}
+                onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
+                className="sr-only"
+              />
+
+              {!attachment && attachState.status !== "failed" && (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => fileInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      fileInputRef.current?.click();
+                    }
+                  }}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragEnter={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={onDrop}
+                  className={
+                    "mt-2 cursor-pointer rounded-sm border border-dashed p-5 text-center transition-colors " +
+                    (isDragOver
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50 hover:bg-muted/30")
+                  }
+                >
+                  <UploadCloud className="mx-auto h-6 w-6 text-primary" />
+                  <div className="mt-2 text-sm font-medium">
+                    {isDragOver ? "Drop to attach" : "Drop a file here or click to upload"}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleAttachmentChange(null)}
-                    className="h-7 px-2"
-                  >
+                  <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    PDF · PNG · JPG · WEBP · TXT · MD · CSV — max 10MB
+                  </div>
+                </div>
+              )}
+
+              {attachment && (
+                <div className="mt-2 rounded-sm border border-primary/30 bg-primary/5 p-3 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {attachState.status === "extracting" ? (
+                        <ScanLine className="h-3.5 w-3.5 text-primary shrink-0 animate-pulse" />
+                      ) : (
+                        <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                      )}
+                      <span className="truncate text-foreground">{attachment.name}</span>
+                      <span className="text-muted-foreground shrink-0">
+                        {(attachment.size / 1024).toFixed(1)} KB
+                      </span>
+                      {attachState.status === "ready" && attachState.extractedSource !== "none" && (
+                        <span className="font-mono uppercase tracking-widest text-[9px] text-primary shrink-0">
+                          {attachState.extractedSource === "ocr" ? "ocr indexed" : "text indexed"}
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={clearAttachment}
+                      disabled={attachmentBusy}
+                      className="h-7 px-2"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+
+                  {attachmentBusy && (
+                    <div className="mt-2">
+                      <Progress value={attachState.progress} className="h-1.5" />
+                      <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                        {attachState.message}
+                      </div>
+                    </div>
+                  )}
+
+                  {attachState.status === "ready" && attachState.message && (
+                    <div className="mt-2 text-muted-foreground">{attachState.message}</div>
+                  )}
+                </div>
+              )}
+
+              {attachState.status === "failed" && (
+                <div className="mt-2 flex items-start justify-between gap-2 rounded-sm border border-destructive/40 bg-destructive/10 p-3 text-xs">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <AlertTriangle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-medium text-destructive">Attachment rejected</div>
+                      <div className="text-muted-foreground mt-0.5">{attachState.error}</div>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={clearAttachment} className="h-7 px-2">
                     <X className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -579,10 +780,10 @@ export default function Proof() {
 
             <Button
               onClick={submit}
-              disabled={submitting || !content.trim() || !title.trim()}
+              disabled={submitting || attachmentBusy || !content.trim() || !title.trim()}
               className="w-full sm:w-auto"
             >
-              {submitting ? "Filing…" : "Score & File Proof Artifact"}
+              {submitting ? "Filing…" : attachmentBusy ? "Processing attachment…" : "Score & File Proof Artifact"}
             </Button>
           </div>
         </Card>
