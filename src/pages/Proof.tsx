@@ -162,6 +162,8 @@ export default function Proof() {
     setArtifactType(ARTIFACT_TYPES[0]);
     setAttachment(null);
     setAttachmentText("");
+    setOriginalExtractedText("");
+    setExtractedEdited(false);
     setAttachState(INITIAL_ATTACH);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -314,6 +316,8 @@ export default function Proof() {
   const clearAttachment = () => {
     setAttachment(null);
     setAttachmentText("");
+    setOriginalExtractedText("");
+    setExtractedEdited(false);
     setAttachState(INITIAL_ATTACH);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -332,6 +336,8 @@ export default function Proof() {
 
   const handleAttachmentChange = async (file: File | null) => {
     setAttachmentText("");
+    setOriginalExtractedText("");
+    setExtractedEdited(false);
     if (!file) {
       clearAttachment();
       return;
@@ -360,6 +366,8 @@ export default function Proof() {
         const text = await file.text();
         const clipped = text.slice(0, 20000);
         setAttachmentText(clipped);
+        setOriginalExtractedText(clipped);
+        setExtractedEdited(false);
         setAttachState({
           file, status: "ready", progress: 100,
           message: `Text indexed — ${clipped.length.toLocaleString()} chars added to verdict context.`,
@@ -386,6 +394,8 @@ export default function Proof() {
         const extracted: string = (data as any)?.textPreview ?? (data as any)?.text ?? "";
         const truncated: boolean = !!(data as any)?.truncated;
         setAttachmentText(extracted);
+        setOriginalExtractedText(extracted);
+        setExtractedEdited(false);
 
         if (!extracted.trim()) {
           setAttachState({
