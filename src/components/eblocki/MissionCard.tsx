@@ -15,11 +15,11 @@ import { haptics } from "@/hooks/useHaptics";
 import { toast } from "sonner";
 import { rollVariableReward } from "@/lib/eblocki/momentum";
 import type { DailyObjective } from "@/hooks/useDailyObjectives";
-import { CompletionReflection, type CompletionPayload } from "./CompletionReflection";
+import { ProofCapture, type ProofCapturePayload } from "./ProofCapture";
 
 interface Props {
   objective: DailyObjective;
-  onComplete: (id: string, reflection?: CompletionPayload) => Promise<void> | void;
+  onComplete: (id: string, reflection?: ProofCapturePayload) => Promise<void> | void;
   onSkip?: (id: string) => Promise<void> | void;
 }
 
@@ -121,14 +121,14 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
     await commit();
   };
 
-  const submitReflection = async (payload: CompletionPayload) => {
+  const submitReflection = async (payload: ProofCapturePayload) => {
     if (firedRef.current) return;
     firedRef.current = true;
     setCompleting(true);
     await commit(payload);
   };
 
-  const commit = async (reflection?: CompletionPayload) => {
+  const commit = async (reflection?: ProofCapturePayload) => {
     const reward = rollVariableReward({
       seed: objective.id,
       resistanceLevel: objective.resistance_level,
@@ -286,10 +286,12 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
         )}
       </div>
     </div>
-    <CompletionReflection
+    <ProofCapture
       open={reflectOpen}
       onOpenChange={setReflectOpen}
       objectiveTitle={objective.title}
+      modeId={objective.mode_id}
+      resistanceLevel={objective.resistance_level}
       onSubmit={submitReflection}
     />
     </>
