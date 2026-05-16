@@ -45,8 +45,9 @@ export default function ModeDetail() {
         setModeError(null);
         const [{ data: userModeData, error: userModeError }, { data: artifactsData, error: artifactsError }, { data: commitmentsData, error: commitmentsError }, { data: interactionsData, error: interactionsError }, { data: researchData, error: researchError }] = await Promise.all([
           supabase.from("user_modes").select("*").eq("user_id", user.id).eq("mode_id", modeKeyUpper).maybeSingle(),
-          supabase.from("proof_artifacts").select("*").or(`mode.eq.${modeKeyUpper},domain.eq.${modeKey.toLowerCase()}`).eq("user_id", user.id).order("created_at", { ascending: false }),
-          supabase.from("proof_commitments").select("*").or(`mode.eq.${modeKeyUpper},domain.eq.${modeKey.toLowerCase()}`).eq("user_id", user.id).order("created_at", { ascending: false }),
+          // proof_artifacts has no `mode` column — match by domain only (lowercase mode id).
+          supabase.from("proof_artifacts").select("*").eq("user_id", user.id).eq("domain", modeKey.toLowerCase()).order("created_at", { ascending: false }),
+          supabase.from("proof_commitments").select("*").eq("user_id", user.id).or(`mode.eq.${modeKeyUpper},domain.eq.${modeKey.toLowerCase()}`).order("created_at", { ascending: false }),
           supabase.from("coach_interactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
           supabase.from("user_research_profiles").select("*").eq("user_id", user.id).eq("mode_id", modeKeyUpper).maybeSingle(),
         ]);
@@ -151,11 +152,16 @@ export default function ModeDetail() {
     return (
       <AppShell>
         <div className="p-8">
-          <Card className="panel p-4">
-            <h1 className="text-xl font-semibold">Mode not found</h1>
-            <p className="mt-2 text-sm text-muted-foreground">The selected mode does not exist or has not been added yet.</p>
-            <div className="mt-4">
+          <Card className="panel p-5 max-w-xl mx-auto">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Mode not configured</span>
+            <h1 className="text-xl font-semibold mt-2">This mode isn't set up yet</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Add <span className="font-mono">{modeKeyUpper || "this mode"}</span> to your operating system,
+              or pick one of your existing modes. Modes need to exist before proof can compound inside them.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
               <Button onClick={() => navigate("/modes")}>Back to Modes</Button>
+              <Button variant="outline" onClick={() => navigate("/onboarding")}>Set up modes</Button>
             </div>
           </Card>
         </div>
@@ -212,6 +218,19 @@ export default function ModeDetail() {
             Every identity claim in this mode needs evidence. This page shows what has actually been produced, not what was intended.
           </p>
         </Card>
+
+        {!isActiveMode && (
+          <Card className="panel p-4 border-amber-500/30 bg-amber-500/5">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-amber-500">Mode inactive</span>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This mode is currently disabled. Proof you submit won't route here and the coach
+              won't use this mode's evidence standards. Reactivate from Modes to bring it back online.
+            </p>
+            <div className="mt-3">
+              <Button size="sm" variant="outline" onClick={() => navigate("/modes")}>Manage modes</Button>
+            </div>
+          </Card>
+        )}
 
         {/* Mode Identity */}
         <Card className="panel p-4">

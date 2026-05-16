@@ -66,10 +66,6 @@ export default function Dashboard() {
     })();
   }, [user, todayISO]);
 
-  if (welcomeCheck === "needs") {
-    return <Navigate to="/welcome" replace />;
-  }
-
   const week = recent.filter((r) => new Date(r.created_at) > new Date(Date.now() - 7 * 864e5));
   const eliteCount = week.filter((r) => r.evidence_strength === "elite").length;
   const strongCount = week.filter((r) => r.evidence_strength === "strong").length;
@@ -117,6 +113,11 @@ export default function Dashboard() {
     setMode(detectMode(quick).primary);
     setStateBadge(detectState(quick));
   };
+
+  // Welcome gate must run AFTER all hooks above to preserve hook order across renders.
+  if (welcomeCheck === "needs") {
+    return <Navigate to="/welcome" replace />;
+  }
 
   return (
     <AppShell>

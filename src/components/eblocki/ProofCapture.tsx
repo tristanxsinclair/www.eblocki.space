@@ -240,15 +240,15 @@ export function ProofCapture({
 
         {/* Locked-in overlay */}
         {locked && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
-              <div className="relative h-16 w-16 rounded-full bg-primary/15 border-2 border-primary flex items-center justify-center">
-                <Lock className="h-7 w-7 text-primary" />
-              </div>
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm animate-in fade-in duration-300 ease-calm">
+            <div className="relative h-16 w-16 rounded-full bg-primary/15 border-2 border-primary flex items-center justify-center lock-in-pulse">
+              <Lock className="h-7 w-7 text-primary" />
             </div>
             <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.22em] text-primary">
               Evidence locked
+            </p>
+            <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Proof &gt; intention
             </p>
           </div>
         )}
