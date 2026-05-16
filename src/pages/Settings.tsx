@@ -350,6 +350,28 @@ export default function Settings() {
             )}
           </div>
         </Card>
+
+        <Card className="panel p-5 space-y-4">
+          <div>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Account & data</span>
+            <h2 className="text-xl font-semibold mt-2">Account</h2>
+            <p className="text-sm text-muted-foreground mt-1">{user?.email}</p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Button variant="outline" onClick={exportAllData} disabled={exporting} className="justify-start">
+              <Download className="h-4 w-4 mr-2" /> {exporting ? "Preparing…" : "Export my data (JSON)"}
+            </Button>
+            <Button variant="destructive" onClick={deleteAccount} disabled={deleting} className="justify-start">
+              <Trash2 className="h-4 w-4 mr-2" /> {deleting ? "Deleting…" : "Delete my account"}
+            </Button>
+          </div>
+          <div className="pt-3 border-t border-border grid sm:grid-cols-4 gap-2 text-xs">
+            <Link to="/legal/privacy" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><Shield className="h-3 w-3" /> Privacy</Link>
+            <Link to="/legal/terms" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><FileTextIcon className="h-3 w-3" /> Terms</Link>
+            <Link to="/legal/data-handling" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><Shield className="h-3 w-3" /> Data handling</Link>
+            <Link to="/legal/ai-disclosure" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><Shield className="h-3 w-3" /> AI disclosure</Link>
+          </div>
+        </Card>
       </div>
     </AppShell>
   );
