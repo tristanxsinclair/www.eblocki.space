@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { normaliseModeKey, pickTemplatesForMode } from "@/lib/eblocki/mode-templates";
 
 export type ObjectiveKind = "mission" | "streak_save" | "recovery" | "boss" | "quick_win";
 export type ObjectiveStatus = "pending" | "active" | "completed" | "skipped" | "failed";
@@ -25,6 +26,9 @@ export interface DailyObjective {
   proof_artifact_id: string | null;
   proof_commitment_id: string | null;
   position: number;
+  completion_proof_text: string | null;
+  completion_hard_part: string | null;
+  completion_upgrade: string | null;
 }
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -64,6 +68,18 @@ async function seedIfNeededInner(userId: string) {
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(5);
+
+  // Active user mode — drives template-based seeding when no open
+  // commitments exist.
+  const { data: activeModes } = await supabase
+    .from("user_modes")
+    .select("mode_id, display_name, is_default")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .order("is_default", { ascending: false })
+    .limit(1);
+  const activeModeRaw = activeModes?.[0]?.mode_id ?? null;
+  const modeKey = normaliseModeKey(activeModeRaw);
 
   type InsertRow = {
     user_id: string;
@@ -110,21 +126,26 @@ async function seedIfNeededInner(userId: string) {
       });
     });
   } else if (!hasAny) {
-    rows.push({
-      user_id: userId,
-      objective_date: date,
-      title: "Ship one artifact in under 30 minutes",
-      description: "Pick the smallest concrete output that proves you started.",
-      kind: "quick_win",
-      resistance_level: 2,
-      focus_minutes: 25,
-      reward_value: 15,
-      streak_impact: 1,
-      identity_alignment: 3,
-      proof_required: true,
-      why_it_matters: "Inertia is the enemy. One artifact converts intention into pattern.",
-      status: "pending",
-      position: 0,
+    // Mode-aware seeding — pull 3 templates from the active mode bank.
+    const templates = pickTemplatesForMode(modeKey, 3, date);
+    templates.forEach((t, i) => {
+      rows.push({
+        user_id: userId,
+        objective_date: date,
+        title: t.title,
+        description: `${t.description}\n\nProof required: ${t.required_artifact}`,
+        mode_id: activeModeRaw ?? modeKey,
+        kind: i === 0 ? "quick_win" : "mission",
+        resistance_level: t.resistance_level,
+        focus_minutes: t.focus_minutes,
+        reward_value: t.reward_value,
+        streak_impact: t.streak_impact,
+        identity_alignment: t.identity_alignment,
+        proof_required: true,
+        why_it_matters: t.why_it_matters,
+        status: "pending",
+        position: i,
+      });
     });
   }
 
