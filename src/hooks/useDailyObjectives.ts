@@ -233,15 +233,17 @@ export function useDailyObjectives() {
             : o,
         ),
       );
-      const patch: Record<string, unknown> = {
-        status: "completed",
+      const patch = {
+        status: "completed" as const,
         completed_at: new Date().toISOString(),
+        ...(reflection
+          ? {
+              completion_proof_text: reflection.proof,
+              completion_hard_part: reflection.hard ?? undefined,
+              completion_upgrade: reflection.upgrade ?? undefined,
+            }
+          : {}),
       };
-      if (reflection) {
-        patch.completion_proof_text = reflection.proof;
-        patch.completion_hard_part = reflection.hard;
-        patch.completion_upgrade = reflection.upgrade;
-      }
       const { error } = await supabase
         .from("daily_objectives")
         .update(patch)
