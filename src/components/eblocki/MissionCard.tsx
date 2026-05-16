@@ -15,10 +15,11 @@ import { haptics } from "@/hooks/useHaptics";
 import { toast } from "sonner";
 import { rollVariableReward } from "@/lib/eblocki/momentum";
 import type { DailyObjective } from "@/hooks/useDailyObjectives";
+import { CompletionReflection, type CompletionPayload } from "./CompletionReflection";
 
 interface Props {
   objective: DailyObjective;
-  onComplete: (id: string) => Promise<void> | void;
+  onComplete: (id: string, reflection?: CompletionPayload) => Promise<void> | void;
   onSkip?: (id: string) => Promise<void> | void;
 }
 
@@ -40,6 +41,7 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
   const [dragX, setDragX] = useState(0);
   const [completing, setCompleting] = useState(false);
   const [holdPct, setHoldPct] = useState(0);
+  const [reflectOpen, setReflectOpen] = useState(false);
   const startX = useRef<number | null>(null);
   const width = useRef<number>(320);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -106,15 +108,34 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
   /* ---------- completion ---------- */
   const triggerComplete = async () => {
     if (firedRef.current) return; // belt-and-braces: hold + swipe race
+    // Reset visual swipe before opening the proof dialog so the card
+    // doesn't sit half-translated behind it.
+    setDragX(0);
+    if (objective.proof_required) {
+      firedRef.current = false; // dialog will set it on actual submit
+      setReflectOpen(true);
+      return;
+    }
     firedRef.current = true;
     setCompleting(true);
+    await commit();
+  };
+
+  const submitReflection = async (payload: CompletionPayload) => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    setCompleting(true);
+    await commit(payload);
+  };
+
+  const commit = async (reflection?: CompletionPayload) => {
     const reward = rollVariableReward({
       seed: objective.id,
       resistanceLevel: objective.resistance_level,
     });
     setDragX(width.current * 0.9);
     try {
-      await onComplete(objective.id);
+      await onComplete(objective.id, reflection);
       // Only fire haptics + toast on confirmed write success.
       haptics.success();
       if (reward.label) {
@@ -138,6 +159,7 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
   };
 
   return (
+    <>
     <div
       ref={cardRef}
       className={cn(
@@ -264,5 +286,12 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
         )}
       </div>
     </div>
+    <CompletionReflection
+      open={reflectOpen}
+      onOpenChange={setReflectOpen}
+      objectiveTitle={objective.title}
+      onSubmit={submitReflection}
+    />
+    </>
   );
 }
