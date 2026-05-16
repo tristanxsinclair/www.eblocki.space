@@ -526,6 +526,48 @@ export default function Proof() {
               />
             </div>
 
+            <div>
+              <Label htmlFor="proof-attachment" className="flex items-center gap-2">
+                <Paperclip className="h-3.5 w-3.5 text-primary" />
+                Attach supporting evidence (optional)
+              </Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                PDF, image, or text file up to 10MB. Text files are pulled into the verdict context.
+              </p>
+              {!attachment ? (
+                <Input
+                  id="proof-attachment"
+                  type="file"
+                  accept={ACCEPTED_TYPES}
+                  onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
+                  className="mt-2"
+                />
+              ) : (
+                <div className="mt-2 flex items-center justify-between gap-2 rounded-sm border border-primary/30 bg-primary/5 p-2.5 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="truncate text-foreground">{attachment.name}</span>
+                    <span className="text-muted-foreground shrink-0">
+                      {(attachment.size / 1024).toFixed(1)} KB
+                    </span>
+                    {attachmentText && (
+                      <span className="font-mono uppercase tracking-widest text-[9px] text-primary shrink-0">
+                        text indexed
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleAttachmentChange(null)}
+                    className="h-7 px-2"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
             {selectedMode && (
               <div className="rounded-sm border border-border p-3 text-xs text-muted-foreground">
                 Scoring against <span className="text-foreground font-mono">{selectedMode.display_name}</span>.
