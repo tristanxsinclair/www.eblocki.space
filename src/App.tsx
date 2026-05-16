@@ -14,6 +14,7 @@ import Modes from "./pages/Modes.tsx";
 import ModeDetail from "./pages/ModeDetail.tsx";
 import Settings from "./pages/Settings.tsx";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { useTimezoneSync } from "@/hooks/useTimezoneSync";
 import Onboarding from "./pages/Onboarding.tsx";
 import StartToday from "./pages/StartToday.tsx";
 import Install from "./pages/Install.tsx";
@@ -30,6 +31,7 @@ const queryClient = new QueryClient();
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
+  useTimezoneSync();
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground font-mono text-xs">Loading…</div>;
   if (!user) return <Navigate to="/auth" replace />;
   return children;
