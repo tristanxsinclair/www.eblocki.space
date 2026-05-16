@@ -98,11 +98,20 @@ export function computeStreak(
 
 /**
  * Momentum score 0..100. Weighted blend of:
- *  - velocity (proofs in last 7 days)
- *  - depth (avg quality 0..10)
- *  - resistance (elite/strong artifacts carry more weight)
- *  - recency (penalises gaps > 24h)
- *  - consistency (unique active days in last 7)
+ *  - velocity     (0..30) qualified proofs in last 7 days (quality >= 4 only,
+ *                          so shallow spam can't inflate the score)
+ *  - depth        (0..30) avg quality of scored proofs, weighted heavier than
+ *                          volume — the system rewards what is hard, not what
+ *                          is frequent
+ *  - resistance   (0..20) elite/strong evidence carries multiplicative weight
+ *  - recency      (0..10) penalises gaps > 24h, hard zero past 48h
+ *  - consistency  (0..10) unique active days in last 7 (streak preservation)
+ *
+ *  Anti-inflation rules:
+ *   - Unscored or low-quality (<4) artifacts add 1 each to velocity, capped
+ *     at 8 — they cannot dominate the score
+ *   - Depth requires at least one scored proof, otherwise 0
+ *   - Quality penalty: avg quality < 3 multiplies velocity by 0.5
  */
 export function computeMomentumScore(
   proofs: ProofSample[],
@@ -111,17 +120,29 @@ export function computeMomentumScore(
   const weekAgo = now.getTime() - 7 * DAY_MS;
   const week = proofs.filter((p) => new Date(p.created_at).getTime() >= weekAgo);
 
-  const velocity = Math.min(week.length * 6, 40); // cap 40
+  // Quality-aware velocity: only proofs scored >= 4 count fully. Unscored or
+  // low-quality work counts at a residual rate so the curve still moves a
+  // little for "I did something" but never dominates.
+  const qualified = week.filter((p) => (p.quality_score ?? 0) >= 4);
+  const residual = week.length - qualified.length;
+  const velocityRaw = qualified.length * 5 + Math.min(residual, 8) * 1;
+  let velocity = Math.min(velocityRaw, 30);
+
   const scored = week.filter((p) => typeof p.quality_score === "number");
   const avgQuality = scored.length
     ? scored.reduce((s, p) => s + (p.quality_score ?? 0), 0) / scored.length
     : 0;
-  const depth = Math.min(avgQuality * 2.5, 25); // cap 25
+
+  // Halve velocity contribution if average work is poor — prevents the
+  // "I logged 7 garbage proofs" inflation path.
+  if (scored.length > 0 && avgQuality < 3) velocity = Math.round(velocity * 0.5);
+
+  const depth = Math.min(avgQuality * 3, 30);
 
   const resistanceOvercome =
     week.filter((p) => p.evidence_strength === "elite").length * 3 +
     week.filter((p) => p.evidence_strength === "strong").length * 2;
-  const resistance = Math.min(resistanceOvercome * 2, 20); // cap 20
+  const resistance = Math.min(resistanceOvercome * 2, 20);
 
   const lastTs = proofs[0] ? new Date(proofs[0].created_at).getTime() : 0;
   const hoursSince = lastTs ? (now.getTime() - lastTs) / 3_600_000 : Infinity;
@@ -129,7 +150,7 @@ export function computeMomentumScore(
     hoursSince <= 12 ? 10 : hoursSince <= 24 ? 6 : hoursSince <= 48 ? 2 : 0;
 
   const activeDays = uniqueDays(week).size;
-  const consistency = Math.min(activeDays * 1.5, 5); // cap 5
+  const consistency = Math.min(activeDays * 1.5, 10);
 
   const score = Math.max(
     0,
@@ -305,3 +326,34 @@ export const STATE_COPY: Record<MomentumStateName, { label: string; tone: string
   recovery: { label: "Recovery", tone: "Reset window. Today decides." },
   elite: { label: "Elite execution", tone: "Sustained high-resistance output." },
 };
+
+/**
+ * Strategic next-best-action copy. Not motivational fluff — a direct
+ * behavioural instruction derived from the snapshot. Used by the dashboard
+ * coach line.
+ */
+export function nextBestAction(snap: MomentumSnapshot): string {
+  if (snap.state === "at_risk") {
+    return "Streak risk detected. Complete one proof artifact before the day ends.";
+  }
+  if (snap.state === "cold") {
+    return "Cold start. Submit one small artifact to break inertia — quality over volume.";
+  }
+  if (snap.state === "recovery") {
+    return "Recovery day. Reduce scope, preserve identity. One real proof is enough.";
+  }
+  if (snap.state === "warming") {
+    return snap.avg_quality >= 6
+      ? "Quality is there. Add a second proof today to convert into momentum."
+      : "Pattern forming. Stack one more proof and raise the depth.";
+  }
+  if (snap.state === "momentum") {
+    if (snap.avg_quality < 6)
+      return "Momentum is stable. Increase depth, not volume — one elite-grade artifact today.";
+    return "Strong day. Convert momentum into one deeper, high-resistance task.";
+  }
+  if (snap.state === "elite") {
+    return "Elite execution. Defend the pattern — one high-resistance artifact protects the streak.";
+  }
+  return "Submit one artifact to advance the pattern.";
+}
