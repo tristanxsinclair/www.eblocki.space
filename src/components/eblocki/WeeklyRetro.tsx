@@ -83,6 +83,8 @@ export function WeeklyRetro({ className }: Props) {
       setArtifacts(pa ?? []);
       setObjectives(dos ?? []);
       setLoading(false);
+      // Privacy-safe: count + presence only, no reflection text.
+      void logEvent("retro_generated", { count: (dos ?? []).length });
     })();
     return () => {
       cancelled = true;
