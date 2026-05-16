@@ -45,8 +45,9 @@ export default function ModeDetail() {
         setModeError(null);
         const [{ data: userModeData, error: userModeError }, { data: artifactsData, error: artifactsError }, { data: commitmentsData, error: commitmentsError }, { data: interactionsData, error: interactionsError }, { data: researchData, error: researchError }] = await Promise.all([
           supabase.from("user_modes").select("*").eq("user_id", user.id).eq("mode_id", modeKeyUpper).maybeSingle(),
-          supabase.from("proof_artifacts").select("*").or(`mode.eq.${modeKeyUpper},domain.eq.${modeKey.toLowerCase()}`).eq("user_id", user.id).order("created_at", { ascending: false }),
-          supabase.from("proof_commitments").select("*").or(`mode.eq.${modeKeyUpper},domain.eq.${modeKey.toLowerCase()}`).eq("user_id", user.id).order("created_at", { ascending: false }),
+          // proof_artifacts has no `mode` column — match by domain only (lowercase mode id).
+          supabase.from("proof_artifacts").select("*").eq("user_id", user.id).eq("domain", modeKey.toLowerCase()).order("created_at", { ascending: false }),
+          supabase.from("proof_commitments").select("*").eq("user_id", user.id).or(`mode.eq.${modeKeyUpper},domain.eq.${modeKey.toLowerCase()}`).order("created_at", { ascending: false }),
           supabase.from("coach_interactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
           supabase.from("user_research_profiles").select("*").eq("user_id", user.id).eq("mode_id", modeKeyUpper).maybeSingle(),
         ]);
