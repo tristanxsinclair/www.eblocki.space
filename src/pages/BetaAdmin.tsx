@@ -18,6 +18,20 @@ interface Funnel {
   day7Retained: number;
 }
 
+interface Retention {
+  nudgesSent: number;
+  nudgesDelivered: number;
+  nudgesFailed: number;
+  nudgesSuppressed: number;
+  proofWithin2h: number;
+  proofWithin24h: number;
+  followThroughRate: number | null;        // proofWithin24h / nudgesSent
+  avgMinutesToProof: number | null;
+  fatigueRatio: number | null;             // dailyAvgPerUser / cap
+  rescueSuccess: number | null;            // streak_at_risk → proof within 24h
+  recoverySuccess: number | null;          // recovery → proof within 24h
+}
+
 /**
  * Beta-only admin dashboard. Aggregate views — no raw reflection text.
  * Powered entirely by client-side selects gated behind `has_role(admin)`.
@@ -33,6 +47,7 @@ export default function BetaAdmin() {
   const [eventCounts, setEventCounts] = useState<Record<string, number>>({});
   const [calibrationCounts, setCalibrationCounts] = useState<Record<CalibrationFlag, number>>({} as any);
   const [topFeedback, setTopFeedback] = useState<Array<{ kind: string; body: string; route: string | null; created_at: string }>>([]);
+  const [retention, setRetention] = useState<Retention | null>(null);
 
   useEffect(() => {
     if (!user || !isAdmin) return;
@@ -43,13 +58,15 @@ export default function BetaAdmin() {
         const sinceDay3 = new Date(Date.now() - 3 * 864e5).toISOString();
         const sinceDay1 = new Date(Date.now() - 1 * 864e5).toISOString();
 
-        const [profiles, proofs, objectives, modes, events, feedback] = await Promise.all([
+        const [profiles, proofs, objectives, modes, events, feedback, notifs, delivery] = await Promise.all([
           supabase.from("user_onboarding_profiles").select("user_id, completed_onboarding, seen_welcome, created_at"),
           supabase.from("proof_artifacts").select("user_id, quality_score, created_at"),
           supabase.from("daily_objectives").select("user_id, status, resistance_level, completion_proof_text, completion_quality_self_rating, objective_date"),
           supabase.from("user_modes").select("mode_id, is_active"),
           supabase.from("analytics_events").select("event, user_id, created_at"),
           supabase.from("beta_feedback").select("kind, body, route, created_at").order("created_at", { ascending: false }).limit(20),
+          supabase.from("notification_log").select("user_id, kind, sent_at, delivery_status, failure_reason"),
+          supabase.from("push_delivery_log").select("user_id, status, attempted_at"),
         ]);
 
         const profileRows = profiles.data ?? [];
@@ -125,6 +142,72 @@ export default function BetaAdmin() {
         setCalibrationCounts(flagCounts);
 
         setTopFeedback((feedback.data ?? []) as any);
+
+        // ───── Retention observation (read-only; never auto-tunes anything) ─────
+        const notifRows = (notifs.data ?? []) as Array<{ user_id: string; kind: string; sent_at: string; delivery_status: string | null; failure_reason: string | null }>;
+        const deliveryRows = (delivery.data ?? []) as Array<{ user_id: string; status: string; attempted_at: string }>;
+        const allProofs = proofRows.map((p) => ({ user_id: p.user_id, ts: new Date(p.created_at).getTime() }));
+
+        const nudgesSent = notifRows.length;
+        const nudgesDelivered = deliveryRows.filter((d) => d.status === "sent" || d.status === "delivered").length;
+        const nudgesFailed = deliveryRows.filter((d) => d.status === "failed").length;
+        const nudgesSuppressed = deliveryRows.filter((d) => d.status === "suppressed" || d.status === "disabled").length;
+
+        let within2h = 0;
+        let within24h = 0;
+        let totalMinutes = 0;
+        let measured = 0;
+        let rescueAttempts = 0, rescueHits = 0;
+        let recoveryAttempts = 0, recoveryHits = 0;
+
+        for (const n of notifRows) {
+          const sentMs = new Date(n.sent_at).getTime();
+          const userProofsAfter = allProofs
+            .filter((p) => p.user_id === n.user_id && p.ts > sentMs)
+            .map((p) => p.ts - sentMs)
+            .sort((a, b) => a - b);
+          const first = userProofsAfter[0];
+          if (first !== undefined) {
+            if (first <= 2 * 3600_000) within2h++;
+            if (first <= 24 * 3600_000) {
+              within24h++;
+              totalMinutes += first / 60_000;
+              measured++;
+              if (n.kind === "streak_at_risk") rescueHits++;
+              if (n.kind === "recovery") recoveryHits++;
+            }
+          }
+          if (n.kind === "streak_at_risk") rescueAttempts++;
+          if (n.kind === "recovery") recoveryAttempts++;
+        }
+
+        // Fatigue = avg nudges/active-user/day relative to the daily cap (3).
+        const perUser = new Map<string, Set<string>>();
+        for (const n of notifRows) {
+          const day = n.sent_at.slice(0, 10);
+          const k = `${n.user_id}|${day}`;
+          if (!perUser.has(n.user_id)) perUser.set(n.user_id, new Set());
+          perUser.get(n.user_id)!.add(k);
+        }
+        const userDayCounts: number[] = [];
+        for (const set of perUser.values()) userDayCounts.push(set.size);
+        const avgPerUserDay = userDayCounts.length
+          ? userDayCounts.reduce((a, b) => a + b, 0) / userDayCounts.length
+          : 0;
+
+        setRetention({
+          nudgesSent,
+          nudgesDelivered,
+          nudgesFailed,
+          nudgesSuppressed,
+          proofWithin2h: within2h,
+          proofWithin24h: within24h,
+          followThroughRate: nudgesSent ? within24h / nudgesSent : null,
+          avgMinutesToProof: measured ? Math.round(totalMinutes / measured) : null,
+          fatigueRatio: avgPerUserDay > 0 ? avgPerUserDay / 3 : null,
+          rescueSuccess: rescueAttempts ? rescueHits / rescueAttempts : null,
+          recoverySuccess: recoveryAttempts ? recoveryHits / recoveryAttempts : null,
+        });
       } finally {
         setLoading(false);
       }
