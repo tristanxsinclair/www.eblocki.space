@@ -152,11 +152,16 @@ export default function ModeDetail() {
     return (
       <AppShell>
         <div className="p-8">
-          <Card className="panel p-4">
-            <h1 className="text-xl font-semibold">Mode not found</h1>
-            <p className="mt-2 text-sm text-muted-foreground">The selected mode does not exist or has not been added yet.</p>
-            <div className="mt-4">
+          <Card className="panel p-5 max-w-xl mx-auto">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Mode not configured</span>
+            <h1 className="text-xl font-semibold mt-2">This mode isn't set up yet</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Add <span className="font-mono">{modeKeyUpper || "this mode"}</span> to your operating system,
+              or pick one of your existing modes. Modes need to exist before proof can compound inside them.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
               <Button onClick={() => navigate("/modes")}>Back to Modes</Button>
+              <Button variant="outline" onClick={() => navigate("/onboarding")}>Set up modes</Button>
             </div>
           </Card>
         </div>
