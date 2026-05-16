@@ -54,7 +54,25 @@ async function seedIfNeeded(userId: string) {
     .order("created_at", { ascending: false })
     .limit(5);
 
-  const rows: Partial<DailyObjective>[] = [];
+  type InsertRow = {
+    user_id: string;
+    objective_date: string;
+    title: string;
+    description?: string | null;
+    mode_id?: string | null;
+    kind: ObjectiveKind;
+    resistance_level: number;
+    focus_minutes: number;
+    reward_value: number;
+    streak_impact: number;
+    identity_alignment: number;
+    proof_required: boolean;
+    why_it_matters?: string | null;
+    status: ObjectiveStatus;
+    proof_commitment_id?: string | null;
+    position: number;
+  };
+  const rows: InsertRow[] = [];
 
   if (pending && pending.length > 0) {
     pending.forEach((p, i) => {
