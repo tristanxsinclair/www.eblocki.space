@@ -1,16 +1,29 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { toast } from "sonner";
 import type { BehaviouralState } from "@/lib/eblocki/states";
+import { STATE_LABELS } from "@/lib/eblocki/states";
 import { Seo } from "@/components/Seo";
 import { Link } from "react-router-dom";
+import { MissionCard } from "@/components/eblocki/MissionCard";
+import { useMomentum } from "@/hooks/useMomentum";
+import { useDailyObjectives } from "@/hooks/useDailyObjectives";
+import { STATE_COPY, nextBestAction } from "@/lib/eblocki/momentum";
+import { MODE_LABELS, type Mode } from "@/lib/eblocki/modes";
+import { cn } from "@/lib/utils";
+import { Flame, Snowflake, ChevronDown, ShieldCheck, Sparkles } from "lucide-react";
 
 const FIELDS: { key: string; label: string; section: "core" | "audit"; placeholder: string }[] = [
   { key: "prime_objective", label: "Prime Objective", section: "core",
