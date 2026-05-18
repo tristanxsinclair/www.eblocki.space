@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
@@ -6,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Accordion,
   AccordionContent,
@@ -13,158 +15,262 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
-import type { BehaviouralState } from "@/lib/eblocki/states";
-import { STATE_LABELS } from "@/lib/eblocki/states";
 import { Seo } from "@/components/Seo";
-import { Link } from "react-router-dom";
-import { MissionCard } from "@/components/eblocki/MissionCard";
 import { useMomentum } from "@/hooks/useMomentum";
-import { useDailyObjectives } from "@/hooks/useDailyObjectives";
-import { STATE_COPY, nextBestAction } from "@/lib/eblocki/momentum";
-import { MODE_LABELS, type Mode } from "@/lib/eblocki/modes";
+import { STATE_COPY } from "@/lib/eblocki/momentum";
 import { cn } from "@/lib/utils";
-import { Flame, Snowflake, ChevronDown, ShieldCheck, Sparkles } from "lucide-react";
+import { Flame, ShieldCheck, ArrowRight, CheckCircle2 } from "lucide-react";
 
-const FIELDS: { key: string; label: string; section: "core" | "audit"; placeholder: string }[] = [
-  { key: "prime_objective", label: "Prime Objective", section: "core",
-    placeholder: "What is the one objective that would make today count?" },
-  { key: "law_proof", label: "Law Proof", section: "core",
-    placeholder: "What concrete law artifact will you produce today (e.g. one IRAC answer)?" },
-  { key: "psychology_proof", label: "Psychology Proof", section: "core",
-    placeholder: "What CAEE paragraph or applied artifact will you produce?" },
-  { key: "eblocki_proof", label: "Eblocki Proof", section: "core",
-    placeholder: "What proof shows the Eblocki standard held today?" },
-  { key: "friction_task", label: "Friction Task", section: "core",
-    placeholder: "What is the highest-friction task you would normally avoid?" },
-  { key: "avoidance_signal", label: "Avoidance Signal", section: "core",
-    placeholder: "What behaviour would prove you are dodging the real task?" },
-  { key: "next_best_action", label: "Next Best Action", section: "core",
-    placeholder: "What is the smallest action that creates evidence right now?" },
-  { key: "end_output", label: "End Output", section: "audit",
-    placeholder: "What did you actually produce today?" },
-  { key: "end_proof", label: "End Proof", section: "audit",
-    placeholder: "What artifact would survive the Court of Evidence?" },
-  { key: "end_avoidance", label: "End Avoidance", section: "audit",
-    placeholder: "Where did avoidance show up today?" },
-  { key: "end_pattern", label: "End Pattern", section: "audit",
-    placeholder: "What pattern repeats and needs an upgrade?" },
-  { key: "tomorrow_first_move", label: "Tomorrow's First Move", section: "audit",
-    placeholder: "First controllable action for tomorrow morning." },
+/**
+ * Daily Operating Command Centre.
+ *
+ * Six-section behavioural loop:
+ *  1. Prime Objective
+ *  2. Proof Required
+ *  3. State Snapshot
+ *  4. Friction Task
+ *  5. Next Best Action (deterministic suggestion + user-owned commitment)
+ *  6. End-of-Day Audit
+ *
+ * Persists to `daily_control_sheets` (existing columns only). Energy/focus
+ * and proof-shape inputs are ephemeral session state — they feed the
+ * deterministic Next Best Action recommendation without faking storage.
+ */
+
+type Domain = "law" | "psychology" | "sales" | "soccer" | "eblocki" | "finance" | "life";
+const DOMAINS: { id: Domain; label: string }[] = [
+  { id: "law", label: "Law" },
+  { id: "psychology", label: "Psychology" },
+  { id: "sales", label: "Sales" },
+  { id: "soccer", label: "Soccer" },
+  { id: "eblocki", label: "Eblocki" },
+  { id: "finance", label: "Finance" },
+  { id: "life", label: "Life" },
 ];
 
-const STATES: BehaviouralState[] = ["locked_in","momentum","strategic_build","scattered","avoidant","overloaded","low_energy","hype_drift","academic_displacement","recovery"];
+type ProofLevel = "contact" | "output" | "depth" | "pressure" | "transfer" | "identity";
+const PROOF_LEVELS: { id: ProofLevel; label: string; hint: string }[] = [
+  { id: "contact", label: "Contact", hint: "Touched the work" },
+  { id: "output", label: "Output", hint: "Produced an artifact" },
+  { id: "depth", label: "Depth", hint: "Applied + reasoned" },
+  { id: "pressure", label: "Pressure", hint: "Held under load" },
+  { id: "transfer", label: "Transfer", hint: "Used across contexts" },
+  { id: "identity", label: "Identity", hint: "Repeated, owned" },
+];
+
+interface NbaSuggestion {
+  action: string;
+  reason: string;
+  effort: string;
+}
+
+/** Deterministic Next Best Action — never fakes AI. */
+function recommendNextAction(input: {
+  primeObjective: string;
+  proofsToday: number;
+  avgQuality: number;
+  state: string;
+  energy: number;
+  focus: number;
+  frictionTask: string;
+  frictionDone: boolean;
+}): NbaSuggestion {
+  const { primeObjective, proofsToday, avgQuality, state, energy, focus, frictionTask, frictionDone } = input;
+
+  if (!primeObjective.trim()) {
+    return {
+      action: "Define one prime objective.",
+      reason: "Without a target, the day fragments into reaction.",
+      effort: "60 seconds.",
+    };
+  }
+  if (state === "at_risk") {
+    return {
+      action: "Submit one minimum-viable proof before the day ends.",
+      reason: "Streak at risk. The artifact protects the pattern.",
+      effort: "10 focused minutes.",
+    };
+  }
+  if (proofsToday === 0) {
+    if (energy <= 3 || focus <= 3) {
+      return {
+        action: "Run a 10-minute proof sprint on the smallest visible artifact.",
+        reason: "Low energy. Minimum viable proof beats a missed day.",
+        effort: "10 minutes. One artifact.",
+      };
+    }
+    return {
+      action: "Produce the first proof artifact for the prime objective.",
+      reason: "No artifact yet. Reading is exposure; output is evidence.",
+      effort: "25-minute focused block.",
+    };
+  }
+  if (frictionTask.trim() && !frictionDone) {
+    return {
+      action: "Execute the smallest visible version of the friction task.",
+      reason: "Avoidance compounds. Friction marks the growth edge.",
+      effort: "Shrink it until you can start in under 2 minutes.",
+    };
+  }
+  if (avgQuality > 0 && avgQuality < 6) {
+    return {
+      action: "Deepen one existing artifact instead of starting a new one.",
+      reason: "Volume is there. Quality is the bottleneck.",
+      effort: "20 minutes on depth, not coverage.",
+    };
+  }
+  if (state === "momentum" || state === "elite") {
+    return {
+      action: "Convert momentum into one high-resistance artifact.",
+      reason: "Strong day. Raise depth, not volume.",
+      effort: "One 45-minute block on hard work.",
+    };
+  }
+  return {
+    action: "Stack one more proof artifact today.",
+    reason: "Pattern reinforces by repetition under load.",
+    effort: "25 minutes, then audit.",
+  };
+}
+
+const SECTION_LABEL = "font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground";
+const SECTION_ACCENT = "font-mono text-[10px] uppercase tracking-[0.28em] text-primary";
 
 export default function Sheet() {
   const { user } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
-  const [form, setForm] = useState<any>({ sheet_date: today, state: "" });
-  const [saving, setSaving] = useState(false);
-  const [proofs, setProofs] = useState<any[]>([]);
-  const [activeMode, setActiveMode] = useState<string | null>(null);
+  const { snapshot } = useMomentum();
 
-  const { snapshot, refresh: refreshMomentum } = useMomentum();
-  const { objectives, complete, skip, refresh: refreshObj } = useDailyObjectives();
+  // Persisted DCS fields
+  const [primeObjective, setPrimeObjective] = useState("");
+  const [frictionTask, setFrictionTask] = useState("");
+  const [avoidanceSignal, setAvoidanceSignal] = useState("");
+  const [nextBestAction, setNextBestAction] = useState("");
+  const [endOutput, setEndOutput] = useState("");
+  const [endProof, setEndProof] = useState("");
+  const [endAvoidance, setEndAvoidance] = useState("");
+  const [endPattern, setEndPattern] = useState("");
+  const [tomorrowFirstMove, setTomorrowFirstMove] = useState("");
+
+  // Ephemeral session state — feeds the recommendation, no DB column.
+  const [domain, setDomain] = useState<Domain>("eblocki");
+  const [proofDescription, setProofDescription] = useState("");
+  const [proofLevel, setProofLevel] = useState<ProofLevel>("output");
+  const [proofQuality, setProofQuality] = useState<number>(3);
+  const [energy, setEnergy] = useState(5);
+  const [focus, setFocus] = useState(5);
+  const [frictionDone, setFrictionDone] = useState(false);
+
+  const [todayProofs, setTodayProofs] = useState<Array<{ id: string; title: string; quality_score: number | null }>>([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("daily_control_sheets").select("*").eq("user_id", user.id).eq("sheet_date", today).maybeSingle()
-      .then(({ data }) => { if (data) setForm(data); });
-    supabase
+    void supabase
+      .from("daily_control_sheets")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("sheet_date", today)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        setPrimeObjective(data.prime_objective ?? "");
+        setFrictionTask(data.friction_task ?? "");
+        setAvoidanceSignal(data.avoidance_signal ?? "");
+        setNextBestAction(data.next_best_action ?? "");
+        setEndOutput(data.end_output ?? "");
+        setEndProof(data.end_proof ?? "");
+        setEndAvoidance(data.end_avoidance ?? "");
+        setEndPattern(data.end_pattern ?? "");
+        setTomorrowFirstMove(data.tomorrow_first_move ?? "");
+      });
+    void supabase
       .from("proof_artifacts")
-      .select("id,title,domain,evidence_strength,quality_score,created_at,resistance_overcome")
+      .select("id, title, quality_score, created_at")
       .eq("user_id", user.id)
+      .gte("created_at", `${today}T00:00:00.000Z`)
       .order("created_at", { ascending: false })
-      .limit(12)
-      .then(({ data }) => setProofs(data ?? []));
-    supabase
-      .from("user_modes")
-      .select("mode_id,is_default")
-      .eq("user_id", user.id)
-      .eq("is_active", true)
-      .order("is_default", { ascending: false })
-      .limit(1)
-      .then(({ data }) => setActiveMode(data?.[0]?.mode_id ?? null));
+      .then(({ data }) => setTodayProofs(data ?? []));
   }, [user, today]);
 
-  const set = (k: string, v: string) => setForm((f: any) => ({ ...f, [k]: v }));
+  const dateLabel = useMemo(
+    () => new Date(today).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }),
+    [today],
+  );
+
+  const safeSnap = snapshot ?? {
+    state: "cold" as const,
+    momentum_score: 0,
+    streak_days: 0,
+    proofs_today: todayProofs.length,
+    avg_quality: 0,
+    identity_signal: "Submit one artifact to begin.",
+  };
+  const stateMeta = STATE_COPY[safeSnap.state];
+  const proofsToday = Math.max(safeSnap.proofs_today, todayProofs.length);
+  const proofSubmitted = proofsToday > 0;
+
+  const recommendation = useMemo(
+    () =>
+      recommendNextAction({
+        primeObjective,
+        proofsToday,
+        avgQuality: safeSnap.avg_quality ?? 0,
+        state: safeSnap.state,
+        energy,
+        focus,
+        frictionTask,
+        frictionDone,
+      }),
+    [primeObjective, proofsToday, safeSnap.avg_quality, safeSnap.state, energy, focus, frictionTask, frictionDone],
+  );
 
   const save = async () => {
     if (!user) return;
     setSaving(true);
     try {
-      const payload = { ...form, user_id: user.id, sheet_date: today };
-      delete payload.id; delete payload.created_at; delete payload.updated_at;
-      const { error } = await supabase.from("daily_control_sheets").upsert(payload, { onConflict: "user_id,sheet_date" });
+      const { error } = await supabase.from("daily_control_sheets").upsert(
+        {
+          user_id: user.id,
+          sheet_date: today,
+          prime_objective: primeObjective || null,
+          friction_task: frictionTask || null,
+          avoidance_signal: avoidanceSignal || null,
+          next_best_action: nextBestAction || null,
+          end_output: endOutput || null,
+          end_proof: endProof || null,
+          end_avoidance: endAvoidance || null,
+          end_pattern: endPattern || null,
+          tomorrow_first_move: tomorrowFirstMove || null,
+        },
+        { onConflict: "user_id,sheet_date" },
+      );
       if (error) throw error;
-      toast.success("Sheet saved.");
-    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
+      toast.success("Day captured.");
+    } catch (e: any) {
+      toast.error(e.message ?? "Save failed.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const createContract = async () => {
-    if (!user || !form.prime_objective) return toast.error("Set a Prime Objective first.");
-    const { error } = await supabase.from("proof_commitments").insert({
-      user_id: user.id,
-      domain: "discipline", mode: "EBLOCKI",
-      title: form.prime_objective,
-      required_artifact: "Concrete output proving the prime objective shipped.",
-      evidence_standard: "State / Bottleneck / Artifact / Reflection / Next upgrade",
-      status: "pending",
-    });
-    if (error) toast.error(error.message);
-    else toast.success("Proof Contract created from prime objective.");
-  };
-
-  const handleComplete = async (id: string) => {
-    try { await complete(id); await refreshMomentum(); } catch { /* surfaced in card */ }
-  };
-  const handleSkip = async (id: string) => { await skip(id); await refreshObj(); };
-
-  const safeSnap = snapshot ?? {
-    state: "cold" as const,
-    momentum_score: 0, streak_days: 0, longest_streak: 0, freeze_tokens: 0,
-    proofs_today: 0, resistance_overcome: 0, avg_quality: 0,
-    identity_signal: "Submit one artifact to begin.",
-    last_proof_at: null, hours_since_proof: Infinity,
-  };
-  const stateMeta = STATE_COPY[safeSnap.state];
-  const coachLine = nextBestAction(safeSnap);
-  const openObjectives = objectives.filter((o) => o.status === "pending" || o.status === "active");
-  const primary = openObjectives[0];
-  const secondary = openObjectives.slice(1);
-  const doneCount = objectives.filter((o) => o.status === "completed").length;
-
-  const dateLabel = useMemo(() =>
-    new Date(today).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }),
-  [today]);
-
-  const stateAccent =
-    safeSnap.state === "at_risk" ? "text-destructive" :
-    safeSnap.state === "elite" || safeSnap.state === "momentum" ? "text-primary" :
-    "text-muted-foreground";
+  const adoptRecommendation = () => setNextBestAction(recommendation.action);
 
   return (
     <AppShell>
       <Seo
-        title="Daily Control Sheet | EBLOCKI"
-        description="Plan the day's prime objective and audit the receipts at end of day. The sheet feeds the proof loop."
+        title="Daily Operating Command Centre | EBLOCKI"
+        description="Define one prime objective, submit proof, audit the day. The behavioural evidence loop."
         path="/sheet"
       />
-      <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-8 motion-calm">
-        {/* 1. FOCUS HEADER — calm, high-signal, large type */}
+      <div className="p-4 md:p-8 max-w-2xl mx-auto space-y-6 motion-calm">
+        {/* HEADER — Today */}
         <header className="space-y-3">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
-              Control Sheet · {dateLabel}
-            </span>
+            <span className={SECTION_LABEL}>Today · {dateLabel}</span>
             <div className="flex items-center gap-2">
-              {activeMode && (
-                <span className="font-mono text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-sm bg-muted/60 text-foreground/80">
-                  {MODE_LABELS[activeMode as Mode] ?? activeMode}
-                </span>
-              )}
-              <span className={cn(
-                "font-mono text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-sm bg-muted/40",
-                stateAccent,
+              <span className={cn("font-mono text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-sm bg-muted/40",
+                safeSnap.state === "at_risk" ? "text-destructive" : "text-foreground/80",
               )}>
                 {stateMeta.label}
               </span>
@@ -176,286 +282,332 @@ export default function Sheet() {
                   <Flame className="h-3 w-3" />{safeSnap.streak_days}d
                 </span>
               )}
+              <span className={cn(
+                "inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest",
+                proofSubmitted ? "text-primary" : "text-muted-foreground",
+              )}>
+                <ShieldCheck className="h-3 w-3" />{proofsToday} proof{proofsToday === 1 ? "" : "s"}
+              </span>
             </div>
           </div>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
-            {coachLine}
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight leading-tight">
+            Today is judged by proof, not intention.
           </h1>
           <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
-            {safeSnap.identity_signal}
+            One artifact makes the day count. No artifact, no progress claim.
           </p>
         </header>
 
-        {/* 2. MOMENTUM SNAPSHOT — 5 metrics, grouped, calm */}
-        <section aria-label="Momentum snapshot">
-          <Card className="panel p-4 md:p-5 border-border/60">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <Metric label="Momentum" value={safeSnap.momentum_score} suffix="/100" accent />
-              <Metric label="Proofs today" value={safeSnap.proofs_today} />
-              <Metric label="Avg depth" value={(safeSnap.avg_quality ?? 0).toFixed(1)} suffix="/10" />
-              <Metric label="Resistance" value={safeSnap.resistance_overcome} />
-              <Metric
-                label="Streak"
-                value={safeSnap.streak_days}
-                suffix="d"
-                hint={safeSnap.freeze_tokens > 0 ? `${safeSnap.freeze_tokens} freeze` : undefined}
+        {/* 1. PRIME OBJECTIVE — visual anchor */}
+        <section aria-label="Prime objective" className="space-y-3">
+          <span className={SECTION_ACCENT}>01 · Prime Objective</span>
+          <div className="relative">
+            <div className="absolute -inset-px rounded-xl bg-gradient-to-b from-primary/15 to-transparent pointer-events-none" />
+            <Card className="relative panel p-5 md:p-6 border-border/60 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="prime" className={SECTION_LABEL}>
+                  What output makes today count?
+                </Label>
+                <Textarea
+                  id="prime"
+                  value={primeObjective}
+                  onChange={(e) => setPrimeObjective(e.target.value)}
+                  placeholder="One prime objective. Everything else is secondary."
+                  rows={2}
+                  className="resize-none bg-background/40 border-border/50 text-base md:text-lg leading-relaxed focus-visible:ring-0 focus-visible:border-primary/50"
+                />
+              </div>
+              <div>
+                <span className={SECTION_LABEL}>Domain</span>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {DOMAINS.map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => setDomain(d.id)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-sm font-mono text-[10px] uppercase tracking-widest border transition-colors",
+                        domain === d.id
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border/50 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                      )}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </div>
+        </section>
+
+        {/* 2. PROOF REQUIRED */}
+        <section aria-label="Proof required" className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className={SECTION_ACCENT}>02 · Proof Required</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              {proofSubmitted ? "Submitted" : "Pending"}
+            </span>
+          </div>
+          <Card className={cn(
+            "panel p-5 border-border/60 space-y-4",
+            proofSubmitted && "border-primary/40",
+          )}>
+            <p className="text-sm text-muted-foreground italic">
+              No artifact, no progress claim. What exists outside your head?
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="proof-desc" className={SECTION_LABEL}>Proof description</Label>
+              <Textarea
+                id="proof-desc"
+                value={proofDescription}
+                onChange={(e) => setProofDescription(e.target.value)}
+                placeholder="The artifact you will submit. Concrete and visible."
+                rows={2}
+                className="resize-none bg-background/40 border-border/50"
+              />
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <span className={SECTION_LABEL}>Level</span>
+                <div className="mt-2 grid grid-cols-3 gap-1.5">
+                  {PROOF_LEVELS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setProofLevel(p.id)}
+                      title={p.hint}
+                      className={cn(
+                        "px-2 py-1.5 rounded-sm font-mono text-[10px] uppercase tracking-widest border transition-colors",
+                        proofLevel === p.id
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border/50 text-muted-foreground hover:border-primary/40",
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className={SECTION_LABEL}>Quality target · {proofQuality}/5</span>
+                <input
+                  type="range"
+                  min={1}
+                  max={5}
+                  step={1}
+                  value={proofQuality}
+                  onChange={(e) => setProofQuality(parseInt(e.target.value, 10))}
+                  className="mt-3 w-full accent-primary"
+                />
+                <div className="mt-1 flex justify-between font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                  <span>contact</span><span>elite</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/40">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                Today: {proofsToday} submitted
+              </span>
+              <Link to="/proof">
+                <Button size="sm" className="font-mono text-[10px] uppercase tracking-widest">
+                  Submit artifact <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
+              </Link>
+            </div>
+            {todayProofs.length > 0 && (
+              <ul className="space-y-1.5 pt-1">
+                {todayProofs.slice(0, 3).map((p) => (
+                  <li key={p.id} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
+                    <span className="truncate">{p.title}</span>
+                    {typeof p.quality_score === "number" && (
+                      <span className="ml-auto font-mono text-[10px] text-muted-foreground">{p.quality_score}/10</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </section>
+
+        {/* 3. STATE SNAPSHOT */}
+        <section aria-label="State snapshot" className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className={SECTION_ACCENT}>03 · State Snapshot</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              {stateMeta.label}
+            </span>
+          </div>
+          <Card className="panel p-5 border-border/60 space-y-4">
+            <SliderRow label="Energy" value={energy} onChange={setEnergy} />
+            <SliderRow label="Focus" value={focus} onChange={setFocus} />
+            <p className="text-xs text-muted-foreground border-t border-border/40 pt-3 leading-relaxed">
+              {stateMeta.tone}
+            </p>
+          </Card>
+        </section>
+
+        {/* 4. FRICTION TASK */}
+        <section aria-label="Friction task" className="space-y-3">
+          <span className={SECTION_ACCENT}>04 · Friction Task</span>
+          <Card className="panel p-5 border-border/60 space-y-4">
+            <p className="text-sm text-muted-foreground italic">
+              The avoided task is the signal. Shrink it until it becomes executable.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="friction" className={SECTION_LABEL}>What you would normally dodge</Label>
+              <Input
+                id="friction"
+                value={frictionTask}
+                onChange={(e) => setFrictionTask(e.target.value)}
+                placeholder="Name it plainly."
+                className="bg-background/40 border-border/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="avoidance" className={SECTION_LABEL}>What avoidance looks like today</Label>
+              <Input
+                id="avoidance"
+                value={avoidanceSignal}
+                onChange={(e) => setAvoidanceSignal(e.target.value)}
+                placeholder="The tell. Re-organising notes, scrolling, planning instead of executing."
+                className="bg-background/40 border-border/50"
+              />
+            </div>
+            <label className="flex items-center gap-2 pt-1 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={frictionDone}
+                onChange={(e) => setFrictionDone(e.target.checked)}
+                className="accent-primary h-4 w-4"
+              />
+              <span className="text-sm">Friction task executed</span>
+            </label>
+          </Card>
+        </section>
+
+        {/* 5. NEXT BEST ACTION — deterministic suggestion */}
+        <section aria-label="Next best action" className="space-y-3">
+          <span className={SECTION_ACCENT}>05 · Next Best Action</span>
+          <Card className="panel p-5 border-primary/30 bg-primary/[0.03] space-y-4">
+            <div className="space-y-3">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                System recommendation
+              </span>
+              <p className="text-base md:text-lg leading-snug font-medium">
+                {recommendation.action}
+              </p>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <dt className={SECTION_LABEL}>Reason</dt>
+                  <dd className="mt-1 text-muted-foreground leading-relaxed">{recommendation.reason}</dd>
+                </div>
+                <div>
+                  <dt className={SECTION_LABEL}>Effort</dt>
+                  <dd className="mt-1 text-muted-foreground leading-relaxed">{recommendation.effort}</dd>
+                </div>
+              </dl>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={adoptRecommendation}
+                className="font-mono text-[10px] uppercase tracking-widest"
+              >
+                Adopt as commitment
+              </Button>
+            </div>
+            <div className="space-y-2 pt-3 border-t border-border/40">
+              <Label htmlFor="nba" className={SECTION_LABEL}>Your committed action</Label>
+              <Textarea
+                id="nba"
+                value={nextBestAction}
+                onChange={(e) => setNextBestAction(e.target.value)}
+                placeholder="A 20-minute move you can start without thinking."
+                rows={2}
+                className="resize-none bg-background/40 border-border/50"
               />
             </div>
           </Card>
         </section>
 
-        {/* 3. PRIMARY MISSION — visually dominant anchor */}
-        <section aria-label="Primary mission" className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-primary">
-              Primary mission
-            </span>
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              {doneCount}/{objectives.length} closed
-            </span>
-          </div>
-          {primary ? (
-            <div className="relative">
-              <div className="absolute -inset-px rounded-xl bg-gradient-to-b from-primary/15 to-transparent pointer-events-none" />
-              <div className="relative">
-                <MissionCard objective={primary} onComplete={handleComplete} onSkip={handleSkip} />
-              </div>
-            </div>
-          ) : (
-            <Card className="panel p-6 border-border/60 text-sm text-muted-foreground">
-              {objectives.length === 0
-                ? "No objectives seeded today. Open the Coach to forge one."
-                : "All objectives closed. Protect the win — rest deliberately."}
-            </Card>
-          )}
-        </section>
-
-        {/* 4. SECONDARY MISSIONS — collapsed by default */}
-        {secondary.length > 0 && (
-          <section aria-label="Secondary missions">
-            <Accordion type="single" collapsible>
-              <AccordionItem value="secondary" className="border-border/60">
-                <AccordionTrigger className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground hover:no-underline py-3">
-                  Secondary missions · {secondary.length}
-                </AccordionTrigger>
-                <AccordionContent className="space-y-3 pt-2">
-                  {secondary.map((o) => (
-                    <div key={o.id} className="opacity-90">
-                      <MissionCard objective={o} onComplete={handleComplete} onSkip={handleSkip} />
-                    </div>
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </section>
-        )}
-
-        {/* 5. PROOF STREAM — evidence feed */}
-        <section aria-label="Proof stream" className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-primary inline-flex items-center gap-2">
-              <ShieldCheck className="h-3 w-3" /> Proof stream
-            </span>
-            <Link to="/proof" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground">
-              Court of evidence →
-            </Link>
-          </div>
-          {proofs.length === 0 ? (
-            <Card className="panel p-5 border-border/60 text-sm text-muted-foreground">
-              No evidence yet. The court has no record of you.
-            </Card>
-          ) : (
-            <ol className="relative border-l border-border/60 pl-4 space-y-3">
-              {proofs.slice(0, 8).map((p) => (
-                <li key={p.id} className="relative">
-                  <span className={cn(
-                    "absolute -left-[21px] top-2 h-2 w-2 rounded-full",
-                    p.evidence_strength === "elite" ? "bg-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.18)]" :
-                    p.evidence_strength === "strong" ? "bg-primary/70" :
-                    "bg-muted-foreground/40",
-                  )} />
-                  <div className="flex items-start justify-between gap-3 rounded-md border border-border/50 bg-card/50 px-3 py-2.5 hover:border-primary/30 transition-colors">
-                    <div className="min-w-0">
-                      <div className="text-sm truncate">{p.title}</div>
-                      <div className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-2 flex-wrap">
-                        <span>{new Date(p.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                        {p.domain && <span>· {p.domain}</span>}
-                        {p.resistance_overcome ? <span>· R{p.resistance_overcome}</span> : null}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      {p.evidence_strength && (
-                        <div className={cn(
-                          "font-mono text-[10px] uppercase tracking-widest",
-                          p.evidence_strength === "elite" ? "text-primary" :
-                          p.evidence_strength === "strong" ? "text-foreground" :
-                          "text-muted-foreground",
-                        )}>{p.evidence_strength}</div>
-                      )}
-                      {typeof p.quality_score === "number" && (
-                        <div className="text-xs text-muted-foreground">{p.quality_score}/10</div>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
-
-        {/* 6. REFLECTION / RECOVERY — progressive, calmer */}
-        <section aria-label="Reflection" className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-primary inline-flex items-center gap-2">
-              <Sparkles className="h-3 w-3" /> Reflection
-            </span>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={createContract} className="font-mono text-[10px] uppercase tracking-widest">
-                Contract this
-              </Button>
-              <Button size="sm" onClick={save} disabled={saving} className="font-mono text-[10px] uppercase tracking-widest">
-                {saving ? "Saving…" : "Save"}
-              </Button>
-            </div>
-          </div>
-
-          <Card className="panel p-5 md:p-6 border-border/60 space-y-5">
-            {/* Always-visible: prime objective + next action */}
-            <ReflectionField
-              id="prime_objective"
-              label="One thing that would make today count"
-              value={form.prime_objective ?? ""}
-              onChange={(v) => set("prime_objective", v)}
-              placeholder="State it plainly. No hedging."
-              large
-            />
-            <ReflectionField
-              id="next_best_action"
-              label="Smallest action that creates evidence right now"
-              value={form.next_best_action ?? ""}
-              onChange={(v) => set("next_best_action", v)}
-              placeholder="A 20-minute move you can start without thinking."
-            />
-
-            <Accordion type="multiple" className="space-y-1">
-              <AccordionItem value="proof" className="border-border/40">
-                <AccordionTrigger className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground hover:no-underline py-3">
-                  Proof expectations · 3
-                </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
-                  <ReflectionField id="law_proof" label="Law proof" value={form.law_proof ?? ""} onChange={(v) => set("law_proof", v)} placeholder="One IRAC answer, one case note, one statute analysis." />
-                  <ReflectionField id="psychology_proof" label="Psychology proof" value={form.psychology_proof ?? ""} onChange={(v) => set("psychology_proof", v)} placeholder="One CAEE paragraph or applied artifact." />
-                  <ReflectionField id="eblocki_proof" label="Eblocki proof" value={form.eblocki_proof ?? ""} onChange={(v) => set("eblocki_proof", v)} placeholder="What proves the standard held today?" />
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="friction" className="border-border/40">
-                <AccordionTrigger className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground hover:no-underline py-3">
-                  Friction & avoidance
-                </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
-                  <ReflectionField id="friction_task" label="Highest-friction task" value={form.friction_task ?? ""} onChange={(v) => set("friction_task", v)} placeholder="The one you'd normally dodge." />
-                  <ReflectionField id="avoidance_signal" label="Avoidance signal" value={form.avoidance_signal ?? ""} onChange={(v) => set("avoidance_signal", v)} placeholder="What behaviour would prove you're avoiding?" />
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="audit" className="border-border/40">
-                <AccordionTrigger className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground hover:no-underline py-3">
-                  End-of-day audit
-                </AccordionTrigger>
-                <AccordionContent className="space-y-4 pt-2">
-                  <ReflectionField id="end_output" label="What you produced" value={form.end_output ?? ""} onChange={(v) => set("end_output", v)} placeholder="Honest output, not effort." />
-                  <ReflectionField id="end_proof" label="What would survive the court" value={form.end_proof ?? ""} onChange={(v) => set("end_proof", v)} placeholder="The artifact that proves it." />
-                  <ReflectionField id="end_avoidance" label="Where avoidance appeared" value={form.end_avoidance ?? ""} onChange={(v) => set("end_avoidance", v)} placeholder="Name the pattern without judgement." />
-                  <ReflectionField id="end_pattern" label="Pattern to upgrade" value={form.end_pattern ?? ""} onChange={(v) => set("end_pattern", v)} placeholder="What repeats and needs to change?" />
-                  <ReflectionField id="tomorrow_first_move" label="Tomorrow's first move" value={form.tomorrow_first_move ?? ""} onChange={(v) => set("tomorrow_first_move", v)} placeholder="One controllable opening action." />
-                  <div>
-                    <Label htmlFor="sheet-state" className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Self-diagnosed state</Label>
-                    <select
-                      id="sheet-state"
-                      value={form.state ?? ""}
-                      onChange={(e) => set("state", e.target.value)}
-                      className="mt-2 w-full rounded-md border border-input bg-background/40 px-3 py-2 text-sm transition-colors hover:border-primary/40 focus:border-primary/60 focus:outline-none"
-                    >
-                      <option value="">—</option>
-                      {STATES.map(s => <option key={s} value={s}>{STATE_LABELS[s] ?? s}</option>)}
-                    </select>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </Card>
-        </section>
-
-        {/* 7. DEEP ANALYTICS — expandable, off the main surface */}
-        <section aria-label="Deep analytics">
+        {/* 6. END-OF-DAY AUDIT — progressive disclosure */}
+        <section aria-label="End-of-day audit" className="space-y-3">
           <Accordion type="single" collapsible>
-            <AccordionItem value="analytics" className="border-border/60">
-              <AccordionTrigger className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground hover:no-underline py-3">
-                <span className="inline-flex items-center gap-2">
-                  <ChevronDown className="h-3 w-3 opacity-0" /> {/* spacing twin */}
-                  Deep analytics & calibration
-                </span>
+            <AccordionItem value="audit" className="border-border/60">
+              <AccordionTrigger className={cn(SECTION_ACCENT, "hover:no-underline py-3")}>
+                06 · End-of-Day Audit
               </AccordionTrigger>
-              <AccordionContent className="pt-3">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Metric label="Longest streak" value={safeSnap.longest_streak} suffix="d" />
-                  <Metric label="Freeze tokens" value={safeSnap.freeze_tokens} icon={<Snowflake className="h-3 w-3" />} />
-                  <Metric label="Hours since proof" value={Number.isFinite(safeSnap.hours_since_proof) ? Math.round(safeSnap.hours_since_proof) : "—"} suffix={Number.isFinite(safeSnap.hours_since_proof) ? "h" : ""} />
-                  <Metric label="Proofs (recent)" value={proofs.length} />
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Link to="/dashboard"><Button variant="outline" size="sm" className="font-mono text-[10px] uppercase tracking-widest">Open dashboard</Button></Link>
-                  <Link to="/start"><Button variant="outline" size="sm" className="font-mono text-[10px] uppercase tracking-widest">Start today flow</Button></Link>
-                  <Link to="/coach"><Button variant="outline" size="sm" className="font-mono text-[10px] uppercase tracking-widest">Coach</Button></Link>
-                </div>
+              <AccordionContent>
+                <Card className="panel p-5 border-border/60 space-y-4 mt-2">
+                  <p className="text-sm text-muted-foreground italic">
+                    Close the loop before the day ends. What actually happened?
+                  </p>
+                  <AuditField id="out" label="Output" placeholder="What you actually produced — not what you planned."
+                    value={endOutput} onChange={setEndOutput} />
+                  <AuditField id="prf" label="Proof" placeholder="The artifact that would survive scrutiny."
+                    value={endProof} onChange={setEndProof} />
+                  <AuditField id="avd" label="Avoidance" placeholder="Where avoidance showed up. Name it without judgement."
+                    value={endAvoidance} onChange={setEndAvoidance} />
+                  <AuditField id="pat" label="Pattern" placeholder="What repeated and needs an upgrade."
+                    value={endPattern} onChange={setEndPattern} />
+                  <AuditField id="tom" label="Tomorrow's first move" placeholder="One controllable opening action."
+                    value={tomorrowFirstMove} onChange={setTomorrowFirstMove} />
+                </Card>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
         </section>
+
+        {/* Save bar */}
+        <div className="sticky bottom-4 z-10 flex justify-end pt-2">
+          <Button
+            size="sm"
+            onClick={save}
+            disabled={saving}
+            className="font-mono text-[10px] uppercase tracking-widest shadow-lg"
+          >
+            {saving ? "Saving…" : "Save day"}
+          </Button>
+        </div>
       </div>
     </AppShell>
   );
 }
 
-function Metric({
-  label, value, suffix, accent, icon, hint,
-}: { label: string; value: number | string; suffix?: string; accent?: boolean; icon?: React.ReactNode; hint?: string }) {
+function SliderRow({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
   return (
-    <div className="rounded-md bg-muted/20 border border-border/40 px-3 py-3 transition-colors hover:border-border">
-      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-1.5">
-        {icon}{label}
+    <div>
+      <div className="flex items-baseline justify-between">
+        <span className={SECTION_LABEL}>{label}</span>
+        <span className="font-mono text-xs tabular-nums text-foreground">{value}/10</span>
       </div>
-      <div className={cn(
-        "mt-1 text-2xl md:text-[26px] font-semibold tabular-nums leading-none",
-        accent ? "text-primary" : "text-foreground",
-      )}>
-        {value}
-        {suffix && <span className="text-sm text-muted-foreground font-normal ml-0.5">{suffix}</span>}
-      </div>
-      {hint && <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{hint}</div>}
+      <input
+        type="range"
+        min={1}
+        max={10}
+        step={1}
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value, 10))}
+        className="mt-2 w-full accent-primary"
+      />
     </div>
   );
 }
 
-function ReflectionField({
-  id, label, value, onChange, placeholder, large,
-}: { id: string; label: string; value: string; onChange: (v: string) => void; placeholder: string; large?: boolean }) {
+function AuditField({
+  id, label, value, onChange, placeholder,
+}: { id: string; label: string; value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor={`sheet-${id}`} className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-        {label}
-      </Label>
+    <div className="space-y-1.5">
+      <Label htmlFor={`audit-${id}`} className={SECTION_LABEL}>{label}</Label>
       <Textarea
-        id={`sheet-${id}`}
+        id={`audit-${id}`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        rows={large ? 2 : 2}
-        className={cn(
-          "resize-none bg-background/40 border-border/50 transition-colors hover:border-primary/30 focus-visible:border-primary/50 focus-visible:ring-0",
-          large && "text-base md:text-lg leading-relaxed py-3",
-        )}
+        rows={2}
+        className="resize-none bg-background/40 border-border/50 focus-visible:ring-0 focus-visible:border-primary/50"
       />
     </div>
   );
