@@ -151,6 +151,33 @@ export type Database = {
           },
         ]
       }
+      court_verdicts: {
+        Row: {
+          created_at: string
+          observer: string | null
+          proof_id: string
+          reasoning: string | null
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          created_at?: string
+          observer?: string | null
+          proof_id: string
+          reasoning?: string | null
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          created_at?: string
+          observer?: string | null
+          proof_id?: string
+          reasoning?: string | null
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
       daily_control_sheets: {
         Row: {
           avoidance_signal: string | null
@@ -298,6 +325,45 @@ export type Database = {
         }
         Relationships: []
       }
+      domain_levels: {
+        Row: {
+          current_standard: string | null
+          domain: string
+          id: string
+          level: number
+          next_requirement: string | null
+          rank: string
+          total_xp: number
+          updated_at: string
+          user_id: string
+          xp_in_level: number
+        }
+        Insert: {
+          current_standard?: string | null
+          domain: string
+          id?: string
+          level?: number
+          next_requirement?: string | null
+          rank?: string
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+          xp_in_level?: number
+        }
+        Update: {
+          current_standard?: string | null
+          domain?: string
+          id?: string
+          level?: number
+          next_requirement?: string | null
+          rank?: string
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+          xp_in_level?: number
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -382,6 +448,39 @@ export type Database = {
           id?: string
           token?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      identity_ledger: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          kind: string
+          proof_id: string | null
+          summary: string
+          user_id: string
+          verdict: string | null
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          kind: string
+          proof_id?: string | null
+          summary: string
+          user_id: string
+          verdict?: string | null
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          kind?: string
+          proof_id?: string | null
+          summary?: string
+          user_id?: string
+          verdict?: string | null
         }
         Relationships: []
       }
@@ -535,6 +634,36 @@ export type Database = {
         }
         Relationships: []
       }
+      operator_level: {
+        Row: {
+          level: number
+          rank: string
+          title: string
+          total_xp: number
+          updated_at: string
+          user_id: string
+          xp_in_level: number
+        }
+        Insert: {
+          level?: number
+          rank?: string
+          title?: string
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+          xp_in_level?: number
+        }
+        Update: {
+          level?: number
+          rank?: string
+          title?: string
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+          xp_in_level?: number
+        }
+        Relationships: []
+      }
       performance_os_config: {
         Row: {
           auto_create_proof_contracts: boolean | null
@@ -607,14 +736,18 @@ export type Database = {
           attachment_type: string | null
           attachment_url: string | null
           content: string | null
+          content_hash: string | null
           created_at: string
           domain: string
           evidence_strength: string | null
           feedback: string | null
           id: string
           next_upgrade: string | null
+          pressure_flag: boolean
+          proof_tier: number | null
           quality_score: number | null
           title: string
+          transfer_flag: boolean
           user_id: string
         }
         Insert: {
@@ -625,14 +758,18 @@ export type Database = {
           attachment_type?: string | null
           attachment_url?: string | null
           content?: string | null
+          content_hash?: string | null
           created_at?: string
           domain: string
           evidence_strength?: string | null
           feedback?: string | null
           id?: string
           next_upgrade?: string | null
+          pressure_flag?: boolean
+          proof_tier?: number | null
           quality_score?: number | null
           title: string
+          transfer_flag?: boolean
           user_id: string
         }
         Update: {
@@ -643,14 +780,18 @@ export type Database = {
           attachment_type?: string | null
           attachment_url?: string | null
           content?: string | null
+          content_hash?: string | null
           created_at?: string
           domain?: string
           evidence_strength?: string | null
           feedback?: string | null
           id?: string
           next_upgrade?: string | null
+          pressure_flag?: boolean
+          proof_tier?: number | null
           quality_score?: number | null
           title?: string
+          transfer_flag?: boolean
           user_id?: string
         }
         Relationships: []
@@ -1006,11 +1147,94 @@ export type Database = {
         }
         Relationships: []
       }
+      xp_events: {
+        Row: {
+          base_xp: number
+          created_at: string
+          diminishing_mult: number
+          domain: string
+          final_xp: number
+          id: string
+          pressure_mult: number
+          proof_id: string | null
+          quality: number
+          quality_mult: number
+          reasoning: string | null
+          streak_mult: number
+          tier: number
+          transfer_mult: number
+          user_id: string
+          verdict: string
+        }
+        Insert: {
+          base_xp: number
+          created_at?: string
+          diminishing_mult?: number
+          domain: string
+          final_xp: number
+          id?: string
+          pressure_mult?: number
+          proof_id?: string | null
+          quality: number
+          quality_mult?: number
+          reasoning?: string | null
+          streak_mult?: number
+          tier: number
+          transfer_mult?: number
+          user_id: string
+          verdict: string
+        }
+        Update: {
+          base_xp?: number
+          created_at?: string
+          diminishing_mult?: number
+          domain?: string
+          final_xp?: number
+          id?: string
+          pressure_mult?: number
+          proof_id?: string | null
+          quality?: number
+          quality_mult?: number
+          reasoning?: string | null
+          streak_mult?: number
+          tier?: number
+          transfer_mult?: number
+          user_id?: string
+          verdict?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      cle_base_xp: { Args: { tier: number }; Returns: number }
+      cle_canon_domain: { Args: { d: string }; Returns: string }
+      cle_classify_tier: {
+        Args: {
+          content: string
+          evidence: string
+          pressure: boolean
+          quality: number
+          transfer: boolean
+        }
+        Returns: number
+      }
+      cle_court: {
+        Args: {
+          is_duplicate: boolean
+          quality: number
+          tier: number
+          vague: boolean
+        }
+        Returns: string
+      }
+      cle_level_threshold: { Args: { lvl: number }; Returns: number }
+      cle_operator_title: { Args: { lvl: number }; Returns: string }
+      cle_rank_for: { Args: { lvl: number }; Returns: string }
+      cle_streak_mult: { Args: { streak: number }; Returns: number }
+      cle_verdict_mult: { Args: { v: string }; Returns: number }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
