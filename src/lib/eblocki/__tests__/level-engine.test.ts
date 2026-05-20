@@ -20,7 +20,7 @@ describe("rank + title", () => {
   });
   it("title escalates", () => {
     expect(operatorTitle(1)).toBe("Emerging Operator");
-    expect(operatorTitle(40)).toBe("Identity Operator");
+    expect(operatorTitle(25)).toBe("Identity Operator");
   });
 });
 
