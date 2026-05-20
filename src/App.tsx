@@ -20,6 +20,7 @@ import StartToday from "./pages/StartToday.tsx";
 import Install from "./pages/Install.tsx";
 import EngineDebug from "./pages/EngineDebug.tsx";
 import BetaAdmin from "./pages/BetaAdmin.tsx";
+import Operator from "./pages/Operator.tsx";
 import Welcome from "./pages/Welcome.tsx";
 import Why from "./pages/Why.tsx";
 import Privacy from "./pages/legal/Privacy.tsx";
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/why" element={<Why />} />
             <Route path="/welcome" element={<Protected><Welcome /></Protected>} />
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+            <Route path="/operator" element={<Protected><Operator /></Protected>} />
             <Route path="/coach" element={<Protected><Coach /></Protected>} />
             <Route path="/sheet" element={<Protected><Sheet /></Protected>} />
             <Route path="/start" element={<Protected><StartToday /></Protected>} />
