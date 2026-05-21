@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
+import { OperatorChip } from "@/components/eblocki/OperatorChip";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -269,6 +270,7 @@ export default function Sheet() {
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <span className={SECTION_LABEL}>Today · {dateLabel}</span>
             <div className="flex items-center gap-2">
+              <OperatorChip />
               <span className={cn("font-mono text-[10px] uppercase tracking-[0.2em] px-2 py-1 rounded-sm bg-muted/40",
                 safeSnap.state === "at_risk" ? "text-destructive" : "text-foreground/80",
               )}>

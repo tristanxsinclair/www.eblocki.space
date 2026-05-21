@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, MessageSquare, FileText, Gavel, Layers, Settings, LogOut, Crosshair, Sparkles, Hexagon } from "lucide-react";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
+import { LevelUpListener } from "./LevelUpListener";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -59,6 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <main className="flex-1 min-w-0" id="main">{children}</main>
+      <LevelUpListener />
     </div>
   );
 }
