@@ -101,6 +101,8 @@ export default function Proof() {
   const [extractedEdited, setExtractedEdited] = useState(false);
   const [attachState, setAttachState] = useState<AttachmentState>(INITIAL_ATTACH);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [pressureFlag, setPressureFlag] = useState(false);
+  const [transferFlag, setTransferFlag] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeModes = useMemo(
