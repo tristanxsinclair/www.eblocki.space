@@ -167,6 +167,8 @@ export default function Proof() {
     setOriginalExtractedText("");
     setExtractedEdited(false);
     setAttachState(INITIAL_ATTACH);
+    setPressureFlag(false);
+    setTransferFlag(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
