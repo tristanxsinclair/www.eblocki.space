@@ -374,6 +374,28 @@ export function ProofCapture({
                 Valid proof checklist
               </span>
             </div>
+            {preview && (
+              <div className="mb-3 -mx-1 px-2 py-2 rounded-sm border border-primary/20 bg-primary/[0.04] flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                    Predicted
+                  </span>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] px-1.5 py-0.5 rounded-sm border border-border text-foreground">
+                    T{preview.tier} · {TIER_LABEL[preview.tier]}
+                  </span>
+                  <CourtVerdictBadge verdict={preview.verdict} />
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    {domainLabel}
+                  </span>
+                </div>
+                <span className={cn(
+                  "font-mono text-xs tabular-nums",
+                  preview.xp.final > 0 ? "text-primary" : "text-destructive",
+                )}>
+                  {preview.xp.final > 0 ? `+${preview.xp.final} XP` : "0 XP"}
+                </span>
+              </div>
+            )}
             <ul className="space-y-1">
               {checks.map((c) => (
                 <li key={c.label} className="flex items-center gap-2 text-[11px]">
