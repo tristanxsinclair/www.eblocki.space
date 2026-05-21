@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { Check, Lock, ShieldCheck, Sparkles, Zap } from "lucide-react";
 import { logEvent } from "@/lib/eblocki/analytics";
 import { normaliseModeKey } from "@/lib/eblocki/mode-templates";
+import { previewProof, TIER_LABEL } from "@/lib/eblocki/level-engine";
+import { CourtVerdictBadge } from "./CourtVerdictBadge";
 
 export interface ProofCapturePayload {
   proof: string;
@@ -29,6 +31,16 @@ interface Props {
   resistanceLevel?: number;
   onSubmit: (payload: ProofCapturePayload) => Promise<void> | void;
 }
+
+const MODE_TO_DOMAIN: Record<string, string> = {
+  LAW_MAX: "law",
+  PSYCH_HD: "psychology",
+  SALES_CLOSE: "sales",
+  ATHLETE_MODE: "soccer",
+  FINANCE_BASICS: "finance",
+  EBLOCKI_BUILD: "eblocki",
+  GENERAL_EXECUTION: "life",
+};
 
 const WAFFLE_PATTERNS = /^(done|yes|ok|finished|complete|did it|na|n\/a|nothing|good|fine)\b/i;
 
@@ -121,6 +133,17 @@ export function ProofCapture({
   const examples = MODE_EXAMPLES[modeKey] ?? MODE_EXAMPLES.GENERAL_EXECUTION;
   const proofPlaceholder = examples.proof[0];
   const highResistance = resistanceLevel >= 4;
+  const domainLabel = MODE_TO_DOMAIN[modeKey] ?? "life";
+
+  // Live preview (optimistic — server trigger is authoritative).
+  const preview = useMemo(() => {
+    if (!proof.trim()) return null;
+    return previewProof({
+      content: proof.trim(),
+      quality,
+      pressureFlag: resistanceLevel >= 4,
+    });
+  }, [proof, quality, resistanceLevel]);
 
   useEffect(() => {
     if (open) {
