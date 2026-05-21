@@ -674,6 +674,56 @@ export default function Proof() {
               />
             </div>
 
+            <div className="grid sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPressureFlag((v) => !v)}
+                aria-pressed={pressureFlag}
+                className={
+                  "rounded-md border p-3 text-left transition-colors " +
+                  (pressureFlag
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/40")
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">
+                    Pressure XP
+                  </span>
+                  <span className={"font-mono text-[10px] " + (pressureFlag ? "text-primary" : "text-muted-foreground")}>
+                    {pressureFlag ? "ON ×1.3" : "OFF"}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                  Shipped under real pressure — deadline, exam, live, fatigue, avoidance overcome.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTransferFlag((v) => !v)}
+                aria-pressed={transferFlag}
+                className={
+                  "rounded-md border p-3 text-left transition-colors " +
+                  (transferFlag
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/40")
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">
+                    Transfer XP
+                  </span>
+                  <span className={"font-mono text-[10px] " + (transferFlag ? "text-primary" : "text-muted-foreground")}>
+                    {transferFlag ? "ON ×1.4" : "OFF"}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                  Skill transferred to the real world — match, mark, revenue, client outcome.
+                </p>
+              </button>
+            </div>
+
             <div>
               <Label htmlFor="proof-attachment" className="flex items-center gap-2">
                 <Paperclip className="h-3.5 w-3.5 text-primary" />
