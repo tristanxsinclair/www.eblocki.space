@@ -269,6 +269,8 @@ export default function Proof() {
           attachment_type: attachment?.type ?? null,
           attachment_name: attachment?.name ?? null,
           attachment_size: attachment?.size ?? null,
+          pressure_flag: pressureFlag,
+          transfer_flag: transferFlag,
         })
         .select()
         .single();
