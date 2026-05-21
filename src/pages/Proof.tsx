@@ -101,6 +101,8 @@ export default function Proof() {
   const [extractedEdited, setExtractedEdited] = useState(false);
   const [attachState, setAttachState] = useState<AttachmentState>(INITIAL_ATTACH);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [pressureFlag, setPressureFlag] = useState(false);
+  const [transferFlag, setTransferFlag] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeModes = useMemo(
@@ -165,6 +167,8 @@ export default function Proof() {
     setOriginalExtractedText("");
     setExtractedEdited(false);
     setAttachState(INITIAL_ATTACH);
+    setPressureFlag(false);
+    setTransferFlag(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -267,6 +271,8 @@ export default function Proof() {
           attachment_type: attachment?.type ?? null,
           attachment_name: attachment?.name ?? null,
           attachment_size: attachment?.size ?? null,
+          pressure_flag: pressureFlag,
+          transfer_flag: transferFlag,
         })
         .select()
         .single();
@@ -668,6 +674,56 @@ export default function Proof() {
                 onChange={(e) => setNextUpgrade(e.target.value)}
                 placeholder="What is the next correction?"
               />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPressureFlag((v) => !v)}
+                aria-pressed={pressureFlag}
+                className={
+                  "rounded-md border p-3 text-left transition-colors " +
+                  (pressureFlag
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/40")
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">
+                    Pressure XP
+                  </span>
+                  <span className={"font-mono text-[10px] " + (pressureFlag ? "text-primary" : "text-muted-foreground")}>
+                    {pressureFlag ? "ON ×1.3" : "OFF"}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                  Shipped under real pressure — deadline, exam, live, fatigue, avoidance overcome.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTransferFlag((v) => !v)}
+                aria-pressed={transferFlag}
+                className={
+                  "rounded-md border p-3 text-left transition-colors " +
+                  (transferFlag
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/40")
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">
+                    Transfer XP
+                  </span>
+                  <span className={"font-mono text-[10px] " + (transferFlag ? "text-primary" : "text-muted-foreground")}>
+                    {transferFlag ? "ON ×1.4" : "OFF"}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                  Skill transferred to the real world — match, mark, revenue, client outcome.
+                </p>
+              </button>
             </div>
 
             <div>

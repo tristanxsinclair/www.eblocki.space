@@ -13,6 +13,7 @@ import { detectState, STATE_LABELS, STATE_PRESCRIPTION, type BehaviouralState } 
 import { Seo } from "@/components/Seo";
 import { MomentumPanel } from "@/components/eblocki/MomentumPanel";
 import { WeeklyRetro } from "@/components/eblocki/WeeklyRetro";
+import { InterventionCard } from "@/components/eblocki/InterventionCard";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -156,6 +157,8 @@ export default function Dashboard() {
 
         <MomentumPanel />
         <WeeklyRetro />
+
+        <InterventionCard state={(currentState as BehaviouralState) ?? state} />
 
         {/* OS OVERVIEW */}
         <Card className="panel p-4 md:p-5 border-primary/30">
