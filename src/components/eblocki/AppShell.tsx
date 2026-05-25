@@ -1,13 +1,14 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageSquare, FileText, Gavel, Layers, Settings, LogOut, Crosshair, Sparkles, Hexagon } from "lucide-react";
+import { LayoutDashboard, MessageSquare, FileText, Gavel, Layers, Settings, LogOut, Crosshair, Sparkles, Hexagon, Swords } from "lucide-react";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 import { LevelUpListener } from "./LevelUpListener";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/operator", label: "Operator", icon: Hexagon },
+  { to: "/gameforge", label: "GameForge", icon: Swords },
   { to: "/onboarding", label: "Setup OS", icon: Sparkles },
   { to: "/coach", label: "Coach", icon: MessageSquare },
   { to: "/sheet", label: "Control Sheet", icon: FileText },
