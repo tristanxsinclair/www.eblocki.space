@@ -16,13 +16,13 @@ type GenerateGamePackInput = {
 };
 
 function readableMode(mode: GameForgeMode): string {
-  return mode.replaceAll("_", " ");
+  return mode.replace(/_/g, " ");
 }
 function readableStyle(style: GameForgeStyle): string {
-  return style.replaceAll("_", " ");
+  return style.replace(/_/g, " ");
 }
 function readableIntensity(intensity: GameForgeIntensity): string {
-  return intensity.replaceAll("_", " ");
+  return intensity.replace(/_/g, " ");
 }
 
 function inferTopic(sourceMaterial: string, mode: GameForgeMode): string {
