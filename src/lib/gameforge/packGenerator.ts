@@ -5,8 +5,10 @@ import type {
   GamePack,
   GameQuestion,
   GameDifficulty,
+  GameQuestionType,
 } from "./types";
 import { getXpForDifficulty } from "./scoring";
+import { GAMEFORGE_MODE_PROFILES } from "./modeProfiles";
 
 type GenerateGamePackInput = {
   sourceMaterial: string;
@@ -63,9 +65,14 @@ function buildPrompt(term: string, mode: GameForgeMode): string {
 }
 
 function buildOptions(correct: string): string[] {
-  return [correct, "surface-level recall", "unsupported assumption", "irrelevant detail"].sort(
-    () => Math.random() - 0.5,
-  );
+  const distractors = ["surface-level recall", "unsupported assumption", "irrelevant detail"];
+  const opts = [correct, ...distractors];
+  // Fisher-Yates so correct answer is not always first
+  for (let i = opts.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [opts[i], opts[j]] = [opts[j], opts[i]];
+  }
+  return opts;
 }
 
 function buildExplanation(term: string, mode: GameForgeMode): string {
@@ -92,27 +99,42 @@ function buildSkillTested(mode: GameForgeMode): string {
 }
 
 function buildQuestionsFromTerms(terms: string[], mode: GameForgeMode): GameQuestion[] {
-  // Ensure at least 15 questions by recycling if needed.
   const base = terms.length >= 15 ? terms : [...terms, ...terms, ...terms].slice(0, 15);
+  const profile = GAMEFORGE_MODE_PROFILES[mode];
   return base.map((term, index) => {
+    let type: GameQuestionType;
+    if (index === base.length - 1) type = "boss";
+    else if (index % 4 === 3) type = "scenario";
+    else if (index % 3 === 0) type = "multiple_choice";
+    else if (index % 3 === 1) type = "flashcard";
+    else type = "written_application";
     const difficulty: GameDifficulty =
-      index >= 12 ? "boss" : index >= 8 ? "hard" : index >= 4 ? "medium" : "easy";
+      type === "boss"
+        ? "boss"
+        : index >= 10
+          ? "hard"
+          : index >= 5
+            ? "medium"
+            : "easy";
+    const prompt =
+      type === "scenario"
+        ? `Scenario — apply ${term} to a realistic ${profile.label} situation. What is the correct call?`
+        : type === "written_application"
+          ? `Explain how ${term} applies using the ${profile.answerFramework} framework.`
+          : type === "boss"
+            ? `Boss check — under pressure, demonstrate ${term} using ${profile.answerFramework}. Name the move.`
+            : buildPrompt(term, mode);
     return {
       id: crypto.randomUUID(),
-      type:
-        index % 3 === 0
-          ? "multiple_choice_arena"
-          : index % 3 === 1
-            ? "flashcard_duel"
-            : "deep_application",
-      prompt: buildPrompt(term, mode),
-      options: buildOptions(term),
+      type,
+      prompt,
+      options: type === "multiple_choice" ? buildOptions(term) : undefined,
       correctAnswer: term,
       explanation: buildExplanation(term, mode),
       difficulty,
       skillTested: buildSkillTested(mode),
       xpValue: getXpForDifficulty(difficulty),
-      feedbackCorrect: "Correct. This is usable recall. Next step: apply it under pressure.",
+      feedbackCorrect: "Correct. Usable recall. Next round forces application.",
       feedbackIncorrect:
         "Incorrect. The issue is not effort; it is precision. Review the concept and retry.",
     };

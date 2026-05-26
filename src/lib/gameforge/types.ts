@@ -1,3 +1,14 @@
+export type GameForgePhase =
+  | "idle"
+  | "generating"
+  | "preview"
+  | "playing"
+  | "feedback"
+  | "mistake_clinic"
+  | "boss_battle"
+  | "completed"
+  | "proof_artifact";
+
 export type GameForgeMode =
   | "law_max"
   | "psych_hd"
@@ -33,7 +44,13 @@ export type GameQuestionType =
   | "scenario_simulator"
   | "boss_battle"
   | "speed_sprint"
-  | "deep_application";
+  | "deep_application"
+  | "multiple_choice"
+  | "flashcard"
+  | "fill_gap"
+  | "scenario"
+  | "written_application"
+  | "boss";
 
 export type GameDifficulty = "easy" | "medium" | "hard" | "boss";
 
@@ -90,6 +107,7 @@ export type UserAnswer = {
   confidence: 1 | 2 | 3 | 4 | 5;
   responseTimeMs?: number;
   xpAwarded: number;
+  answeredAt?: string;
 };
 
 export type GameMistake = {
@@ -114,12 +132,15 @@ export type GameMistake = {
 export type GameSession = {
   id: string;
   packId: string;
+  phase?: GameForgePhase;
   currentLevelIndex: number;
   currentQuestionIndex: number;
   xp: number;
   focusPoints: number;
   correctStreak: number;
   wrongStreak: number;
+  totalAnswered?: number;
+  correctAnswers?: number;
   answers: UserAnswer[];
   mistakes: GameMistake[];
   completed: boolean;
