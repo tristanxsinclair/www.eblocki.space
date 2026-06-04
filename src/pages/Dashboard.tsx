@@ -14,6 +14,7 @@ import { Seo } from "@/components/Seo";
 import { MomentumPanel } from "@/components/eblocki/MomentumPanel";
 import { WeeklyRetro } from "@/components/eblocki/WeeklyRetro";
 import { InterventionCard } from "@/components/eblocki/InterventionCard";
+import { TemporalCommandCard } from "@/components/eblocki/TemporalCommandCard";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -157,6 +158,8 @@ export default function Dashboard() {
 
         <MomentumPanel />
         <WeeklyRetro />
+
+        <TemporalCommandCard />
 
         <InterventionCard state={(currentState as BehaviouralState) ?? state} />
 
