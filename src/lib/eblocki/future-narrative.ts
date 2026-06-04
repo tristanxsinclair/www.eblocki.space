@@ -26,7 +26,7 @@ export function generateFutureNarrative(r: TemporalResult): TemporalNarrative {
       ignore: r.intervention.blocked,
       confidence: "Confidence: low — insufficient evidence.",
       uncertaintyWarning:
-        "Eblocki does not predict destiny. Projections require repeated proof to stabilise.",
+      "Eblocki does not predict fate. Projections are probabilistic and require repeated proof to stabilise.",
     };
   }
 
@@ -45,6 +45,6 @@ export function generateFutureNarrative(r: TemporalResult): TemporalNarrative {
     ignore: r.intervention.blocked,
     confidence: `Confidence ${Math.round(r.confidence.score * 100)}% (${r.confidence.band}). ${r.confidence.rationale}`,
     uncertaintyWarning:
-      "Projections are probabilistic, not deterministic. Proof changes the path. Nothing here is guaranteed.",
+      "Projections are probabilistic, not deterministic. Proof changes the path. Nothing here is promised.",
   };
 }
