@@ -31,9 +31,17 @@ export type EngineEvent =
   | "temporal_snapshot_created"
   | "temporal_loop_audit_status"
   | "temporal_calibration_completed"
-  | "dashboard_section_opened";
+  | "dashboard_section_opened"
+  | "gameforge_pack_generated"
+  | "gameforge_round_completed"
+  | "gameforge_boss_battle_completed"
+  | "gameforge_mastery_result"
+  | "coach_prompt_submitted"
+  | "coach_mode_detected"
+  | "coach_proof_action_generated"
+  | "coach_gameforge_suggested";
 
-/** Whitelist of property keys — anything else is dropped. */
+/** Whitelist of property keys - anything else is dropped. */
 const ALLOWED_KEYS = new Set([
   "kind", "mode", "state", "score", "streak", "resistance", "depth",
   "result", "reason", "dedup_key", "escalation_level", "count", "fixture",
@@ -41,6 +49,8 @@ const ALLOWED_KEYS = new Set([
   "step", "route",
   "modelVersion", "confidenceLevel", "loopStatus", "riskKind", "recommendedPath",
   "accuracyBucket", "intelligenceLevel", "sectionName",
+  "domain", "intensity", "style", "scoreBucket", "responseMode", "proofActionType",
+  "accuracy", "bossCompleted", "correct", "difficulty", "suggested", "roundStyle",
 ]);
 
 function sanitise(props: Record<string, unknown>): Record<string, unknown> {
@@ -59,7 +69,7 @@ export async function logEvent(event: EngineEvent, props: Record<string, unknown
     await supabase.from("analytics_events").insert({
       user_id: user?.id ?? null,
       event,
-      // Cast to satisfy generated Json typing — content is already sanitised.
+      // Cast to satisfy generated Json typing; content is already sanitised.
       properties: sanitise(props) as unknown as Record<string, never>,
       platform: "web",
     });
