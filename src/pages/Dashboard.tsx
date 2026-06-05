@@ -52,6 +52,7 @@ export default function Dashboard() {
   const [state, setStateBadge] = useState<BehaviouralState | null>(null);
   const [futureTab, setFutureTab] = useState("forecast");
   const [weeklyOpen, setWeeklyOpen] = useState(false);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [queryFailed, setQueryFailed] = useState(false);
 
   const todayISO = new Date().toISOString().slice(0, 10);
@@ -154,6 +155,11 @@ export default function Dashboard() {
     logEvent("dashboard_section_opened", { sectionName: "weekly" });
   };
 
+  const toggleDiagnostics = () => {
+    setDiagnosticsOpen((open) => !open);
+    logEvent("dashboard_section_opened", { sectionName: "advanced_diagnostics" });
+  };
+
   if (welcomeCheck === "needs") {
     return <Navigate to="/welcome" replace />;
   }
@@ -174,7 +180,7 @@ export default function Dashboard() {
           <div className="flex gap-2 flex-wrap">
             <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Proof</Button></Link>
             <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
-            <Link to="/start"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Start</Button></Link>
+            <Link to="/start-today"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Start</Button></Link>
             <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
           </div>
         </header>
@@ -183,7 +189,7 @@ export default function Dashboard() {
           <Card className="panel p-4 border-primary/30 bg-primary/5">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Eblocki OS — Not Configured</div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Eblocki OS - Not Configured</div>
                 <p className="text-sm mt-1 text-muted-foreground">No personalised modes found. Add modes so proof can route to the right standards.</p>
               </div>
               <Link to="/modes"><Button size="sm">Configure Modes</Button></Link>
@@ -218,7 +224,20 @@ export default function Dashboard() {
               </TabsContent>
               <TabsContent value="calibration" className="space-y-3">
                 <TemporalFeedbackPanel />
-                <TemporalModelAuditPanel />
+                <button
+                  type="button"
+                  onClick={toggleDiagnostics}
+                  className="w-full rounded-sm border border-border bg-card/50 px-4 py-3 text-left transition-colors hover:border-primary/40"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Advanced</div>
+                      <div className="mt-1 text-sm text-foreground">Model health and loop diagnostics</div>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${diagnosticsOpen ? "rotate-180" : ""}`} />
+                  </div>
+                </button>
+                {diagnosticsOpen && <TemporalModelAuditPanel />}
               </TabsContent>
               <TabsContent value="intelligence" className="space-y-3">
                 <TemporalIntelligencePanel />
@@ -313,7 +332,7 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
       <div className="mt-4 grid md:grid-cols-3 gap-2">
         <CommandSignal icon={<Target />} label="Proof required" value={view.commandSummary.proofRequired} />
         <CommandSignal icon={<ShieldAlert />} label="Highest risk" value={view.commandSummary.highestRisk} />
-        <CommandSignal icon={<Radar />} label="Future path" value={`${view.futureSummary.primaryPath.replace(/_/g, " ")} · ${view.futureSummary.confidenceLevel}`} />
+        <CommandSignal icon={<Radar />} label="Future path" value={`${view.futureSummary.primaryPath.replace(/_/g, " ")} - ${view.futureSummary.confidenceLevel}`} />
       </div>
     </Card>
   );
@@ -344,10 +363,10 @@ function EvidenceCommandPanel({
 
         <div className="mt-4 grid gap-3">
           <EvidenceBlock icon={<FileText />} label="Pending proof" action="Submit" href="/proof">
-            {topPending ? `${topPending.title} · ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open Coach to forge one."}
+            {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open Coach to forge one."}
           </EvidenceBlock>
           <EvidenceBlock icon={<Gavel />} label="Latest verdict" action="Court" href="/proof">
-            {latestArtifact ? `${latestArtifact.title} · ${latestArtifact.evidence_strength ?? "unscored"}` : "Court of Evidence is empty."}
+            {latestArtifact ? `${latestArtifact.title} - ${latestArtifact.evidence_strength ?? "unscored"}` : "Court of Evidence is empty."}
           </EvidenceBlock>
           <EvidenceBlock icon={<CircleDot />} label="Domain signal" action="Modes" href="/modes">
             {view.evidenceSummary.strongestDomain
