@@ -13,7 +13,8 @@ import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
 import { scoreProofArtifact } from "@/lib/eblocki/proof-scoring";
 import type { UserMode } from "@/lib/eblocki/modes";
 import { computeTemporal } from "@/lib/eblocki/temporal-engine";
-import { buildTemporalSnapshot } from "@/lib/eblocki/temporal-calibration";
+import { buildTemporalSnapshotPayload, stripSensitiveTemporalSnapshotFields } from "@/lib/eblocki/temporal-snapshot";
+import { logEvent } from "@/lib/eblocki/analytics";
 import { toast } from "sonner";
 import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLine, AlertTriangle } from "lucide-react";
 import { Seo } from "@/components/Seo";
@@ -280,8 +281,8 @@ export default function Proof() {
         .single();
       if (error) throw error;
 
-      // Temporal snapshot — coarse, privacy-safe, advisory only.
-      // Failure here must never break proof submission.
+      // Temporal snapshot is advisory. Proof filing has already succeeded;
+      // snapshot failure must never make the UI claim proof submission failed.
       try {
         const [{ data: priorArts }, { data: priorVerds }, { data: priorLed }, { data: priorModes }] = await Promise.all([
           supabase.from("proof_artifacts")
@@ -297,15 +298,25 @@ export default function Proof() {
           artifacts: priorArts ?? [],
           verdicts: priorVerds ?? [],
           ledger: priorLed ?? [],
-          activeDomains: (priorModes ?? []).map((m: any) => m.mode_id),
+          activeDomains: (priorModes ?? []).map((mode) => mode.mode_id),
         });
-        const snapshot = buildTemporalSnapshot(temporal);
-        await supabase
-          .from("proof_artifacts")
-          .update({ temporal_snapshot: snapshot as any })
-          .eq("id", artifact!.id);
+        const snapshot = stripSensitiveTemporalSnapshotFields(buildTemporalSnapshotPayload(temporal));
+        if (snapshot) {
+          const { error: snapshotError } = await supabase
+            .from("proof_artifacts")
+            .update({ temporal_snapshot: snapshot })
+            .eq("id", artifact!.id);
+          if (!snapshotError) {
+            logEvent("temporal_snapshot_created", {
+              modelVersion: snapshot.modelVersion,
+              confidenceLevel: snapshot.confidenceLevel,
+              riskKind: snapshot.mainRisk,
+              recommendedPath: snapshot.recommendedPath,
+            });
+          }
+        }
       } catch {
-        // silent — snapshot is advisory
+        // Snapshot creation is intentionally non-blocking and contains no raw proof text.
       }
 
       let contractClosed = false;
