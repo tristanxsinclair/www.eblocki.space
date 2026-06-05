@@ -1,100 +1,86 @@
 # Eblocki Temporal Intelligence Engine
 
-## What it is
-A deterministic behavioural trajectory projector. Calculates four possible
-futures (current / corrected / decay / escalation) across 24h, 7d, 30d, 90d,
-and 1y horizons from observed proof artifacts, court verdicts, identity
-ledger entries, and active domains.
+## What It Is
+A deterministic behavioural trajectory projector. It calculates four possible futures (`current_path`, `corrected_path`, `decay_path`, `escalation_path`) across 24h, 7d, 30d, 90d, and 1y horizons from observed proof artifacts, court verdicts, identity ledger entries, active domains, and latest behavioural state.
 
-## What it predicts
-- Future Power Score (0–100) — projected behavioural capacity.
-- Drift / shallow / overload / neglect risk vectors.
-- Identity escalation chance.
-- Domain-level neglect.
-- The single proof artifact that bends the corrected path upward.
+It is not fortune-telling. It is an evidence-weighted operating signal.
 
-## What it refuses to claim
-- No guarantees. No destiny language.
-- No identity escalation without `accepted_strong`/`elite`/`transfer` evidence.
-- No future change without a new artifact. **No proof, no future change.**
+## Product Law
+- No proof, no future change.
+- No identity escalation without `accepted_strong`, `elite`, or transfer evidence.
+- No guarantees, destiny language, or fake certainty.
+- Every command must require an artifact.
+- Low evidence always means low confidence.
 
-## Data inputs
-- `proof_artifacts` (quality, evidence_strength, transfer/pressure flags, tier, domain, created_at)
-- `court_verdicts` (verdict, created_at)
-- `identity_ledger` (kind, domain, created_at)
-- `user_modes` (active domains)
-- `daily_control_sheets.state` (latest)
+## Core Files
+- `src/lib/eblocki/temporal-engine.ts` — deterministic forecast model.
+- `src/lib/eblocki/temporal-snapshot.ts` — type-safe JSONB snapshot boundary.
+- `src/lib/eblocki/temporal-calibration.ts` — forecast vs later proof comparison.
+- `src/lib/eblocki/temporal-calibration-history.ts` — aggregate calibration history summary.
+- `src/lib/eblocki/temporal-loop-audit.ts` — operational audit of the full loop.
+- `src/lib/eblocki/intervention-memory.ts` — intervention effectiveness memory.
+- `src/lib/eblocki/temporal-intelligence-score.ts` — system calibration score.
+- `src/components/eblocki/TemporalModelAuditPanel.tsx` — compact model status UI.
 
-All extractors are null-safe. Legacy rows missing metadata never throw.
+## Snapshot Type-Safety Rule
+All `proof_artifacts.temporal_snapshot` reads and writes must pass through `src/lib/eblocki/temporal-snapshot.ts`.
 
-## Uncertainty
-`confidence = dataVolume + recentConsistency + signalClarity − missingDataPenalty − legacyPenalty`,
-normalised to [0,1] and bucketed `low | moderate | high`. The visual renders
-an explicit uncertainty band around the corrected path.
+The helper exports:
+- `TEMPORAL_SNAPSHOT_VERSION`
+- `TemporalSnapshotPayload`
+- `TemporalSnapshotPathName`
+- `TemporalSnapshotConfidenceLevel`
+- `isTemporalSnapshotPayload()`
+- `normaliseTemporalSnapshot()`
+- `buildTemporalSnapshotPayload()`
+- `stripSensitiveTemporalSnapshotFields()`
+- `getTemporalSnapshotSummary()`
 
-## Proof changes trajectory
-The engine emits a single `FutureIntervention { command, blocked, timebox,
-artifactRequired }`. Producing that artifact within the timebox is the only
-input that shifts the corrected path's vector. Planning does not count.
+Do not scatter casts around dashboard/proof code. Generated Supabase types already expose `temporal_snapshot: Json | null`; runtime validation protects old or malformed rows.
 
-## Visualisation
-`src/components/eblocki/TemporalMap.tsx` — pure SVG, semantic Tailwind
-tokens, no charting library. Upper half = growth, lower half = risk.
-Solid line = corrected path; dashed = current / escalation / decay.
+## Privacy-Safe Snapshot Fields
+Snapshots store only coarse operational fields:
+`modelVersion`, `generatedAt`, `predictionId`, paths, confidence, risk kind, required artifact, domain, horizon scores, evidence count, and trajectory scores.
 
-## Coach context
-`src/lib/eblocki/temporal-coach-context.ts` prepares an AI-ready payload
-(`primaryPath`, four vectors, `proofRequired`, `forbiddenClaims`,
-`uncertaintyWarning`). The engine itself **never calls an AI provider**.
+Snapshots must never store:
+- long proof content
+- personal notes or reflections
+- raw proof descriptions
+- OCR text or attachment content
+- coach transcripts
+- secrets, tokens, or keys
 
-## Model versioning
-Every `TemporalResult`, snapshot, calibration, and coach context carries
-`TEMPORAL_MODEL_VERSION` (currently `temporal-v1.1-calibrated`). Forecasts
-remain auditable when weights change.
+## Loop Audit
+`auditTemporalLoop()` answers whether the Temporal loop is actually working.
 
-## Snapshot persistence
-`proof_artifacts.temporal_snapshot` (jsonb, nullable) holds the
-`TemporalForecastSnapshot` that was active when an artifact was submitted.
-Long text is stripped. Snapshot failure never blocks proof submission.
+Statuses:
+- `inactive` — waiting for proof evidence.
+- `partial` — forecast/snapshot exists but later proof or calibration is missing.
+- `operational` — comparing prediction against later proof and producing calibration signals.
+- `degraded` — invalid, legacy, or missing snapshot data was detected.
 
-## Calibration engine
-See `src/lib/eblocki/temporal-calibration.ts` and
-`docs/EBLOCKI_TEMPORAL_CALIBRATION.md`. Compares forecast vs reality and
-returns an advisory `TemporalCalibrationResult`.
+The audit checks forecast generation, snapshot build/read/privacy, later proof comparison, calibration, reality check, intervention memory, intelligence score, and dashboard empty states.
 
-## Reality check logic
-`runTemporalRealityCheck(snapshot, outcome)` returns
-`accurate | partially_accurate | inaccurate | insufficient_data`, signal
-strength, and the next observation target.
+## Dashboard Hierarchy
+The dashboard now uses progressive disclosure:
+- Zone 1: `Command` — one hero command, proof required, highest risk.
+- Zone 2: `Forecast` — TemporalMap, calibration, intelligence, audit panel behind tabs.
+- Zone 3: `Evidence` — proof/court/identity summaries, weekly detail collapsed by default.
 
-## Confidence explainability
-`TemporalConfidence` now includes `reasons`, `dataVolumeSignal`,
-`signalClaritySignal`, `missingDataPenalty`, `legacyRowPenalty`, and an
-`uncertaintyWarning`. Low data → low confidence, always.
+This keeps the command centre readable while preserving the intelligence systems.
 
-## Intervention memory
-`src/lib/eblocki/intervention-memory.ts` aggregates calibration history to
-identify the most reliable intervention archetype.
+## Debugging Temporal Loop Issues
+1. Open the Model Audit panel on `/dashboard`.
+2. Check `status`, `missingPieces`, and `nextFix`.
+3. Inspect the latest `proof_artifacts.temporal_snapshot` shape.
+4. Pass the row through `normaliseTemporalSnapshot()` before calibration.
+5. Confirm later proof exists after the snapshot timestamp.
+6. Run `calibrateForecast(snapshot, outcome)`.
+7. Review `TemporalFeedbackPanel` and `TemporalIntelligencePanel` history summary.
 
-## Temporal Intelligence Score
-`src/lib/eblocki/temporal-intelligence-score.ts` produces a 0–100 system
-calibration score with level: `dormant | forming | learning | sharp |
-highly_calibrated`. It measures how much the system knows about the user,
-not the user's intelligence.
+## What Counts As Operational
+The loop is operational only when:
+forecast → privacy-safe snapshot → later proof → calibration → reality check → intervention memory → intelligence score → next command all execute without fake certainty.
 
-## What the model learns
-- Which intervention archetypes drive proof improvements.
-- Whether confidence was appropriate per forecast.
-- Which risks systematically over- or under-predicted.
-- The neglected domain that erodes domain coverage.
-
-## What the model refuses to claim
-- Guaranteed outcomes.
-- Destiny language.
-- Identity escalation without `accepted_strong`/`elite`/`transfer` evidence.
-- Praise without proof.
-- High confidence under low data.
-
-## Future tuning
-Bump `TEMPORAL_MODEL_VERSION` whenever weights or thresholds change so old
-snapshots remain comparable but clearly versioned.
+## Model Versioning
+Every forecast and snapshot carries `TEMPORAL_MODEL_VERSION` plus `TEMPORAL_SNAPSHOT_VERSION`. Bump the model version when behavioural weights or thresholds change so old forecasts remain auditable.
