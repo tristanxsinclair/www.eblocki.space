@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -11,459 +11,504 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { Sparkles, Zap, Target, Trophy, Brain, RefreshCw, CheckCircle2, XCircle, Flame, Shield } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { generateLocalGamePack } from "@/lib/gameforge/packGenerator";
-import { DEMO_SEEDS, buildDemoPack } from "@/lib/gameforge/demoPacks";
 import {
-  createInitialSession,
-  createUserAnswer,
-  classifyMistake,
-} from "@/lib/gameforge/gameEngine";
-import { createGameForgeProofArtifact } from "@/lib/gameforge/proofArtifact";
-import { calculateAccuracy, calculateMasteryRank } from "@/lib/gameforge/scoring";
-import type {
-  GameForgeIntensity,
-  GameForgeMode,
-  GameForgeProofArtifact,
-  GamePack,
-  GameQuestion,
-  GameSession,
-  GameForgeStyle,
-} from "@/lib/gameforge/types";
+  ArrowRight,
+  Brain,
+  CheckCircle2,
+  ClipboardCopy,
+  Crosshair,
+  Flame,
+  Gauge,
+  MessageSquare,
+  Radar,
+  RefreshCw,
+  Shield,
+  Sparkles,
+  Sword,
+  Target,
+  Trophy,
+  XCircle,
+  Zap,
+} from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { logEvent } from "@/lib/eblocki/analytics";
+import {
+  advanceGameForgeSession,
+  buildGameForgeMasteryResult,
+  buildGameForgePack,
+  buildGameForgeProofArtifact,
+  createInitialGameForgeSession,
+  detectGameForgeMode,
+  getActiveQuestion,
+  resolveGameForgeMistake,
+  submitGameForgeAnswer,
+  type GameForgeFeedback,
+  type GameForgeGameStyle,
+  type GameForgeIntensity,
+  type GameForgeMasteryResult,
+  type GameForgeMode,
+  type GameForgePack,
+  type GameForgeProofArtifact,
+  type GameForgeQuestion,
+  type GameForgeSession,
+} from "@/lib/gameforge/gameforge-engine";
 
-const MODES: { value: GameForgeMode; label: string }[] = [
-  { value: "general_knowledge", label: "General Knowledge" },
-  { value: "law_max", label: "Law Max (IRAC)" },
-  { value: "psych_hd", label: "Psych HD" },
-  { value: "sales_close", label: "Sales Close" },
-  { value: "language_grind", label: "Language Grind" },
-  { value: "sport_iq", label: "Sport IQ" },
-  { value: "finance_builder", label: "Finance Builder" },
+const MODE_OPTIONS: Array<{ value: GameForgeMode | "auto"; label: string }> = [
+  { value: "auto", label: "Auto" },
+  { value: "law", label: "Law" },
+  { value: "psychology", label: "Psychology" },
+  { value: "sales", label: "Sales" },
+  { value: "language", label: "Language" },
+  { value: "sport", label: "Sport" },
+  { value: "finance", label: "Finance" },
+  { value: "general", label: "General" },
   { value: "custom", label: "Custom" },
 ];
 
-const INTENSITIES: { value: GameForgeIntensity; label: string }[] = [
-  { value: "casual", label: "Casual" },
+const INTENSITY_OPTIONS: Array<{ value: GameForgeIntensity; label: string }> = [
+  { value: "warmup", label: "Warmup" },
   { value: "focused", label: "Focused" },
-  { value: "exam_prep", label: "Exam Prep" },
-  { value: "boss_fight", label: "Boss Fight" },
-  { value: "elite_mastery", label: "Elite Mastery" },
+  { value: "exam", label: "Exam" },
+  { value: "pressure", label: "Pressure" },
+  { value: "elite", label: "Elite" },
 ];
 
-const STYLES: { value: GameForgeStyle; label: string }[] = [
-  { value: "mixed_mode", label: "Mixed Mode" },
-  { value: "quick_sprint", label: "Quick Sprint" },
-  { value: "full_lesson_path", label: "Full Lesson Path" },
+const STYLE_OPTIONS: Array<{ value: GameForgeGameStyle; label: string }> = [
+  { value: "mixed", label: "Mixed" },
+  { value: "recall", label: "Recall Duel" },
+  { value: "scenario", label: "Scenario Trial" },
+  { value: "speed_round", label: "Speed Round" },
   { value: "mistake_clinic", label: "Mistake Clinic" },
+  { value: "court_trial", label: "Court Trial" },
+  { value: "transfer_challenge", label: "Transfer Challenge" },
   { value: "boss_battle", label: "Boss Battle" },
-  { value: "scenario_simulator", label: "Scenario Simulator" },
-  { value: "memory_drill", label: "Memory Drill" },
-  { value: "application_challenge", label: "Application Challenge" },
 ];
 
-function flattenQuestions(pack: GamePack): GameQuestion[] {
-  return pack.levels.flatMap((l) => l.questions);
+const DEMO_PACKS: Array<{ label: string; material: string; mode: GameForgeMode; style: GameForgeGameStyle; intensity: GameForgeIntensity }> = [
+  {
+    label: "Statutory Trial",
+    material: "Statutory interpretation requires text, context and purpose. Ambiguity is resolved by reading the provision with the Act as a whole. A strong IRAC answer identifies the issue, states the rule, applies facts, handles counterargument and reaches a conclusion.",
+    mode: "law",
+    style: "court_trial",
+    intensity: "exam",
+  },
+  {
+    label: "Psych Application",
+    material: "Cognitive dissonance occurs when behaviour conflicts with beliefs. People reduce discomfort by changing attitudes, justifying the behaviour, or avoiding conflicting evidence. Strong psychology answers define the concept, apply it to behaviour, use evidence and evaluate limitations.",
+    mode: "psychology",
+    style: "scenario",
+    intensity: "focused",
+  },
+  {
+    label: "Objection Arena",
+    material: "A customer says the premium option is too expensive. Diagnose the actual need, frame value, attach warranty or service only when it solves the risk, handle the objection and close with a clear recommendation.",
+    mode: "sales",
+    style: "scenario",
+    intensity: "pressure",
+  },
+  {
+    label: "False 9 Read",
+    material: "A false nine drops into midfield to create overloads, pulls centre backs out, opens third-man runs and requires scanning before receiving. The tactical proof is the decision cue, movement, pass option and match-transfer drill.",
+    mode: "sport",
+    style: "transfer_challenge",
+    intensity: "elite",
+  },
+];
+
+type GameForgeRouteState = {
+  seed?: string;
+  mode?: GameForgeMode;
+  style?: GameForgeGameStyle;
+  intensity?: GameForgeIntensity;
+};
+
+function countQuestions(pack: GameForgePack | null): number {
+  if (!pack) return 0;
+  return pack.levels.reduce((sum, level) => sum + level.rounds.reduce((roundSum, round) => roundSum + round.questions.length, 0), 0);
 }
 
-function modeFeedback(mode: GameForgeMode, correct: boolean, confidence: number, isFast = false): string {
-  if (correct && confidence <= 2) return "Correct with low confidence. Knowledge exists; calibration needs work.";
-  if (!correct && confidence >= 4) return "False certainty detected. Confidence exceeded evidence.";
-  if (!correct && isFast) return "Speed is leaking precision. Slow the next answer down.";
-  if (correct) {
-    switch (mode) {
-      case "law_max":
-        return "Correct — recall-level. Next answer must apply the rule to facts (IRAC).";
-      case "psych_hd":
-        return "Correct. Now push from concept → application → evidence → evaluation.";
-      case "sales_close":
-        return "Correct. Now attach value before defending price.";
-      case "sport_iq":
-        return "Correct decision — scan before receiving on the next rep.";
-      default:
-        return "Correct. This is usable recall. Next level forces application.";
-    }
-  }
-  switch (mode) {
-    case "law_max":
-      return "Wrong. You identified a legal term but missed the operative issue.";
-    case "psych_hd":
-      return "Wrong. You defined the concept but did not apply or evaluate it.";
-    case "sales_close":
-      return "Wrong. You matched the product but missed the attachment point.";
-    default:
-      return "Incorrect. You confused the concept with a distractor. Fix the pattern before chasing XP.";
-  }
+function buildProofText(artifact: GameForgeProofArtifact): string {
+  return [
+    artifact.title,
+    `Domain: ${artifact.domain}`,
+    `Mastery score: ${artifact.masteryScore}`,
+    `Evidence: ${artifact.evidence}`,
+    `Weak point: ${artifact.weakPoint}`,
+    `Next upgrade: ${artifact.nextUpgrade}`,
+  ].join("\n");
 }
 
 export function GameForgeShell() {
-  const [sourceMaterial, setSourceMaterial] = useState("");
-  const [mode, setMode] = useState<GameForgeMode>("general_knowledge");
-  const [intensity, setIntensity] = useState<GameForgeIntensity>("focused");
-  const [style, setStyle] = useState<GameForgeStyle>("mixed_mode");
-
-  const [pack, setPack] = useState<GamePack | null>(null);
-  const [session, setSession] = useState<GameSession | null>(null);
+  const location = useLocation();
+  const routeState = (location.state ?? {}) as GameForgeRouteState;
+  const [sourceMaterial, setSourceMaterial] = useState(routeState.seed ?? "");
+  const [mode, setMode] = useState<GameForgeMode | "auto">(routeState.mode ?? "auto");
+  const [intensity, setIntensity] = useState<GameForgeIntensity>(routeState.intensity ?? "focused");
+  const [style, setStyle] = useState<GameForgeGameStyle>(routeState.style ?? "mixed");
+  const [pack, setPack] = useState<GameForgePack | null>(null);
+  const [session, setSession] = useState<GameForgeSession | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState("");
   const [confidence, setConfidence] = useState<1 | 2 | 3 | 4 | 5>(3);
-  const [lastFeedback, setLastFeedback] = useState<{ kind: "correct" | "incorrect"; msg: string } | null>(null);
+  const [lastFeedback, setLastFeedback] = useState<GameForgeFeedback | null>(null);
+  const [questionStartedAt, setQuestionStartedAt] = useState(Date.now());
+  const [masteryResult, setMasteryResult] = useState<GameForgeMasteryResult | null>(null);
   const [proofArtifact, setProofArtifact] = useState<GameForgeProofArtifact | null>(null);
-  const [questionStart, setQuestionStart] = useState<number>(Date.now());
 
-  const flat = useMemo(() => (pack ? flattenQuestions(pack) : []), [pack]);
-  const currentQuestion = useMemo<GameQuestion | null>(() => {
-    if (!pack || !session) return null;
-    const level = pack.levels[session.currentLevelIndex];
-    if (!level) return null;
-    return level.questions[session.currentQuestionIndex] ?? null;
-  }, [pack, session]);
+  const detectedMode = useMemo(() => detectGameForgeMode(sourceMaterial), [sourceMaterial]);
+  const activeQuestion = useMemo<GameForgeQuestion | null>(() => (pack && session ? getActiveQuestion(pack, session) : null), [pack, session]);
+  const totalQuestions = useMemo(() => countQuestions(pack), [pack]);
+  const progress = session && totalQuestions ? Math.round((session.answers.length / totalQuestions) * 100) : 0;
+  const activeLevel = pack && session ? pack.levels[session.currentLevelIndex] : null;
+  const activeRound = activeLevel && session ? activeLevel.rounds[session.currentRoundIndex] : null;
 
-  const totalAnswered = session?.answers.length ?? 0;
-  const totalQuestions = flat.length;
+  function resetPlayState() {
+    setSession(null);
+    setSelectedAnswer("");
+    setConfidence(3);
+    setLastFeedback(null);
+    setMasteryResult(null);
+    setProofArtifact(null);
+  }
 
   function handleGeneratePack() {
-    const text = sourceMaterial.trim() || DEMO_SEEDS[0].source;
-    const next = generateLocalGamePack({
-      sourceMaterial: text,
+    const nextPack = buildGameForgePack({
+      material: sourceMaterial,
       mode,
       intensity,
       style,
     });
-    setPack(next);
-    setSession(null);
-    setProofArtifact(null);
-    setLastFeedback(null);
+    setPack(nextPack);
+    resetPlayState();
+    logEvent("gameforge_pack_generated", {
+      domain: nextPack.mode,
+      mode: nextPack.mode,
+      intensity: nextPack.intensity,
+      style: nextPack.style,
+    });
   }
 
-  function handleLoadDemo(i: number) {
-    const demo = buildDemoPack(i);
-    setSourceMaterial(DEMO_SEEDS[i].source);
+  function handleLoadDemo(index: number) {
+    const demo = DEMO_PACKS[index];
+    setSourceMaterial(demo.material);
     setMode(demo.mode);
-    setIntensity(demo.intensity);
     setStyle(demo.style);
-    setPack(demo);
-    setSession(null);
-    setProofArtifact(null);
-    setLastFeedback(null);
+    setIntensity(demo.intensity);
+    const nextPack = buildGameForgePack({ material: demo.material, mode: demo.mode, style: demo.style, intensity: demo.intensity });
+    setPack(nextPack);
+    resetPlayState();
   }
 
   function handleStartSession() {
     if (!pack) return;
-    setSession(createInitialSession(pack.id));
+    setSession(createInitialGameForgeSession(pack));
     setSelectedAnswer("");
     setConfidence(3);
     setLastFeedback(null);
+    setMasteryResult(null);
     setProofArtifact(null);
-    setQuestionStart(Date.now());
+    setQuestionStartedAt(Date.now());
+  }
+
+  function finishSession(nextSession: GameForgeSession) {
+    if (!pack) return;
+    const finished = { ...nextSession, phase: "complete" as const };
+    const result = buildGameForgeMasteryResult(pack, finished);
+    const artifact = buildGameForgeProofArtifact(pack, result);
+    setSession(finished);
+    setMasteryResult(result);
+    setProofArtifact(artifact);
+    logEvent("gameforge_mastery_result", {
+      domain: pack.mode,
+      mode: pack.mode,
+      score: result.score,
+      scoreBucket: result.scoreBucket,
+      accuracy: result.accuracy,
+      bossCompleted: result.completedBossBattle,
+    });
   }
 
   function handleSubmitAnswer() {
-    if (!pack || !session || !currentQuestion || !selectedAnswer) return;
-    const responseTimeMs = Date.now() - questionStart;
-    const answer = createUserAnswer({ question: currentQuestion, userAnswer: selectedAnswer, confidence });
-    answer.responseTimeMs = responseTimeMs;
-
-    const correct = answer.isCorrect;
-    const newAnswers = [...session.answers, answer];
-    const newMistakes = correct ? session.mistakes : [...session.mistakes, classifyMistake(currentQuestion, answer)];
-    const correctStreak = correct ? session.correctStreak + 1 : 0;
-    const wrongStreak = correct ? 0 : session.wrongStreak + 1;
-    const xp = session.xp + answer.xpAwarded;
-    const focusPoints = Math.max(0, session.focusPoints - (correct ? 0 : 1));
-
-    setSession({
-      ...session,
-      answers: newAnswers,
-      mistakes: newMistakes,
-      correctStreak,
-      wrongStreak,
-      xp,
-      focusPoints,
+    if (!pack || !session || !activeQuestion || !selectedAnswer.trim()) return;
+    const responseTimeMs = Date.now() - questionStartedAt;
+    const { session: nextSession, feedback } = submitGameForgeAnswer({
+      pack,
+      session,
+      question: activeQuestion,
+      userAnswer: selectedAnswer,
+      confidence,
+      responseTimeMs,
     });
-
-    const isFast = responseTimeMs < 2500;
-    let msg = modeFeedback(pack.mode, correct, confidence, isFast);
-    if (correct && correctStreak >= 3) msg += " — Difficulty rising.";
-    if (!correct && wrongStreak >= 2) msg += " — Mistake Clinic triggered.";
-    setLastFeedback({ kind: correct ? "correct" : "incorrect", msg });
+    setSession(nextSession);
+    setLastFeedback(feedback);
+    logEvent("gameforge_round_completed", {
+      domain: pack.mode,
+      mode: pack.mode,
+      roundStyle: activeRound?.style ?? activeQuestion.type,
+      correct: feedback.isCorrect,
+      difficulty: activeQuestion.difficulty,
+    });
+    if (activeQuestion.type === "boss_battle") {
+      logEvent("gameforge_boss_battle_completed", {
+        domain: pack.mode,
+        mode: pack.mode,
+        correct: feedback.isCorrect,
+        difficulty: activeQuestion.difficulty,
+      });
+    }
   }
 
   function handleNextQuestion() {
     if (!pack || !session) return;
-    const level = pack.levels[session.currentLevelIndex];
-    const lastQ = session.currentQuestionIndex >= level.questions.length - 1;
-    const lastLevel = session.currentLevelIndex >= pack.levels.length - 1;
-    const focusDead = session.focusPoints <= 0;
+    const next = advanceGameForgeSession(pack, session);
+    setLastFeedback(null);
+    setSelectedAnswer("");
+    setConfidence(3);
+    setQuestionStartedAt(Date.now());
+    if (next.phase === "complete") finishSession(next);
+    else setSession(next);
+  }
 
-    if (focusDead || (lastQ && lastLevel)) {
-      handleFinishSession();
+  function handleResolveMistake(questionId: string) {
+    if (!session) return;
+    const next = resolveGameForgeMistake(session, questionId);
+    setSession(next);
+    if (pack && next.phase === "complete") {
+      const result = buildGameForgeMasteryResult(pack, next);
+      setMasteryResult(result);
+      setProofArtifact(buildGameForgeProofArtifact(pack, result));
+    }
+  }
+
+  async function handleCopyProof() {
+    if (!proofArtifact) return;
+    if (!navigator.clipboard) {
+      toast.error("Clipboard unavailable. Select the proof text manually.");
       return;
     }
-    const nextLevelIndex = lastQ ? session.currentLevelIndex + 1 : session.currentLevelIndex;
-    const nextQuestionIndex = lastQ ? 0 : session.currentQuestionIndex + 1;
-    setSession({ ...session, currentLevelIndex: nextLevelIndex, currentQuestionIndex: nextQuestionIndex });
-    setSelectedAnswer("");
-    setConfidence(3);
-    setLastFeedback(null);
-    setQuestionStart(Date.now());
+    await navigator.clipboard.writeText(buildProofText(proofArtifact));
+    toast.success("Proof artifact copied.");
   }
 
-  function handleFinishSession() {
-    if (!pack || !session) return;
-    const finished = { ...session, completed: true };
-    setSession(finished);
-    setProofArtifact(createGameForgeProofArtifact({ pack, session: finished }));
-  }
-
-  function handleResolveMistake(index: number) {
-    if (!session) return;
-    const next = session.mistakes.slice();
-    next[index] = { ...next[index], resolved: true };
-    setSession({ ...session, mistakes: next, xp: session.xp + 5 });
-  }
-
-  function handleRestart() {
-    setSession(null);
-    setLastFeedback(null);
-    setProofArtifact(null);
-    setSelectedAnswer("");
-    setConfidence(3);
-  }
-
-  const accuracy = session ? calculateAccuracy(session.answers) : 0;
-  const liveRank = session
-    ? calculateMasteryRank({
-        accuracy,
-        xp: session.xp,
-        mistakesResolved: session.mistakes.filter((m) => m.resolved).length,
-        bossCompleted: !!session.completed,
-      })
-    : null;
+  const coachSeed = pack && masteryResult
+    ? `Review this GameForge result. Domain: ${pack.mode}. Mastery score: ${masteryResult.score}. Weak points: ${masteryResult.weakPoints.join(", ")}. Next upgrade: ${masteryResult.nextPracticeRecommendation}.`
+    : "";
 
   return (
-    <div className="px-4 md:px-8 py-6 max-w-5xl mx-auto space-y-6">
-      <header className="flex items-start justify-between gap-3">
+    <div className="px-4 md:px-8 py-6 max-w-6xl mx-auto space-y-5">
+      <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">GameForge</div>
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mt-1">
-            Turn any topic into playable proof.
-          </h1>
+          <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">GameForge // Practice Engine</div>
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mt-1">Turn material into playable mastery.</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Paste material. Pick a mode. Forge a pack. Play it. Earn proof.
+            Paste notes, choose the pressure, play the rounds, expose weak points, clear the boss battle, and leave with a proof artifact.
           </p>
         </div>
-        <Sparkles className="h-5 w-5 text-primary shrink-0 mt-2" />
+        <div className="flex items-center gap-2 rounded-sm border border-primary/30 bg-primary/5 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-primary">
+          <Sparkles className="h-3.5 w-3.5" /> Playable fallback active
+        </div>
       </header>
 
-      {/* Input + selectors */}
-      <Card className="p-4 md:p-6 space-y-4">
-        <div>
-          <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Source material</label>
+      <Card className="panel overflow-hidden border-primary/25 bg-card/60">
+        <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-3">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">GameForge Input Console</div>
+            <div className="mt-1 text-sm text-foreground">Paste any material. Empty input still creates a safe starter pack.</div>
+          </div>
+          <Radar className="h-4 w-4 text-primary" />
+        </div>
+        <div className="p-4 md:p-5 space-y-4">
           <Textarea
             value={sourceMaterial}
-            onChange={(e) => setSourceMaterial(e.target.value)}
-            rows={5}
-            className="mt-2"
-            placeholder="Paste lecture notes, textbook excerpts, product specs, vocab lists, tactical notes…"
+            onChange={(event) => setSourceMaterial(event.target.value)}
+            rows={6}
+            className="resize-none"
+            placeholder="Paste law notes, psych concepts, sales objections, sport tactics, Spanish vocab, finance material, or any confused explanation."
           />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Mode</label>
-            <Select value={mode} onValueChange={(v) => setMode(v as GameForgeMode)}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {MODES.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="grid gap-3 md:grid-cols-3">
+            <Selector label="Mode" value={mode} onChange={(value) => setMode(value as GameForgeMode | "auto")} items={MODE_OPTIONS} />
+            <Selector label="Intensity" value={intensity} onChange={(value) => setIntensity(value as GameForgeIntensity)} items={INTENSITY_OPTIONS} />
+            <Selector label="Game Style" value={style} onChange={(value) => setStyle(value as GameForgeGameStyle)} items={STYLE_OPTIONS} />
           </div>
-          <div>
-            <label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Intensity</label>
-            <Select value={intensity} onValueChange={(v) => setIntensity(v as GameForgeIntensity)}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {INTENSITIES.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Style</label>
-            <Select value={style} onValueChange={(v) => setStyle(v as GameForgeStyle)}>
-              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {STYLES.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2 pt-1">
-          <Button onClick={handleGeneratePack} className="gap-2">
-            <Zap className="h-4 w-4" /> Forge pack
-          </Button>
-          {pack && !session && (
-            <Button variant="outline" onClick={handleStartSession} className="gap-2">
-              <Target className="h-4 w-4" /> Start session
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+            <div className="flex flex-wrap gap-2">
+              {DEMO_PACKS.map((demo, index) => (
+                <Button key={demo.label} size="sm" variant="outline" onClick={() => handleLoadDemo(index)}>
+                  {demo.label}
+                </Button>
+              ))}
+            </div>
+            <Button onClick={handleGeneratePack} className="gap-2">
+              <Zap className="h-4 w-4" /> Generate Game
             </Button>
-          )}
-        </div>
-        <div className="border-t border-border pt-3">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">Demo packs</div>
-          <div className="flex flex-wrap gap-2">
-            {DEMO_SEEDS.map((d, i) => (
-              <Button key={d.label} variant="outline" size="sm" onClick={() => handleLoadDemo(i)}>
-                {d.label}
-              </Button>
-            ))}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4">
+            <Signal label="Detected" value={detectedMode} icon={<Radar />} />
+            <Signal label="Style" value={style.replace(/_/g, " ")} icon={<Sword />} />
+            <Signal label="Intensity" value={intensity} icon={<Gauge />} />
+            <Signal label="Proof" value="required" icon={<Shield />} />
           </div>
         </div>
       </Card>
 
-      {/* Pack preview */}
       {pack && !session && (
-        <Card className="p-4 md:p-6 space-y-3">
-          <div className="flex items-start justify-between gap-3">
+        <Card className="panel p-4 md:p-5 border-border/80 bg-card/50">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <div className="text-xs font-mono uppercase text-muted-foreground">Pack</div>
-              <h2 className="text-lg font-semibold mt-1">{pack.title}</h2>
-              <p className="text-sm text-muted-foreground mt-1">{pack.topicDiagnosis}</p>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Generated Game Pack</div>
+              <h2 className="mt-1 text-xl font-semibold">{pack.title}</h2>
+              <p className="mt-2 text-sm text-muted-foreground max-w-2xl">{pack.proofStandard}</p>
             </div>
-            <Brain className="h-5 w-5 text-primary shrink-0" />
+            <Button onClick={handleStartSession} className="gap-2">
+              <Target className="h-4 w-4" /> Start Pack
+            </Button>
           </div>
-          <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
-            {pack.learningObjectives.map((o) => <li key={o}>{o}</li>)}
-          </ul>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-2">
-            {pack.levels.map((l, i) => (
-              <div key={l.id} className="rounded-md border border-border p-3 bg-muted/30">
-                <div className="text-[10px] font-mono uppercase text-muted-foreground">Lv {i + 1}</div>
-                <div className="text-sm font-medium mt-1">{l.title}</div>
-                <div className="text-xs text-muted-foreground mt-1">{l.questions.length} questions · pass ≥ {l.requiredAccuracyToPass}%</div>
-              </div>
-            ))}
+          <div className="mt-4 grid gap-2 sm:grid-cols-4">
+            <Metric label="Domain" value={pack.mode} />
+            <Metric label="Difficulty" value={`${pack.difficultyRating}/10`} />
+            <Metric label="Concepts" value={String(pack.concepts.length)} />
+            <Metric label="Questions" value={String(totalQuestions)} />
           </div>
-          <Button onClick={handleStartSession} className="gap-2 mt-2">
-            <Target className="h-4 w-4" /> Start session
-          </Button>
-        </Card>
-      )}
-
-      {/* Play */}
-      {pack && session && !session.completed && currentQuestion && (
-        <Card className="p-4 md:p-6 space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="text-[10px] font-mono uppercase text-muted-foreground">
-              Lv {session.currentLevelIndex + 1} · Q {session.currentQuestionIndex + 1} / {pack.levels[session.currentLevelIndex].questions.length}
+          <div className="mt-4 grid gap-3 lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="rounded-sm border border-border bg-background/30 p-3">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Learning Objectives</div>
+              <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                {pack.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}
+              </ul>
             </div>
-            <div className="flex items-center gap-3 text-xs font-mono">
-              <span className="inline-flex items-center gap-1"><Zap className="h-3 w-3 text-primary" /> {session.xp} XP</span>
-              <span className="inline-flex items-center gap-1"><Shield className="h-3 w-3" /> {session.focusPoints} focus</span>
-              <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3 text-orange-500" /> {session.correctStreak}</span>
-            </div>
-          </div>
-          <Progress value={totalQuestions ? Math.round((totalAnswered / totalQuestions) * 100) : 0} className="h-1.5" />
-
-          <div>
-            <div className="text-[10px] font-mono uppercase text-muted-foreground">{currentQuestion.difficulty} · {currentQuestion.skillTested}</div>
-            <h3 className="text-base md:text-lg font-medium mt-1">{currentQuestion.prompt}</h3>
-          </div>
-
-          {currentQuestion.options ? (
-            <div className="grid grid-cols-1 gap-2">
-              {currentQuestion.options.map((opt) => (
-                <button
-                  key={opt}
-                  disabled={!!lastFeedback}
-                  onClick={() => setSelectedAnswer(opt)}
-                  className={cn(
-                    "text-left rounded-md border px-3 py-2 text-sm transition-colors",
-                    selectedAnswer === opt
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-card hover:bg-muted/50",
-                    lastFeedback && opt === currentQuestion.correctAnswer && "border-emerald-500/60 bg-emerald-500/10",
-                  )}
-                >
-                  {opt}
-                </button>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {pack.levels.map((level) => (
+                <div key={level.id} className="rounded-sm border border-border bg-background/30 p-3">
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{level.difficulty}</div>
+                  <div className="mt-1 text-sm font-medium">{level.title}</div>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{level.objective}</p>
+                </div>
               ))}
             </div>
-          ) : (
-            <Input
-              value={selectedAnswer}
-              onChange={(e) => setSelectedAnswer(e.target.value)}
-              placeholder="Type your answer…"
-              disabled={!!lastFeedback}
-            />
-          )}
-
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono uppercase text-muted-foreground">Confidence</span>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                onClick={() => setConfidence(n as 1 | 2 | 3 | 4 | 5)}
-                disabled={!!lastFeedback}
-                className={cn(
-                  "h-7 w-7 rounded-sm border text-xs font-mono",
-                  confidence === n ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted/50",
-                )}
-              >
-                {n}
-              </button>
-            ))}
           </div>
-
-          {lastFeedback ? (
-            <div className="space-y-3">
-              <div
-                className={cn(
-                  "rounded-md border p-3 text-sm",
-                  lastFeedback.kind === "correct"
-                    ? "border-emerald-500/40 bg-emerald-500/5 text-emerald-700 dark:text-emerald-300"
-                    : "border-destructive/40 bg-destructive/5 text-destructive",
-                )}
-              >
-                <div className="flex items-center gap-2 font-medium">
-                  {lastFeedback.kind === "correct" ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                  {lastFeedback.kind === "correct" ? "Correct" : "Incorrect"}
-                </div>
-                <p className="mt-1">{lastFeedback.msg}</p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Answer: <span className="font-mono">{currentQuestion.correctAnswer}</span> — {currentQuestion.explanation}
-                </p>
-              </div>
-              <Button onClick={handleNextQuestion}>Next</Button>
-            </div>
-          ) : (
-            <Button onClick={handleSubmitAnswer} disabled={!selectedAnswer}>Submit answer</Button>
-          )}
         </Card>
       )}
 
-      {/* Mistake Clinic */}
-      {session && session.mistakes.length > 0 && (
-        <Card className="p-4 md:p-6 space-y-3">
-          <div className="flex items-center justify-between">
+      {pack && session && session.phase !== "complete" && activeQuestion && (
+        <Card className={cn("panel p-4 md:p-5 border-border/80 bg-card/50", session.phase === "boss_battle" && "border-primary/50 bg-primary/5")}>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <div className="text-xs font-mono uppercase text-muted-foreground">Mistake Clinic</div>
-              <h3 className="text-base font-semibold mt-1">{session.mistakes.filter((m) => !m.resolved).length} open · {session.mistakes.filter((m) => m.resolved).length} resolved</h3>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                {session.phase === "boss_battle" ? "Boss Battle" : activeRound?.title ?? "Active Round"}
+              </div>
+              <h2 className="mt-1 text-lg font-semibold">{activeLevel?.title}</h2>
+            </div>
+            <div className="grid grid-cols-3 gap-2 min-w-[240px]">
+              <Metric label="XP" value={String(session.xp)} />
+              <Metric label="Streak" value={String(session.streak)} />
+              <Metric label="Focus" value={String(session.focus)} />
             </div>
           </div>
-          <div className="space-y-2">
-            {session.mistakes.map((m, i) => (
-              <div key={`${m.questionId}-${i}`} className="rounded-md border border-border p-3 bg-muted/20">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <div className="text-[10px] font-mono uppercase text-muted-foreground">{m.mistakeType.replace(/_/g, " ")}</div>
-                    <div className="text-sm mt-1">{m.prompt}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      You: <span className="font-mono">{m.userAnswer || "—"}</span> · Correct: <span className="font-mono">{m.correctAnswer}</span>
-                    </div>
-                    <div className="text-xs mt-2">{m.recoveryDrill}</div>
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              <span>{session.answers.length}/{totalQuestions} answered</span>
+              <span>Adaptive: {session.adaptiveDifficulty}</span>
+            </div>
+            <Progress value={progress} className="h-1.5" />
+          </div>
+
+          <div className="mt-5 rounded-sm border border-border bg-background/35 p-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                {activeQuestion.difficulty} // {activeQuestion.skill}
+              </div>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{activeQuestion.xp} XP</div>
+            </div>
+            <h3 className="mt-3 text-base md:text-lg font-medium leading-snug">{activeQuestion.prompt}</h3>
+
+            {activeQuestion.answerMode === "choice" && activeQuestion.options ? (
+              <div className="mt-4 grid gap-2">
+                {activeQuestion.options.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    disabled={!!lastFeedback}
+                    onClick={() => setSelectedAnswer(option)}
+                    className={cn(
+                      "rounded-sm border px-3 py-3 text-left text-sm transition-colors",
+                      selectedAnswer === option ? "border-primary bg-primary/10 text-foreground" : "border-border bg-card/70 text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                      lastFeedback && option === activeQuestion.expectedAnswer && "border-emerald-500/50 bg-emerald-500/10 text-emerald-300",
+                    )}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <Textarea
+                value={selectedAnswer}
+                disabled={!!lastFeedback}
+                onChange={(event) => setSelectedAnswer(event.target.value)}
+                className="mt-4 min-h-[110px] resize-none"
+                placeholder="Answer with the concept, application, decision, or framework move."
+              />
+            )}
+
+            <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Confidence</span>
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    disabled={!!lastFeedback}
+                    onClick={() => setConfidence(value as 1 | 2 | 3 | 4 | 5)}
+                    className={cn(
+                      "h-8 w-8 rounded-sm border font-mono text-xs",
+                      confidence === value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted/40",
+                    )}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+              {!lastFeedback && <Button onClick={handleSubmitAnswer} disabled={!selectedAnswer.trim()}>Submit Answer</Button>}
+            </div>
+
+            {lastFeedback && (
+              <div className={cn("mt-4 rounded-sm border p-3 text-sm", lastFeedback.isCorrect ? "border-emerald-500/40 bg-emerald-500/10" : "border-destructive/40 bg-destructive/10")}>
+                <div className="flex items-center gap-2 font-medium">
+                  {lastFeedback.isCorrect ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <XCircle className="h-4 w-4 text-destructive" />}
+                  {lastFeedback.isCorrect ? "Correct" : "Mistake exposed"}
+                </div>
+                <p className="mt-2 text-muted-foreground">{lastFeedback.explanation}</p>
+                {!lastFeedback.isCorrect && <p className="mt-2 text-xs text-muted-foreground">Recovery drill: {lastFeedback.recoveryDrill}</p>}
+                <Button onClick={handleNextQuestion} className="mt-3" size="sm">
+                  Next <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {session && session.mistakes.length > 0 && (
+        <Card className="panel p-4 md:p-5 border-border/80 bg-card/50">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Mistake Clinic</div>
+              <h2 className="mt-1 text-base font-semibold">{session.mistakes.filter((mistake) => !mistake.resolved).length} open weak point(s)</h2>
+            </div>
+            <Brain className="h-4 w-4 text-primary" />
+          </div>
+          <div className="mt-4 grid gap-2">
+            {session.mistakes.map((mistake) => (
+              <div key={mistake.questionId} className="rounded-sm border border-border bg-background/30 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{mistake.mistakeKind ?? "mistake"}</div>
+                    <div className="mt-1 text-sm font-medium">{mistake.skill}</div>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{mistake.recoveryDrill}</p>
                   </div>
-                  {!m.resolved ? (
-                    <Button size="sm" variant="outline" onClick={() => handleResolveMistake(i)}>Mark resolved</Button>
+                  {mistake.resolved ? (
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-400">Resolved</span>
                   ) : (
-                    <span className="text-[10px] font-mono uppercase text-emerald-600">Resolved</span>
+                    <Button size="sm" variant="outline" onClick={() => handleResolveMistake(mistake.questionId)}>Mark resolved</Button>
                   )}
                 </div>
               </div>
@@ -472,71 +517,88 @@ export function GameForgeShell() {
         </Card>
       )}
 
-      {/* End screen */}
-      {session?.completed && (
-        <Card className="p-4 md:p-6 space-y-3">
-          <div className="flex items-center justify-between">
+      {pack && session?.phase === "complete" && masteryResult && (
+        <Card className="panel p-4 md:p-5 border-primary/35 bg-primary/5">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <div className="text-xs font-mono uppercase text-muted-foreground">Session complete</div>
-              <h3 className="text-lg font-semibold mt-1">{pack?.title}</h3>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Mastery Result</div>
+              <h2 className="mt-1 text-xl font-semibold">{masteryResult.masteryLabel}</h2>
+              <p className="mt-2 text-sm text-muted-foreground max-w-2xl">{masteryResult.summary}</p>
             </div>
             <Trophy className="h-5 w-5 text-primary" />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <Stat label="XP" value={String(session.xp)} />
-            <Stat label="Accuracy" value={`${accuracy}%`} />
-            <Stat label="Focus left" value={String(session.focusPoints)} />
-            <Stat label="Rank" value={liveRank ?? "—"} />
+          <div className="mt-4 grid gap-2 sm:grid-cols-4">
+            <Metric label="Score" value={`${masteryResult.score}/100`} />
+            <Metric label="Accuracy" value={`${masteryResult.accuracy}%`} />
+            <Metric label="XP" value={String(masteryResult.xp)} />
+            <Metric label="Boss" value={masteryResult.completedBossBattle ? "cleared" : "missed"} />
           </div>
-          <div className="flex gap-2 pt-1">
-            <Button variant="outline" onClick={handleRestart} className="gap-2">
-              <RefreshCw className="h-4 w-4" /> Restart
-            </Button>
+          <div className="mt-4 rounded-sm border border-border bg-background/30 p-3">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Next practice</div>
+            <p className="mt-1 text-sm">{masteryResult.nextPracticeRecommendation}</p>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="outline" onClick={handleStartSession} className="gap-2"><RefreshCw className="h-4 w-4" /> Replay</Button>
+            <Link to="/coach" state={{ coachSeed, mode: "proof_review" }}>
+              <Button variant="outline" className="gap-2"><MessageSquare className="h-4 w-4" /> Ask Coach to Review</Button>
+            </Link>
           </div>
         </Card>
       )}
 
-      {/* Proof artifact */}
       {proofArtifact && (
-        <Card className="p-4 md:p-6 space-y-3 border-primary/40">
-          <div className="flex items-center justify-between">
+        <Card className="panel p-4 md:p-5 border-primary/45 bg-card/60">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary">Proof Artifact</div>
-              <h3 className="text-base font-semibold mt-1">{proofArtifact.topic}</h3>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Artifact Output</div>
+              <h2 className="mt-1 text-base font-semibold">{proofArtifact.title}</h2>
+              <p className="mt-2 text-sm text-muted-foreground">{proofArtifact.summary}</p>
             </div>
-            <Shield className="h-5 w-5 text-primary" />
+            <Button size="sm" variant="outline" onClick={handleCopyProof} className="gap-2"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</Button>
           </div>
-          <dl className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-            <Row k="Domain" v={proofArtifact.domain} />
-            <Row k="Mode" v={proofArtifact.gameMode} />
-            <Row k="Evidence" v={proofArtifact.evidenceCompleted} />
-            <Row k="XP earned" v={String(proofArtifact.xpEarned)} />
-            <Row k="Accuracy" v={`${proofArtifact.accuracy}%`} />
-            <Row k="Mastery rank" v={proofArtifact.masteryRank} />
-            <Row k="Weakness" v={proofArtifact.weaknessFound} />
-            <Row k="Skill improved" v={proofArtifact.skillImproved} />
-            <Row k="Next upgrade" v={proofArtifact.nextUpgrade} />
-          </dl>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <Metric label="Domain" value={proofArtifact.domain} />
+            <Metric label="Evidence" value={proofArtifact.evidence} />
+            <Metric label="Weak point" value={proofArtifact.weakPoint} />
+            <Metric label="Next upgrade" value={proofArtifact.nextUpgrade} />
+          </div>
         </Card>
       )}
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Selector({ label, value, onChange, items }: { label: string; value: string; onChange: (value: string) => void; items: Array<{ value: string; label: string }> }) {
   return (
-    <div className="rounded-md border border-border p-3 bg-muted/20">
-      <div className="text-[10px] font-mono uppercase text-muted-foreground">{label}</div>
-      <div className="text-base font-semibold mt-1">{value}</div>
+    <div>
+      <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {items.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+function Signal({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return (
-    <div className="flex flex-col">
-      <dt className="text-[10px] font-mono uppercase text-muted-foreground">{k}</dt>
-      <dd className="text-sm">{v}</dd>
+    <div className="rounded-sm border border-border bg-background/30 p-3 min-w-0">
+      <div className="flex items-center gap-1.5 text-primary [&_svg]:h-3.5 [&_svg]:w-3.5">
+        {icon}
+        <span className="font-mono text-[9px] uppercase tracking-widest">{label}</span>
+      </div>
+      <div className="mt-1 truncate text-sm">{value}</div>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-sm border border-border bg-background/30 p-3 min-w-0">
+      <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="mt-1 truncate text-sm text-foreground">{value}</div>
     </div>
   );
 }
