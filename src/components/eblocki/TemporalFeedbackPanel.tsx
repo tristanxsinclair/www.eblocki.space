@@ -27,7 +27,6 @@ export function TemporalFeedbackPanel() {
       // Fetch most recent artifact with a temporal snapshot.
       const { data: rows } = await supabase
         .from("proof_artifacts")
-        // @ts-expect-error temporal_snapshot column added via migration
         .select("id, created_at, temporal_snapshot")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
