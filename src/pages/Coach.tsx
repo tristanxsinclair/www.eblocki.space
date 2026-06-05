@@ -20,11 +20,11 @@ function prettyMode(m: string): string {
 }
 
 const QUICK_PROMPTS = [
-  "Force this into a proof artifact.",
+  "Give me the next proof action.",
   "Diagnose my avoidance.",
   "Create a Proof Contract for this.",
   "Review my latest proof.",
-  "Give me the next controllable action.",
+  "Turn this into something I can submit.",
 ];
 
 const SECTION_TITLES = [
@@ -36,7 +36,6 @@ const SECTION_TITLES = [
 
 function splitResponseSections(text: string): { title: string; body: string }[] {
   if (!text) return [];
-  // Match either "## Title", "1. Title", or bare "Title" lines that match SECTION_TITLES.
   const lines = text.split(/\r?\n/);
   const sections: { title: string; body: string[] }[] = [];
   let current: { title: string; body: string[] } | null = null;
@@ -177,32 +176,31 @@ export default function Coach() {
   }, [result, sections]);
 
   const isPersonalisedMode = result ? userModeIds.has(result.mode) : false;
-  const headerModeLabel = result?.mode ?? requestedMode;
 
   return (
     <AppShell>
       <Seo
-        title="AI Coach | EBLOCKI"
-        description="Diagnose the bottleneck. Detect the mode and behavioural state. Forge a Proof Contract you must close."
+        title="Proof Coach | EBLOCKI"
+        description="Get evidence-backed correction, a next proof action, and a Proof Contract tied to your current bottleneck."
         path="/coach"
       />
       <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
         <header>
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            AI Coach
+            Proof Coach
           </span>
           <div className="flex items-end justify-between gap-3 flex-wrap">
             <h1 className="text-2xl md:text-3xl font-semibold mt-1">
-              Diagnose. Prescribe. Prove.
+              Get correction you can prove.
             </h1>
-            <Link to="/start">
+            <Link to="/start-today">
               <Button size="sm" variant="outline">
                 <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Start Today
               </Button>
             </Link>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Drop the task. The system routes to the right mode, diagnoses the state, and forces a Proof Contract.
+            The coach uses your proof, risk, and forecast context where available. It turns bottlenecks into evidence-backed actions and Proof Contracts.
           </p>
           {requestedMode && (
             <div className="mt-3 inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1">
@@ -219,10 +217,10 @@ export default function Coach() {
 
         <Card className="panel p-4">
           <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            What are you trying to execute?
+            What needs correction?
           </label>
           <Textarea
-            placeholder="e.g. I have my LAWS1005 statutory interpretation prep but I keep reorganising notes instead of writing answers. Force the next controllable action into a proof artifact."
+            placeholder="Name the bottleneck, the work, and what proof would count. Example: I keep reorganising notes instead of writing answers. Give me the next proof action."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             className="mt-2 min-h-[140px]"
@@ -233,9 +231,9 @@ export default function Coach() {
             </span>
             <Button onClick={send} disabled={loading || !input.trim()}>
               {loading ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Diagnosing…</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Checking</>
               ) : (
-                <><Send className="h-4 w-4 mr-2" /> Send to Coach</>
+                <><Send className="h-4 w-4 mr-2" /> Get Correction</>
               )}
             </Button>
           </div>
@@ -297,7 +295,7 @@ export default function Coach() {
                     {s.title}
                   </h2>
                   <div className="mt-2 text-sm whitespace-pre-wrap leading-relaxed">
-                    {s.body || <span className="text-muted-foreground italic">—</span>}
+                    {s.body || <span className="text-muted-foreground italic">No detail returned.</span>}
                   </div>
                 </Card>
               ))}
@@ -361,18 +359,18 @@ export default function Coach() {
           </h2>
           {history.length === 0 ? (
             <p className="text-sm text-muted-foreground mt-2">
-              No coach interactions yet. Drop a real bottleneck above to start the loop.
+              No coach interactions yet. Name a real bottleneck above to start the loop.
             </p>
           ) : (
             <ul className="mt-3 divide-y divide-border">
               {history.map((h) => (
                 <li key={h.id} className="py-2 text-xs">
                   <span className="font-mono uppercase tracking-wider text-muted-foreground">
-                    {h.mode ?? "—"}
+                    {h.mode ?? "none"}
                   </span>
                   <span className="ml-2 text-foreground">
                     {h.user_input.slice(0, 110)}
-                    {h.user_input.length > 110 ? "…" : ""}
+                    {h.user_input.length > 110 ? "..." : ""}
                   </span>
                 </li>
               ))}
