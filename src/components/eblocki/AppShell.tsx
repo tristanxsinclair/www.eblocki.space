@@ -1,19 +1,17 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageSquare, FileText, Gavel, Layers, Settings, LogOut, Crosshair, Sparkles, Hexagon, Swords } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Gavel, Settings, LogOut, Crosshair, Sparkles, Hexagon, Swords } from "lucide-react";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 import { LevelUpListener } from "./LevelUpListener";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/operator", label: "Operator", icon: Hexagon },
-  { to: "/gameforge", label: "GameForge", icon: Swords },
-  { to: "/onboarding", label: "Setup OS", icon: Sparkles },
+  { to: "/start-today", label: "Start Today", icon: Sparkles },
+  { to: "/proof", label: "Proof", icon: Gavel },
   { to: "/coach", label: "Coach", icon: MessageSquare },
-  { to: "/sheet", label: "Control Sheet", icon: FileText },
-  { to: "/proof", label: "Court of Evidence", icon: Gavel },
-  { to: "/modes", label: "Modes", icon: Layers },
+  { to: "/gameforge", label: "GameForge", icon: Swords },
+  { to: "/operator", label: "Operator", icon: Hexagon },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -24,7 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen-safe flex flex-col md:flex-row">
-      <aside className="md:w-60 md:min-h-screen border-b md:border-b-0 md:border-r border-border bg-card/40 flex md:flex-col safe-top safe-x md:safe-bottom">
+      <aside className="md:w-56 md:min-h-screen border-b md:border-b-0 md:border-r border-border bg-card/40 flex md:flex-col safe-top safe-x md:safe-bottom">
         <Link to="/dashboard" className="flex items-center gap-2 px-4 py-4 border-b border-border md:w-full native-tap">
           <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground">
             <Crosshair className="h-4 w-4" />
@@ -38,7 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               to={n.to}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-sm font-mono text-xs uppercase tracking-wider whitespace-nowrap",
+                  "flex items-center gap-2 px-3 py-2 rounded-sm font-mono text-xs uppercase tracking-wider whitespace-nowrap native-tap",
                   isActive
                     ? "bg-primary/10 text-primary border border-primary/30"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
