@@ -1,18 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Radar, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 import {
   calibrateForecast,
-  type TemporalForecastSnapshot,
   type TemporalCalibrationResult,
 } from "@/lib/eblocki/temporal-calibration";
+import { normaliseTemporalSnapshot, type TemporalSnapshotPayload } from "@/lib/eblocki/temporal-snapshot";
+import { logEvent } from "@/lib/eblocki/analytics";
 
 interface FeedbackData {
-  snapshot: TemporalForecastSnapshot;
+  snapshot: TemporalSnapshotPayload;
   calibration: TemporalCalibrationResult;
   snapshotAt: string;
+}
+
+function accuracyBucket(score: number): string {
+  if (score >= 75) return "strong";
+  if (score >= 50) return "mixed";
+  return "weak";
 }
 
 export function TemporalFeedbackPanel() {
@@ -24,7 +31,7 @@ export function TemporalFeedbackPanel() {
     if (!user) return;
     let cancelled = false;
     (async () => {
-      // Fetch most recent artifact with a temporal snapshot.
+      setEmpty(false);
       const { data: rows } = await supabase
         .from("proof_artifacts")
         .select("id, created_at, temporal_snapshot")
@@ -33,17 +40,16 @@ export function TemporalFeedbackPanel() {
         .limit(20);
 
       if (cancelled) return;
-      const withSnap = (rows ?? []).find(
-        (r: any) => r.temporal_snapshot && typeof r.temporal_snapshot === "object",
-      );
+      const withSnap = (rows ?? [])
+        .map((row) => ({ row, snapshot: normaliseTemporalSnapshot(row.temporal_snapshot) }))
+        .find((entry): entry is { row: NonNullable<typeof rows>[number]; snapshot: TemporalSnapshotPayload } => entry.snapshot !== null);
       if (!withSnap) {
         setEmpty(true);
         return;
       }
-      const snapshot = (withSnap as any).temporal_snapshot as TemporalForecastSnapshot;
-      const snapshotAt = (withSnap as any).created_at;
+      const snapshot = withSnap.snapshot;
+      const snapshotAt = withSnap.row.created_at;
 
-      // Pull evidence produced after snapshot.
       const { data: arts } = await supabase
         .from("proof_artifacts")
         .select("id,domain,quality_score,evidence_strength,transfer_flag,pressure_flag,proof_tier,created_at")
@@ -67,6 +73,13 @@ export function TemporalFeedbackPanel() {
           ledgerAfter: [],
         });
         setData({ snapshot, calibration, snapshotAt });
+        logEvent("temporal_calibration_completed", {
+          modelVersion: snapshot.modelVersion,
+          confidenceLevel: snapshot.confidenceLevel,
+          riskKind: snapshot.mainRisk,
+          recommendedPath: snapshot.recommendedPath,
+          accuracyBucket: accuracyBucket(calibration.accuracyScore),
+        });
       } catch {
         setEmpty(true);
       }
@@ -136,7 +149,7 @@ export function TemporalFeedbackPanel() {
   );
 }
 
-function Cell({ label, children }: { label: string; children: React.ReactNode }) {
+function Cell({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="rounded-sm border border-border p-2 bg-card/40">
       <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
