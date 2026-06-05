@@ -27,7 +27,11 @@ export type EngineEvent =
   | "welcome_completed"
   | "welcome_skipped"
   | "why_viewed"
-  | "feedback_submitted";
+  | "feedback_submitted"
+  | "temporal_snapshot_created"
+  | "temporal_loop_audit_status"
+  | "temporal_calibration_completed"
+  | "dashboard_section_opened";
 
 /** Whitelist of property keys — anything else is dropped. */
 const ALLOWED_KEYS = new Set([
@@ -35,6 +39,8 @@ const ALLOWED_KEYS = new Set([
   "result", "reason", "dedup_key", "escalation_level", "count", "fixture",
   "quality", "proof_len", "has_upgrade", "has_hard",
   "step", "route",
+  "modelVersion", "confidenceLevel", "loopStatus", "riskKind", "recommendedPath",
+  "accuracyBucket", "intelligenceLevel", "sectionName",
 ]);
 
 function sanitise(props: Record<string, unknown>): Record<string, unknown> {
