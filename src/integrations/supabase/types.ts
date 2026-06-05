@@ -746,6 +746,7 @@ export type Database = {
           pressure_flag: boolean
           proof_tier: number | null
           quality_score: number | null
+          temporal_snapshot: Json | null
           title: string
           transfer_flag: boolean
           user_id: string
@@ -768,6 +769,7 @@ export type Database = {
           pressure_flag?: boolean
           proof_tier?: number | null
           quality_score?: number | null
+          temporal_snapshot?: Json | null
           title: string
           transfer_flag?: boolean
           user_id: string
@@ -790,6 +792,7 @@ export type Database = {
           pressure_flag?: boolean
           proof_tier?: number | null
           quality_score?: number | null
+          temporal_snapshot?: Json | null
           title?: string
           transfer_flag?: boolean
           user_id?: string

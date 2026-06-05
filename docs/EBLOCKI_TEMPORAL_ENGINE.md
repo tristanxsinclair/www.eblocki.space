@@ -46,3 +46,55 @@ Solid line = corrected path; dashed = current / escalation / decay.
 `src/lib/eblocki/temporal-coach-context.ts` prepares an AI-ready payload
 (`primaryPath`, four vectors, `proofRequired`, `forbiddenClaims`,
 `uncertaintyWarning`). The engine itself **never calls an AI provider**.
+
+## Model versioning
+Every `TemporalResult`, snapshot, calibration, and coach context carries
+`TEMPORAL_MODEL_VERSION` (currently `temporal-v1.1-calibrated`). Forecasts
+remain auditable when weights change.
+
+## Snapshot persistence
+`proof_artifacts.temporal_snapshot` (jsonb, nullable) holds the
+`TemporalForecastSnapshot` that was active when an artifact was submitted.
+Long text is stripped. Snapshot failure never blocks proof submission.
+
+## Calibration engine
+See `src/lib/eblocki/temporal-calibration.ts` and
+`docs/EBLOCKI_TEMPORAL_CALIBRATION.md`. Compares forecast vs reality and
+returns an advisory `TemporalCalibrationResult`.
+
+## Reality check logic
+`runTemporalRealityCheck(snapshot, outcome)` returns
+`accurate | partially_accurate | inaccurate | insufficient_data`, signal
+strength, and the next observation target.
+
+## Confidence explainability
+`TemporalConfidence` now includes `reasons`, `dataVolumeSignal`,
+`signalClaritySignal`, `missingDataPenalty`, `legacyRowPenalty`, and an
+`uncertaintyWarning`. Low data → low confidence, always.
+
+## Intervention memory
+`src/lib/eblocki/intervention-memory.ts` aggregates calibration history to
+identify the most reliable intervention archetype.
+
+## Temporal Intelligence Score
+`src/lib/eblocki/temporal-intelligence-score.ts` produces a 0–100 system
+calibration score with level: `dormant | forming | learning | sharp |
+highly_calibrated`. It measures how much the system knows about the user,
+not the user's intelligence.
+
+## What the model learns
+- Which intervention archetypes drive proof improvements.
+- Whether confidence was appropriate per forecast.
+- Which risks systematically over- or under-predicted.
+- The neglected domain that erodes domain coverage.
+
+## What the model refuses to claim
+- Guaranteed outcomes.
+- Destiny language.
+- Identity escalation without `accepted_strong`/`elite`/`transfer` evidence.
+- Praise without proof.
+- High confidence under low data.
+
+## Future tuning
+Bump `TEMPORAL_MODEL_VERSION` whenever weights or thresholds change so old
+snapshots remain comparable but clearly versioned.

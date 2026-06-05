@@ -12,6 +12,8 @@ import { Progress } from "@/components/ui/progress";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
 import { scoreProofArtifact } from "@/lib/eblocki/proof-scoring";
 import type { UserMode } from "@/lib/eblocki/modes";
+import { computeTemporal } from "@/lib/eblocki/temporal-engine";
+import { buildTemporalSnapshot } from "@/lib/eblocki/temporal-calibration";
 import { toast } from "sonner";
 import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLine, AlertTriangle } from "lucide-react";
 import { Seo } from "@/components/Seo";
@@ -277,6 +279,34 @@ export default function Proof() {
         .select()
         .single();
       if (error) throw error;
+
+      // Temporal snapshot — coarse, privacy-safe, advisory only.
+      // Failure here must never break proof submission.
+      try {
+        const [{ data: priorArts }, { data: priorVerds }, { data: priorLed }, { data: priorModes }] = await Promise.all([
+          supabase.from("proof_artifacts")
+            .select("id,domain,quality_score,evidence_strength,transfer_flag,pressure_flag,proof_tier,created_at")
+            .eq("user_id", user.id).order("created_at", { ascending: false }).limit(200),
+          supabase.from("court_verdicts")
+            .select("verdict,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100),
+          supabase.from("identity_ledger")
+            .select("kind,domain,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100),
+          supabase.from("user_modes").select("mode_id").eq("user_id", user.id).eq("is_active", true),
+        ]);
+        const temporal = computeTemporal({
+          artifacts: priorArts ?? [],
+          verdicts: priorVerds ?? [],
+          ledger: priorLed ?? [],
+          activeDomains: (priorModes ?? []).map((m: any) => m.mode_id),
+        });
+        const snapshot = buildTemporalSnapshot(temporal);
+        await supabase
+          .from("proof_artifacts")
+          .update({ temporal_snapshot: snapshot as any })
+          .eq("id", artifact!.id);
+      } catch {
+        // silent — snapshot is advisory
+      }
 
       let contractClosed = false;
       if (linkedContract && !linkedContract.proof_artifact_id) {

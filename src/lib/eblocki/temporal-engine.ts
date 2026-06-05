@@ -9,6 +9,8 @@
  * Core rule: NO PROOF, NO FUTURE CHANGE.
  */
 
+export const TEMPORAL_MODEL_VERSION = "temporal-v1.1-calibrated";
+
 export type FutureHorizon = "24h" | "7d" | "30d" | "90d" | "1y";
 export const HORIZONS: FutureHorizon[] = ["24h", "7d", "30d", "90d", "1y"];
 
@@ -105,6 +107,12 @@ export interface TemporalConfidence {
   score: number;       // 0..1
   band: "low" | "moderate" | "high";
   rationale: string;
+  reasons?: string[];
+  dataVolumeSignal?: number;
+  signalClaritySignal?: number;
+  missingDataPenalty?: number;
+  legacyRowPenalty?: number;
+  uncertaintyWarning?: string;
 }
 
 export interface FutureIntervention {
@@ -126,6 +134,7 @@ export interface VisualTrajectoryModel {
 
 export interface TemporalResult {
   generatedAt: string;
+  modelVersion: string;
   hasEvidence: boolean;
   futurePowerScore: number;   // 0..100
   momentum: ProofMomentum;
@@ -310,6 +319,25 @@ export function computeTemporal(input: TemporalInput = {}): TemporalResult {
       artifacts.length === 0
         ? "No proof artifacts yet. Future modelling is provisional until baseline evidence exists."
         : `Based on ${artifacts.length} artifact(s), ${strongCount} strong, ${Math.round(consistency * 14)}/14 active days.`,
+    reasons: [
+      `data volume signal: ${Math.round(dataVolume)}/60`,
+      `recent consistency: ${Math.round(recentConsistency)}/30`,
+      `signal clarity: ${signalClarity ? "strong proof present" : "no strong proof"}`,
+      missingDataPenalty ? "missing data penalty applied" : "no missing data penalty",
+      legacyPenalty ? `legacy rows penalty: -${legacyPenalty}` : "no legacy penalty",
+    ],
+    dataVolumeSignal: dataVolume,
+    signalClaritySignal: signalClarity,
+    missingDataPenalty,
+    legacyRowPenalty: legacyPenalty,
+    uncertaintyWarning:
+      artifacts.length === 0
+        ? "Low confidence: not enough behavioural evidence yet. Submit proof to activate stronger forecasting."
+        : confScore < 0.34
+          ? "Low confidence: forecast is provisional. Add more strong-evidence proofs to sharpen it."
+          : confScore < 0.7
+            ? "Moderate confidence: trajectory direction is stable; horizon detail remains probabilistic."
+            : "High confidence: pattern is well-observed. Projections remain probabilistic, not deterministic.",
   };
 
   // Intervention
@@ -354,6 +382,7 @@ export function computeTemporal(input: TemporalInput = {}): TemporalResult {
 
   return {
     generatedAt: now.toISOString(),
+    modelVersion: TEMPORAL_MODEL_VERSION,
     hasEvidence: artifacts.length > 0,
     futurePowerScore: Math.round(futurePowerScore),
     momentum,
