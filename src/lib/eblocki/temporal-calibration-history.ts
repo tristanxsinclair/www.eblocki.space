@@ -1,6 +1,6 @@
 import type { ProofArtifactLike, VerdictLike } from "./temporal-engine";
 import { calibrateForecast } from "./temporal-calibration";
-import { normaliseTemporalSnapshot, type TemporalSnapshotPathName } from "./temporal-snapshot";
+import { normaliseTemporalSnapshot, type TemporalSnapshotPathName, type TemporalSnapshotPayload } from "./temporal-snapshot";
 
 export type TemporalConfidenceTrend = "not_enough_data" | "rising" | "falling" | "stable";
 
@@ -48,7 +48,7 @@ export function buildTemporalCalibrationHistory(
   const sorted = [...proofs].sort((a, b) => dateMs(a.created_at) - dateMs(b.created_at));
   const snapshotRows = sorted
     .map((proof) => ({ proof, snapshot: normaliseTemporalSnapshot(proof.temporal_snapshot) }))
-    .filter((entry): entry is { proof: TemporalCalibrationHistoryProof; snapshot: NonNullable<typeof entry.snapshot> } => !!entry.snapshot);
+    .filter((entry): entry is { proof: TemporalCalibrationHistoryProof; snapshot: TemporalSnapshotPayload } => entry.snapshot !== null);
 
   const riskCounts = new Map<string, number>();
   const pathScores = new Map<TemporalSnapshotPathName, number[]>();
