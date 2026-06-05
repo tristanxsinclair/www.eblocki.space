@@ -1,53 +1,98 @@
 # Eblocki Temporal Calibration
 
-## What this is
-A deterministic, advisory reality-feedback layer for the Temporal Engine.
-Forecasts (`TemporalForecastSnapshot`) are stored on the proof artifact that
-triggered them. Later evidence is compared against the snapshot to produce a
-`TemporalCalibrationResult`.
+## What This Is
+A deterministic, advisory reality-feedback layer for the Temporal Engine. Forecast snapshots are stored on proof artifacts, then compared against later proof evidence. The result is a `TemporalCalibrationResult`, not a guarantee.
 
-## How forecasts are generated
-Every accepted proof submission produces a `TemporalResult` via
-`computeTemporal(...)` and a coarse `TemporalForecastSnapshot` via
-`buildTemporalSnapshot(result)`. The snapshot is written to
-`proof_artifacts.temporal_snapshot` (jsonb, additive migration).
+## Operational Loop
+The production loop is:
+forecast → snapshot → later proof → calibration → reality check → intervention memory → intelligence score → next command.
 
-## What the snapshot stores
-Only coarse, privacy-safe fields: `modelVersion`, `generatedAt`,
-`predictionId`, `primaryPath`, `recommendedPath`, `confidenceScore`,
-`confidenceLevel`, `mainRisk`, `mainRiskScore`, `mainOpportunity`,
-`proofRequired` (truncated), `artifactRequired`, `domain`, `horizonScores`,
-`evidenceCount`, `trajectoryScores`. **Never** long proof descriptions,
-secrets, or personal free text.
+The loop is considered operational only when all links can run on real evidence without fake certainty.
 
-## How outcomes are compared
-`calibrateForecast(snapshot, outcome)` and `runTemporalRealityCheck(...)`
-compare the required artifact, target domain, verdicts, and quality of
-evidence produced after the snapshot timestamp.
+## Snapshot Boundary
+Use `src/lib/eblocki/temporal-snapshot.ts` for all snapshot reads and writes.
 
-## What accuracy means
-`accuracyScore ∈ [0, 100]` is derived from `realityCheck.verdict` plus
-whether the predicted risk occurred and whether proof quality rose. It is
-a calibration signal, not a guarantee.
+Rules:
+- `modelVersion` is required.
+- `generatedAt` is required.
+- path names normalise to `current_path | corrected_path | decay_path | escalation_path`.
+- confidence normalises to `low | moderate | high`.
+- null/legacy rows do not crash.
+- output must be JSONB-safe.
+- raw proof text, notes, OCR, attachments, coach transcripts, and secrets are excluded.
 
-## Why weights are advisory only
-`suggestedWeightAdjustments` are returned for human/system inspection. The
-kernel never self-modifies its weights. Tuning happens via deliberate code
-changes with a new `TEMPORAL_MODEL_VERSION`.
+## Writing Snapshots
+`Proof.tsx` files proof first. Snapshot persistence is secondary and best-effort. If the proof insert fails, no success is claimed. If the snapshot update fails, the proof remains filed and the UI does not pretend calibration happened.
 
-## How to interpret low confidence
-Low confidence almost always means insufficient data — submit proof. The
-system refuses to escalate identity or claim certainty until evidence
-exists.
+Use:
+- `buildTemporalSnapshotPayload(result)`
+- `stripSensitiveTemporalSnapshotFields(payload)`
 
-## How to debug predictions
-1. Read the snapshot on the relevant artifact.
-2. Re-run `computeTemporal` with the same inputs at `generatedAt`.
-3. Run `calibrateForecast` against later evidence.
-4. Inspect `realityCheck` + `suggestedWeightAdjustments`.
+## Reading Snapshots
+Dashboard, feedback, intelligence, and audit code must read snapshots through:
+- `normaliseTemporalSnapshot(row.temporal_snapshot)`
+- `getTemporalSnapshotSummary(row.temporal_snapshot)`
 
-## Data that must never be stored
-- Long content fields.
-- Attachments or OCR text.
-- Coach transcripts.
-- API keys / secrets.
+Do not cast `temporal_snapshot` directly in page/component code.
+
+## Calibration History
+`src/lib/eblocki/temporal-calibration-history.ts` exposes `buildTemporalCalibrationHistory(proofs, verdicts)`.
+
+It returns:
+- `totalForecasts`
+- `calibratedForecasts`
+- `averageAccuracy`
+- `bestForecast`
+- `weakestForecast`
+- `mostCommonRisk`
+- `mostReliablePath`
+- `confidenceTrend`
+- `summary`
+
+TemporalIntelligencePanel uses this to distinguish real calibrated history from a forming signal.
+
+## Loop Audit
+`src/lib/eblocki/temporal-loop-audit.ts` checks whether the system can:
+1. Generate a Temporal forecast.
+2. Build a snapshot.
+3. Confirm snapshot privacy safety.
+4. Read snapshot rows.
+5. Compare later proof against a snapshot.
+6. Classify calibration outcome.
+7. Run a reality check.
+8. Build intervention memory.
+9. Calculate Temporal Intelligence Score.
+10. Show dashboard empty states.
+
+Statuses:
+- `inactive`: waiting for proof evidence.
+- `partial`: forecast exists but needs later proof/calibration.
+- `operational`: comparing prediction against reality.
+- `degraded`: invalid or legacy snapshot data detected.
+
+## Model Audit UI
+`TemporalModelAuditPanel` is compact and secondary. It shows model version, loop status, snapshot status, calibration status, confidence, data quality, next fix, and developer-safe detail on demand.
+
+It must never claim sentience, certainty, or guaranteed prediction.
+
+## Privacy-Safe Analytics
+Only safe metadata is logged:
+- `temporal_snapshot_created`
+- `temporal_loop_audit_status`
+- `temporal_calibration_completed`
+- `dashboard_section_opened`
+
+Allowed properties include model version, confidence level, loop status, risk kind, recommended path, accuracy bucket, intelligence level, and section name. Never send proof descriptions, notes, full snapshots, raw JSON, or secrets.
+
+## Debugging Predictions
+1. Confirm proof insert succeeded.
+2. Confirm `temporal_snapshot` exists on the proof row.
+3. Run `getTemporalSnapshotSummary()`.
+4. If degraded, inspect whether the row is legacy or malformed.
+5. Confirm later proof exists after `created_at` of the snapshot artifact.
+6. Run `calibrateForecast(snapshot, outcome)`.
+7. Check `realityCheck.verdict` and `nextObservationTarget`.
+8. Check intervention memory and intelligence score.
+
+## Advisory Weights Only
+`suggestedWeightAdjustments` are diagnostics. The model never self-modifies. Weight changes require deliberate code changes and a model version bump.
