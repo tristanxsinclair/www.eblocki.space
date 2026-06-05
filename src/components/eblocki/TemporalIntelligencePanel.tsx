@@ -7,7 +7,6 @@ import { computeTemporal } from "@/lib/eblocki/temporal-engine";
 import {
   calibrateForecast,
   type TemporalCalibrationResult,
-  type TemporalForecastSnapshot,
 } from "@/lib/eblocki/temporal-calibration";
 import {
   summariseInterventionMemory,
@@ -17,10 +16,16 @@ import {
   computeTemporalIntelligenceScore,
   type TemporalIntelligenceScore,
 } from "@/lib/eblocki/temporal-intelligence-score";
+import { normaliseTemporalSnapshot, type TemporalSnapshotPayload } from "@/lib/eblocki/temporal-snapshot";
+import {
+  buildTemporalCalibrationHistory,
+  type TemporalCalibrationHistorySummary,
+} from "@/lib/eblocki/temporal-calibration-history";
 
 export function TemporalIntelligencePanel() {
   const { user } = useAuth();
   const [score, setScore] = useState<TemporalIntelligenceScore | null>(null);
+  const [history, setHistory] = useState<TemporalCalibrationHistorySummary | null>(null);
   const [reliability, setReliability] = useState<number>(0);
   const [evaluations, setEvaluations] = useState<number>(0);
 
@@ -52,48 +57,50 @@ export function TemporalIntelligencePanel() {
       if (cancelled) return;
 
       try {
+        const proofRows = arts ?? [];
         const result = computeTemporal({
-          artifacts: arts ?? [],
+          artifacts: proofRows,
           verdicts: verds ?? [],
           ledger: led ?? [],
-          activeDomains: (modes ?? []).map((m: any) => m.mode_id),
+          activeDomains: (modes ?? []).map((mode) => mode.mode_id),
         });
 
-        // Build calibration history from snapshots in artifacts.
         const calibrations: TemporalCalibrationResult[] = [];
         const records: ReturnType<typeof recordFromCalibration>[] = [];
-        const snapshots = (arts ?? [])
-          .filter((a: any) => a.temporal_snapshot)
+        const snapshots = proofRows
+          .map((row) => ({ row, snapshot: normaliseTemporalSnapshot(row.temporal_snapshot) }))
+          .filter((entry): entry is { row: typeof proofRows[number]; snapshot: TemporalSnapshotPayload } => entry.snapshot !== null)
           .slice(0, 10);
-        for (const a of snapshots) {
-          const snap = (a as any).temporal_snapshot as TemporalForecastSnapshot;
-          const after = (arts ?? []).filter(
-            (x: any) => new Date(x.created_at) > new Date(a.created_at),
+        for (const { row, snapshot } of snapshots) {
+          const after = proofRows.filter(
+            (candidate) => new Date(candidate.created_at).getTime() > new Date(row.created_at).getTime(),
           );
           const verdictsAfter = (verds ?? []).filter(
-            (v: any) => new Date(v.created_at) > new Date(a.created_at),
+            (verdict) => new Date(verdict.created_at).getTime() > new Date(row.created_at).getTime(),
           );
           try {
-            const cal = calibrateForecast(snap, {
+            const cal = calibrateForecast(snapshot, {
               windowHours: 24,
               artifactsAfter: after,
               verdictsAfter,
               ledgerAfter: [],
             });
             calibrations.push(cal);
-            records.push(recordFromCalibration(snap.artifactRequired, snap.domain, cal));
+            records.push(recordFromCalibration(snapshot.artifactRequired, snapshot.domain, cal));
           } catch {
-            // skip
+            // skip invalid calibration pairs
           }
         }
 
         const memory = summariseInterventionMemory(records);
         const tis = computeTemporalIntelligenceScore({ result, calibrations, memory });
         setScore(tis);
+        setHistory(buildTemporalCalibrationHistory(proofRows, verds ?? []));
         setReliability(memory.interventionReliabilityScore);
         setEvaluations(memory.totalEvaluations);
       } catch {
         setScore(null);
+        setHistory(null);
       }
     })();
     return () => { cancelled = true; };
@@ -140,8 +147,8 @@ export function TemporalIntelligencePanel() {
 
       <div className="mt-3 grid md:grid-cols-2 gap-3 text-xs">
         <div className="rounded-sm border border-border p-2 bg-card/40">
-          <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">What raises score</div>
-          <div className="text-sm mt-0.5">{score.whatRaisesScore}</div>
+          <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Calibration history</div>
+          <div className="text-sm mt-0.5">{history?.summary ?? "Calibration history is forming."}</div>
         </div>
         <div className="rounded-sm border border-border p-2 bg-card/40">
           <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Next observation target</div>
