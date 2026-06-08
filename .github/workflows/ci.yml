@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify product
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint Eblocki touched surfaces
+        run: npm run lint:eblocki
+
+      - name: Smoke built SPA routes
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/eblocki-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill $PREVIEW_PID' EXIT
+          ROUTE_SMOKE_BASE_URL=http://127.0.0.1:4173 npm run smoke:routes
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=moderate
