@@ -8,7 +8,9 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "lint:eblocki": "eslint src/lib/eblocki src/lib/gameforge src/components/gameforge src/pages/Coach.tsx src/pages/GameForge.tsx",
     "preview": "vite preview",
+    "smoke:routes": "node scripts/route-smoke.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
