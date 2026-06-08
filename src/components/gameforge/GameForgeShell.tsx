@@ -23,6 +23,7 @@ import {
   Radar,
   RefreshCw,
   Shield,
+  ShieldCheck,
   Sparkles,
   Sword,
   Target,
