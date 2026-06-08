@@ -173,6 +173,7 @@ export function GameForgeShell() {
     setLastFeedback(null);
     setMasteryResult(null);
     setProofArtifact(null);
+    setProofSubmittedId(null);
   }
 
   function handleGeneratePack() {
@@ -619,6 +620,15 @@ export function GameForgeShell() {
               <p className="mt-2 text-sm text-muted-foreground">{proofArtifact.summary}</p>
             </div>
             <Button size="sm" variant="outline" onClick={handleCopyProof} className="gap-2"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</Button>
+            <Button
+              size="sm"
+              onClick={handleSubmitProofToLedger}
+              disabled={submittingProof || !!proofSubmittedId}
+              className="gap-2"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              {proofSubmittedId ? "Submitted to ledger" : submittingProof ? "Submitting..." : "Submit to Evidence Ledger"}
+            </Button>
           </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <Metric label="Domain" value={proofArtifact.domain} />
