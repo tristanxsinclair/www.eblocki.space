@@ -23,6 +23,7 @@ import {
   Radar,
   RefreshCw,
   Shield,
+  ShieldCheck,
   Sparkles,
   Sword,
   Target,
@@ -32,6 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/eblocki/analytics";
 import {
   advanceGameForgeSession,
@@ -154,6 +156,8 @@ export function GameForgeShell() {
   const [questionStartedAt, setQuestionStartedAt] = useState(Date.now());
   const [masteryResult, setMasteryResult] = useState<GameForgeMasteryResult | null>(null);
   const [proofArtifact, setProofArtifact] = useState<GameForgeProofArtifact | null>(null);
+  const [submittingProof, setSubmittingProof] = useState(false);
+  const [proofSubmittedId, setProofSubmittedId] = useState<string | null>(null);
 
   const detectedMode = useMemo(() => detectGameForgeMode(sourceMaterial), [sourceMaterial]);
   const activeQuestion = useMemo<GameForgeQuestion | null>(() => (pack && session ? getActiveQuestion(pack, session) : null), [pack, session]);
@@ -169,6 +173,7 @@ export function GameForgeShell() {
     setLastFeedback(null);
     setMasteryResult(null);
     setProofArtifact(null);
+    setProofSubmittedId(null);
   }
 
   function handleGeneratePack() {
@@ -288,6 +293,66 @@ export function GameForgeShell() {
     }
     await navigator.clipboard.writeText(buildProofText(proofArtifact));
     toast.success("Proof artifact copied.");
+  }
+
+  async function handleSubmitProofToLedger() {
+    if (!pack || !masteryResult || !proofArtifact || submittingProof) return;
+    setSubmittingProof(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Sign in to submit GameForge proof to your ledger.");
+        return;
+      }
+      const domainMap: Record<string, string> = {
+        law: "law",
+        psychology: "psychology",
+        sales: "sales",
+        sport: "sport",
+        finance: "finance",
+        language: "life",
+        general: "life",
+        custom: "life",
+      };
+      const evidenceStrength =
+        masteryResult.scoreBucket === "mastery" ? "elite"
+        : masteryResult.scoreBucket === "strong" ? "strong"
+        : masteryResult.scoreBucket === "solid" ? "moderate"
+        : "weak";
+      const qualityScore = Math.max(1, Math.min(5, Math.round(masteryResult.score / 20)));
+      const content = [
+        `GameForge mastery proof — ${pack.title}`,
+        `Mastery score: ${masteryResult.score}/100 (${masteryResult.masteryLabel}).`,
+        `Accuracy: ${masteryResult.accuracy}%. XP: ${masteryResult.xp}. Boss battle: ${masteryResult.completedBossBattle ? "cleared" : "not cleared"}.`,
+        `Strongest skill: ${masteryResult.strongestSkill}.`,
+        `Weak points: ${masteryResult.weakPoints.join("; ")}.`,
+        `Next upgrade: ${proofArtifact.nextUpgrade}`,
+      ].join("\n");
+      const { data: row, error } = await supabase
+        .from("proof_artifacts")
+        .insert({
+          user_id: user.id,
+          domain: domainMap[pack.mode] ?? "life",
+          title: proofArtifact.title.slice(0, 200),
+          artifact_type: "gameforge",
+          content,
+          quality_score: qualityScore,
+          evidence_strength: evidenceStrength,
+          next_upgrade: proofArtifact.nextUpgrade,
+          pressure_flag: masteryResult.completedBossBattle,
+          transfer_flag: masteryResult.score >= 78,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      setProofSubmittedId(row?.id ?? null);
+      toast.success("Proof submitted to evidence ledger.");
+    } catch (err) {
+      console.error("[gameforge] submit proof failed", err);
+      toast.error("Could not submit proof. Try again or copy it manually.");
+    } finally {
+      setSubmittingProof(false);
+    }
   }
 
   const coachSeed = pack && masteryResult
@@ -554,7 +619,18 @@ export function GameForgeShell() {
               <h2 className="mt-1 text-base font-semibold">{proofArtifact.title}</h2>
               <p className="mt-2 text-sm text-muted-foreground">{proofArtifact.summary}</p>
             </div>
-            <Button size="sm" variant="outline" onClick={handleCopyProof} className="gap-2"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={handleCopyProof} className="gap-2"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</Button>
+              <Button
+                size="sm"
+                onClick={handleSubmitProofToLedger}
+                disabled={submittingProof || !!proofSubmittedId}
+                className="gap-2"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {proofSubmittedId ? "Submitted" : submittingProof ? "Submitting..." : "Submit to Evidence Ledger"}
+              </Button>
+            </div>
           </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <Metric label="Domain" value={proofArtifact.domain} />
