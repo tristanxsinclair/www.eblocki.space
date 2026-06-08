@@ -41,7 +41,7 @@ describe("analytics privacy", () => {
     expect(mocks.from).toHaveBeenCalledWith("analytics_events");
     expect(mocks.insert).toHaveBeenCalledTimes(1);
 
-    const [payload] = mocks.insert.mock.calls[0] as Array<[{ properties: Record<string, unknown> }]>;
+    const [payload] = mocks.insert.mock.calls[0] as [{ properties: Record<string, unknown> }];
     expect(payload.properties).toEqual({
       domain: "law",
       responseMode: "law_reasoning",
