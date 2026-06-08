@@ -156,6 +156,8 @@ export function GameForgeShell() {
   const [questionStartedAt, setQuestionStartedAt] = useState(Date.now());
   const [masteryResult, setMasteryResult] = useState<GameForgeMasteryResult | null>(null);
   const [proofArtifact, setProofArtifact] = useState<GameForgeProofArtifact | null>(null);
+  const [submittingProof, setSubmittingProof] = useState(false);
+  const [proofSubmittedId, setProofSubmittedId] = useState<string | null>(null);
 
   const detectedMode = useMemo(() => detectGameForgeMode(sourceMaterial), [sourceMaterial]);
   const activeQuestion = useMemo<GameForgeQuestion | null>(() => (pack && session ? getActiveQuestion(pack, session) : null), [pack, session]);
@@ -290,6 +292,66 @@ export function GameForgeShell() {
     }
     await navigator.clipboard.writeText(buildProofText(proofArtifact));
     toast.success("Proof artifact copied.");
+  }
+
+  async function handleSubmitProofToLedger() {
+    if (!pack || !masteryResult || !proofArtifact || submittingProof) return;
+    setSubmittingProof(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Sign in to submit GameForge proof to your ledger.");
+        return;
+      }
+      const domainMap: Record<string, string> = {
+        law: "law",
+        psychology: "psychology",
+        sales: "sales",
+        sport: "sport",
+        finance: "finance",
+        language: "life",
+        general: "life",
+        custom: "life",
+      };
+      const evidenceStrength =
+        masteryResult.scoreBucket === "mastery" ? "elite"
+        : masteryResult.scoreBucket === "strong" ? "strong"
+        : masteryResult.scoreBucket === "solid" ? "moderate"
+        : "weak";
+      const qualityScore = Math.max(1, Math.min(5, Math.round(masteryResult.score / 20)));
+      const content = [
+        `GameForge mastery proof — ${pack.title}`,
+        `Mastery score: ${masteryResult.score}/100 (${masteryResult.masteryLabel}).`,
+        `Accuracy: ${masteryResult.accuracy}%. XP: ${masteryResult.xp}. Boss battle: ${masteryResult.completedBossBattle ? "cleared" : "not cleared"}.`,
+        `Strongest skill: ${masteryResult.strongestSkill}.`,
+        `Weak points: ${masteryResult.weakPoints.join("; ")}.`,
+        `Next upgrade: ${proofArtifact.nextUpgrade}`,
+      ].join("\n");
+      const { data: row, error } = await supabase
+        .from("proof_artifacts")
+        .insert({
+          user_id: user.id,
+          domain: domainMap[pack.mode] ?? "life",
+          title: proofArtifact.title.slice(0, 200),
+          artifact_type: "gameforge",
+          content,
+          quality_score: qualityScore,
+          evidence_strength: evidenceStrength,
+          next_upgrade: proofArtifact.nextUpgrade,
+          pressure_flag: masteryResult.completedBossBattle,
+          transfer_flag: masteryResult.score >= 78,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      setProofSubmittedId(row?.id ?? null);
+      toast.success("Proof submitted to evidence ledger.");
+    } catch (err) {
+      console.error("[gameforge] submit proof failed", err);
+      toast.error("Could not submit proof. Try again or copy it manually.");
+    } finally {
+      setSubmittingProof(false);
+    }
   }
 
   const coachSeed = pack && masteryResult
