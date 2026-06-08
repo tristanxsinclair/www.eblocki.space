@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/eblocki/analytics";
 import {
   advanceGameForgeSession,
