@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ProofContractCard } from "@/components/eblocki/ProofContractCard";
 import { normaliseCoachResponse, type NormalisedCoachResponse } from "@/lib/eblocki/coach-response";
+import type { ProofContract } from "@/lib/eblocki/proof-contract";
 import type { Mode } from "@/lib/eblocki/modes";
 import { toast } from "sonner";
 import {
@@ -60,6 +61,12 @@ type CoachRouteState = {
   mode?: CoachResponseMode | "auto";
 };
 
+type CoachHistoryRow = {
+  id: string;
+  mode: string | null;
+  user_input: string;
+};
+
 function coerceMode(value: string | null | undefined): CoachResponseMode | "auto" {
   const match = MODE_CHIPS.find((chip) => chip.value === value);
   return match?.value ?? "auto";
@@ -67,6 +74,54 @@ function coerceMode(value: string | null | undefined): CoachResponseMode | "auto
 
 function splitRemoteResponse(text: string): string {
   return text.replace(/^##\s*/gm, "").trim();
+}
+
+function normaliseProofContractMode(value: string | null | undefined): Mode {
+  switch ((value ?? "").toUpperCase()) {
+    case "LAW_MAX":
+      return "LAW_MAX";
+    case "PSYCH_HD":
+      return "PSYCH_HD";
+    case "SALES_CLOSE":
+      return "SALES_CLOSE";
+    case "EBLOCKI":
+    case "EBLOCKI_BUILD":
+      return "EBLOCKI";
+    case "SPORT":
+    case "ATHLETE_MODE":
+      return "SPORT";
+    case "BRAND":
+      return "BRAND";
+    case "CAREER_MONEY":
+    case "FINANCE_BASICS":
+      return "CAREER_MONEY";
+    default:
+      return "GENERAL_EXECUTION";
+  }
+}
+
+function buildProofContractCardValue(result: NormalisedCoachResponse): ProofContract {
+  const contract = result.proofContract;
+  return {
+    shouldCreate: contract.shouldCreate,
+    domain: contract.domain,
+    mode: normaliseProofContractMode(contract.mode),
+    title: contract.title,
+    requiredArtifact: contract.requiredArtifact,
+    evidenceStandard: contract.evidenceStandard,
+    dueDate: contract.dueDate,
+    seriousnessScore: contract.seriousnessScore,
+    reason: contract.reason,
+  };
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return fallback;
 }
 
 export default function Coach() {
@@ -82,7 +137,7 @@ export default function Coach() {
   const [error, setError] = useState<string | null>(null);
   const [committing, setCommitting] = useState(false);
   const [localCommitmentId, setLocalCommitmentId] = useState<string | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<CoachHistoryRow[]>([]);
 
   const committedId = remoteResult?.commitmentId ?? localCommitmentId;
 
@@ -90,7 +145,7 @@ export default function Coach() {
     if (!user) return;
     supabase
       .from("coach_interactions")
-      .select("*")
+      .select("id, mode, user_input")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(5)
@@ -159,8 +214,8 @@ export default function Coach() {
       }
       const normalised = normaliseCoachResponse(data);
       setRemoteResult(normalised);
-    } catch (e: any) {
-      setError(e?.message || "Unexpected coach error. Deterministic diagnosis is still available.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Unexpected coach error. Deterministic diagnosis is still available."));
     } finally {
       setLoading(false);
     }
@@ -182,13 +237,14 @@ export default function Coach() {
           evidence_standard: remoteResult.proofContract.evidenceStandard,
           status: "pending",
         })
-        .select()
+        .select("id")
         .single();
       if (insertError) throw insertError;
-      setLocalCommitmentId(data!.id);
+      if (!data?.id) throw new Error("No commitment id returned.");
+      setLocalCommitmentId(data.id);
       toast.success("Committed to the Court of Evidence.");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to commit.");
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, "Failed to commit."));
     } finally {
       setCommitting(false);
     }
@@ -369,10 +425,7 @@ export default function Coach() {
 
             {remoteResult?.proofContract.shouldCreate && (
               <ProofContractCard
-                contract={{
-                  ...remoteResult.proofContract,
-                  mode: remoteResult.proofContract.mode as Mode,
-                } as any}
+                contract={buildProofContractCardValue(remoteResult)}
                 onCommit={commit}
                 committing={committing}
                 committed={!!committedId}
