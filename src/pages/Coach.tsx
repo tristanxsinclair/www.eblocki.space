@@ -6,6 +6,7 @@ import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { ProofContractCard } from "@/components/eblocki/ProofContractCard";
 import { normaliseCoachResponse, type NormalisedCoachResponse } from "@/lib/eblocki/coach-response";
 import type { Mode } from "@/lib/eblocki/modes";
