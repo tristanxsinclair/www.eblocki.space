@@ -32,6 +32,7 @@ import { TemporalFeedbackPanel } from "@/components/eblocki/TemporalFeedbackPane
 import { TemporalIntelligencePanel } from "@/components/eblocki/TemporalIntelligencePanel";
 import { TemporalModelAuditPanel } from "@/components/eblocki/TemporalModelAuditPanel";
 import { TemporalMap } from "@/components/eblocki/TemporalMap";
+import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
 import { computeTemporal, type TemporalResult } from "@/lib/eblocki/temporal-engine";
 import { buildDashboardViewModel } from "@/lib/eblocki/dashboard-view-model";
 import { logEvent } from "@/lib/eblocki/analytics";
@@ -254,6 +255,20 @@ export default function Dashboard() {
             latestArtifact={latestArtifact}
           />
         </div>
+
+        <section className="space-y-3">
+          <SectionHeader eyebrow="Zone 4" title="Product match" detail="trust-gated" />
+          <ProductMatchPanel
+            artifacts={allArtifacts}
+            temporal={temporalResult}
+            accessLevel="free"
+            operatingProfile={{
+              primaryDomain: activeDomains[0] ?? null,
+              recommendationsAllowed: true,
+              trustPreference: "neutral",
+            }}
+          />
+        </section>
 
         <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 items-start">
           <QuickCheckInCard
