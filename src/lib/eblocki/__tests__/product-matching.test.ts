@@ -100,10 +100,7 @@ describe("product-matching", () => {
   it("never crashes on legacy/null data", () => {
     expect(() =>
       buildProductMatchingResult({
-        artifacts: [
-          // @ts-expect-error legacy shape
-          { domain: null, quality_score: null, created_at: null },
-        ],
+        artifacts: [{ domain: null, quality_score: null, created_at: null }],
       }),
     ).not.toThrow();
   });
