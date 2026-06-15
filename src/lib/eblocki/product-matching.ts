@@ -228,7 +228,10 @@ function scoreCandidate(candidate: ProductMatch, need: UserNeedSignal, input: Pr
     return { ...candidate, fitScore: 0, trustScore: 0 };
   }
   const acceptedCategories = NEED_CATEGORY_MAP[need.domain.toLowerCase()] ?? NEED_CATEGORY_MAP.general;
-  const categoryFit = acceptedCategories.includes(candidate.category) ? 1 : 0.3;
+  // Internal Pro is a cross-domain meta-tool — it always fits the diagnosis surface.
+  const categoryFit = candidate.monetisationType === "internal_pro"
+    ? 1
+    : acceptedCategories.includes(candidate.category) ? 1 : 0.3;
 
   const monetisationPenalty = candidate.monetisationType === "affiliate" || candidate.monetisationType === "sponsored"
     ? 0.85
