@@ -39,7 +39,14 @@ export type EngineEvent =
   | "coach_prompt_submitted"
   | "coach_mode_detected"
   | "coach_proof_action_generated"
-  | "coach_gameforge_suggested";
+  | "coach_gameforge_suggested"
+  | "product_need_detected"
+  | "product_match_shown"
+  | "product_match_clicked"
+  | "product_match_dismissed"
+  | "upgrade_cta_shown"
+  | "upgrade_clicked"
+  | "recommendation_outcome_logged";
 
 /** Whitelist of property keys - anything else is dropped. */
 const ALLOWED_KEYS = new Set([
@@ -51,6 +58,7 @@ const ALLOWED_KEYS = new Set([
   "accuracyBucket", "intelligenceLevel", "sectionName",
   "domain", "intensity", "style", "scoreBucket", "responseMode", "proofActionType",
   "accuracy", "bossCompleted", "correct", "difficulty", "suggested", "roundStyle",
+  "needSource", "needUrgency", "matchCategory", "monetisationType", "fitScore", "accessLevel", "outcome",
 ]);
 
 function sanitise(props: Record<string, unknown>): Record<string, unknown> {
