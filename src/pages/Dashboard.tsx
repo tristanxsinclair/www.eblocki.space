@@ -176,9 +176,9 @@ export default function Dashboard() {
         description="Command-centre overview: next proof, forecast, evidence, identity, and weekly calibration."
         path="/dashboard"
       />
-      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-5">
-        <header className="flex items-end justify-between gap-4 flex-wrap">
-          <div>
+      <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-5">
+        <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">
+          <div className="min-w-0">
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Operating System // Command Centre</span>
             <h1 className="text-2xl md:text-3xl font-semibold mt-1">Command surface</h1>
           </div>
@@ -206,12 +206,23 @@ export default function Dashboard() {
 
         <ProofWeekPanel artifactDates={allArtifacts.map((a: any) => a.created_at).filter(Boolean)} />
 
-        <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-4 items-start">
+        <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-4 items-start min-w-0">
           <section className="space-y-3 min-w-0">
             <SectionHeader eyebrow="Zone 2" title="Forecast" detail={view.futureSummary.status} />
+            {/* Always-visible mobile forecast summary so a beta tester sees
+                one clear signal without expanding the advanced map. */}
+            <Card className="md:hidden panel p-3 border-border/80 bg-card/50 mobile-safe-card">
+              <div className="grid grid-cols-2 gap-2">
+                <MetricCell label="Power" value={`${view.futureSummary.futurePowerScore}/100`} />
+                <MetricCell label="Confidence" value={view.futureSummary.confidenceLevel} />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground text-wrap-safe">
+                <span className="text-foreground">Command:</span> {view.futureSummary.temporalCommand}
+              </p>
+            </Card>
             <MobileCollapse
               eyebrow="Zone 2"
-              label="View forecast, calibration, and intel"
+              label="Open forecast map, calibration & intel"
               trackId="forecast_tabs"
               onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "forecast_tabs" })}
             >
@@ -293,31 +304,41 @@ export default function Dashboard() {
           </MobileCollapse>
         </section>
 
-        <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 items-start">
-          <QuickCheckInCard
-            quick={quick}
-            setQuick={setQuick}
-            mode={mode}
-            state={state}
-            onDiagnose={handleCheckIn}
-          />
-          <Card className="panel p-4 border-border/80 bg-card/50">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Identity</div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {currentMode ? `Last coach mode: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
-                </p>
-              </div>
-              {currentState && <StateBadge state={currentState as BehaviouralState} />}
+        <section className="space-y-3 min-w-0">
+          <SectionHeader eyebrow="Zone 5" title="Check-in & identity" />
+          <MobileCollapse
+            eyebrow="Zone 5"
+            label="Quick check-in & identity signal"
+            trackId="check_in_identity"
+            onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "check_in_identity" })}
+          >
+            <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 items-start min-w-0">
+              <QuickCheckInCard
+                quick={quick}
+                setQuick={setQuick}
+                mode={mode}
+                state={state}
+                onDiagnose={handleCheckIn}
+              />
+              <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
+                <div className="flex items-center justify-between gap-3 min-w-0">
+                  <div className="min-w-0">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Identity</div>
+                    <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
+                      {currentMode ? `Last coach mode: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
+                    </p>
+                  </div>
+                  {currentState && <StateBadge state={currentState as BehaviouralState} />}
+                </div>
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <MetricCell label="Modes" value={String(view.evidenceSummary.modesCount)} />
+                  <MetricCell label="Latest" value={view.evidenceSummary.latestProofTitle ?? "none"} />
+                  <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
+                </div>
+              </Card>
             </div>
-            <div className="mt-3 grid sm:grid-cols-3 gap-2">
-              <MetricCell label="Modes" value={String(view.evidenceSummary.modesCount)} />
-              <MetricCell label="Latest" value={view.evidenceSummary.latestProofTitle ?? "none"} />
-              <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
-            </div>
-          </Card>
-        </div>
+          </MobileCollapse>
+        </section>
 
         <section className="space-y-3">
           <button
