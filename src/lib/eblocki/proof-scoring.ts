@@ -1,9 +1,10 @@
 import type { Mode } from "./modes";
+import { selectDomainStandard } from "./domain-standards";
 
 export type EvidenceStrength = "weak" | "moderate" | "strong" | "elite";
 
 export interface ProofScore {
-  score: number;          // 1..10
+  score: number;
   strength: EvidenceStrength;
   feedback: string;
   nextUpgrade: string;
@@ -12,7 +13,7 @@ export interface ProofScore {
 const HEURISTICS: Record<string, { keywords: string[]; label: string }[]> = {
   law: [
     { keywords: ["issue"], label: "issue" },
-    { keywords: ["rule", "section", "s ", "act"], label: "rule/authority" },
+    { keywords: ["rule", "section", "s ", "act", "authority"], label: "rule/authority" },
     { keywords: ["apply", "application", "on the facts"], label: "application" },
     { keywords: ["counter", "however", "alternatively"], label: "counterargument" },
     { keywords: ["conclu"], label: "conclusion" },
@@ -89,13 +90,10 @@ export function scoreProof(domain: string, content: string, mode?: Mode): ProofS
     }
   }
 
-  // base from coverage
   let score = Math.round((hits / heuristics.length) * 8);
-  // length adjustment
   if (words < 30) score -= 2;
   else if (words >= 120) score += 1;
   if (words >= 250) score += 1;
-  // bonus for self-correction language
   if (/\b(however|but|next time|upgrade|missed|i should have)\b/.test(text)) score += 1;
 
   score = Math.max(1, Math.min(10, score));
@@ -114,6 +112,7 @@ export function scoreProof(domain: string, content: string, mode?: Mode): ProofS
 
   return { score, strength, feedback, nextUpgrade };
 }
+
 export type ProofDomain =
   | "law"
   | "psychology"
@@ -141,88 +140,15 @@ export interface ProofScoringResult {
 }
 
 const DOMAIN_MARKERS: Record<string, string[]> = {
-  law: [
-    "issue",
-    "rule",
-    "application",
-    "conclusion",
-    "authority",
-    "statute",
-    "case",
-    "jurisdiction",
-    "counterargument",
-    "construction",
-    "purpose",
-    "context",
-  ],
-  psychology: [
-    "concept",
-    "application",
-    "evidence",
-    "evaluation",
-    "study",
-    "research",
-    "mechanism",
-    "cognition",
-    "behaviour",
-    "development",
-  ],
-  sales: [
-    "customer",
-    "objection",
-    "gse",
-    "warranty",
-    "close",
-    "premium",
-    "pain",
-    "diagnosis",
-    "aov",
-    "attachment",
-  ],
-  eblocki: [
-    "state",
-    "proof",
-    "artifact",
-    "avoidance",
-    "bottleneck",
-    "friction",
-    "upgrade",
-    "control",
-    "identity",
-  ],
-  sport: [
-    "movement",
-    "training",
-    "match",
-    "goal",
-    "pressing",
-    "finishing",
-    "drill",
-    "positioning",
-    "energy",
-  ],
-  brand: [
-    "hook",
-    "caption",
-    "post",
-    "script",
-    "audience",
-    "identity",
-    "content",
-    "publish",
-    "original",
-  ],
-  career_money: [
-    "cost",
-    "risk",
-    "income",
-    "opportunity",
-    "resume",
-    "cover letter",
-    "budget",
-    "decision",
-    "upside",
-  ],
+  law: ["issue", "rule", "application", "conclusion", "authority", "statute", "case", "jurisdiction", "counterargument", "citation"],
+  law_academic: ["source", "jurisdiction", "authority", "current version", "key rule", "unit relevance", "assessment", "limitation", "confidence"],
+  psychology: ["concept", "application", "evidence", "evaluation", "study", "research", "mechanism", "cognition", "behaviour", "development"],
+  sales: ["customer", "objection", "gse", "warranty", "close", "premium", "pain", "diagnosis", "aov", "attachment"],
+  eblocki: ["state", "proof", "artifact", "avoidance", "bottleneck", "friction", "upgrade", "control", "identity"],
+  product: ["issue", "output", "screen", "corrected logic", "implementation", "test", "acceptance", "route", "standard", "upgrade"],
+  sport: ["movement", "training", "match", "goal", "pressing", "finishing", "drill", "positioning", "energy"],
+  brand: ["hook", "caption", "post", "script", "audience", "identity", "content", "publish", "original"],
+  career_money: ["cost", "risk", "income", "opportunity", "resume", "cover letter", "budget", "decision", "upside"],
   general: ["proof", "reflection", "feedback", "upgrade", "action"],
 };
 
@@ -240,10 +166,7 @@ export function evidenceStrengthFromScore(score: number): EvidenceStrength {
 function countDomainMarkers(domain: string, text: string): number {
   const markers = DOMAIN_MARKERS[domain] ?? DOMAIN_MARKERS.general;
   const lower = text.toLowerCase();
-
-  return markers.reduce((count, marker) => {
-    return lower.includes(marker.toLowerCase()) ? count + 1 : count;
-  }, 0);
+  return markers.reduce((count, marker) => lower.includes(marker.toLowerCase()) ? count + 1 : count, 0);
 }
 
 export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult {
@@ -253,13 +176,12 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
   const content = input.content?.trim() || "";
   const reflection = input.reflection?.trim() || "";
   const nextUpgrade = input.nextUpgrade?.trim() || "";
+  const standard = selectDomainStandard({ domain, artifactType });
 
-  const combined = [title, artifactType, content, reflection, nextUpgrade]
-    .filter(Boolean)
-    .join("\n");
+  const combined = [title, artifactType, content, reflection, nextUpgrade].filter(Boolean).join("\n");
+  const standardHits = standard.criteria.filter((criterion) => combined.toLowerCase().includes(criterion.split(" ")[0].toLowerCase())).length;
 
   let score = 1;
-
   if (title.length > 4) score += 1;
   if (artifactType.length > 2) score += 1;
   if (content.length >= 80) score += 1;
@@ -270,12 +192,9 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
   const markerCount = countDomainMarkers(domain, combined);
   if (markerCount >= 2) score += 1;
   if (markerCount >= 4) score += 1;
+  if (standardHits >= 3) score += 1;
 
-  const hasCorrectionLanguage =
-    /\b(correct|improve|revise|upgrade|next time|weakness|feedback|mistake|fix)\b/i.test(
-      combined
-    );
-
+  const hasCorrectionLanguage = /\b(correct|improve|revise|upgrade|next time|weakness|feedback|mistake|fix|implementation|test)\b/i.test(combined);
   if (hasCorrectionLanguage) score += 1;
 
   const finalScore = clampScore(score);
@@ -285,25 +204,17 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
   let suggestedUpgrade = "";
 
   if (evidenceStrength === "weak") {
-    feedback =
-      "Weak evidence. The artifact is too vague or underdeveloped. It needs clearer content, applied detail, reflection, and a next upgrade.";
-    suggestedUpgrade =
-      "Add a concrete artifact, explain what was done, identify the weakness, and define the next correction.";
+    feedback = `Weak evidence against ${standard.label}. The artifact is too vague or underdeveloped.`;
+    suggestedUpgrade = standard.missingStandard;
   } else if (evidenceStrength === "moderate") {
-    feedback =
-      "Moderate evidence. A concrete artifact exists, but the application or evaluation is still limited.";
-    suggestedUpgrade =
-      "Add domain-specific structure and one clear correction based on feedback.";
+    feedback = `Moderate evidence against ${standard.label}. A concrete artifact exists, but standard coverage is still limited.`;
+    suggestedUpgrade = standard.nextUpgrade;
   } else if (evidenceStrength === "strong") {
-    feedback =
-      "Strong evidence. The artifact shows applied skill, useful structure, and some feedback awareness.";
-    suggestedUpgrade =
-      "Sharpen the correction step and connect the artifact to the next measurable performance upgrade.";
+    feedback = `Strong evidence against ${standard.label}. The artifact shows applied skill and feedback awareness.`;
+    suggestedUpgrade = standard.nextUpgrade;
   } else {
-    feedback =
-      "Elite evidence. The artifact includes action, application, feedback, and a clear upgrade path.";
-    suggestedUpgrade =
-      "Preserve this standard and repeat it across the next proof cycle.";
+    feedback = `Elite evidence against ${standard.label}. The artifact includes action, application, feedback, and a clear upgrade path.`;
+    suggestedUpgrade = "Preserve this standard and repeat it across the next proof cycle.";
   }
 
   return {
