@@ -202,8 +202,13 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
   if (hasCorrectionLanguage) score += 1;
 
   let finalScore = clampScore(score);
-  if (standard.key === "product_system_review_standard" && !hasImplementationProof(combined)) {
-    finalScore = Math.min(finalScore, 8);
+  if (standard.key === "product_system_review_standard") {
+    // Identity escalation requires actual shipped implementation evidence,
+    // not aspirational language in the next-upgrade field.
+    const evidenceBody = [title, artifactType, content, reflection].filter(Boolean).join("\n");
+    if (!hasImplementationProof(evidenceBody)) {
+      finalScore = Math.min(finalScore, 8);
+    }
   }
   const evidenceStrength = evidenceStrengthFromScore(finalScore);
 
