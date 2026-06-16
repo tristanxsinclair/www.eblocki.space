@@ -16,6 +16,7 @@ import { Shield, Download, Trash2, FileText as FileTextIcon } from "lucide-react
 import { track, reset as resetAnalytics, EVENTS } from "@/lib/analytics";
 import { BetaFeedback } from "@/components/eblocki/BetaFeedback";
 import { NotificationPreferences } from "@/components/eblocki/NotificationPreferences";
+import { PasswordSecurity } from "@/components/eblocki/PasswordSecurity";
 
 const MODELS = [
   "google/gemini-3-flash-preview",
@@ -376,6 +377,7 @@ export default function Settings() {
         </Card>
 
         <NotificationPreferences />
+        <PasswordSecurity />
         <BetaFeedback />
       </div>
     </AppShell>
