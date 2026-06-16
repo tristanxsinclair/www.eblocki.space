@@ -111,7 +111,8 @@ export function scoreProof(domain: string, content: string, mode?: Mode): ProofS
         : "Tighten the strongest section to publishable standard.";
 
   return { score, strength, feedback, nextUpgrade };
-}\n
+}
+
 export type ProofDomain =
   | "law"
   | "psychology"
