@@ -1146,9 +1146,9 @@ export default function Proof() {
 
 function VerdictRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-sm border border-border p-3">
+    <div className="rounded-sm border border-border p-3 min-w-0 max-w-full overflow-hidden">
       <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-      <p className="mt-1 text-sm">{value}</p>
+      <p className="mt-1 text-sm break-words whitespace-pre-wrap">{value}</p>
     </div>
   );
 }
