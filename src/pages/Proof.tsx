@@ -600,6 +600,26 @@ export default function Proof() {
           <h1 className="text-2xl md:text-3xl font-semibold mt-1">Receipts, scored.</h1>
         </header>
 
+        {proofWeekDay && (
+          <Card className="panel p-3 md:p-4 border-primary/40 bg-primary/5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-start gap-2 min-w-0">
+                <Flame className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                    Proof Week — Day {proofWeekDayParam} / 7 · {proofWeekDay.label}
+                  </div>
+                  <p className="mt-1 text-sm leading-snug">{proofWeekDay.command}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{proofWeekDay.proofRequired}</p>
+                </div>
+              </div>
+              <Link to="/proof" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground">
+                Exit context
+              </Link>
+            </div>
+          </Card>
+        )}
+
         <Card className="panel p-4 border-primary/20">
           <div className="flex items-start gap-3">
             <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
