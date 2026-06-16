@@ -35,8 +35,8 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Seo
-        title="Eblocki - Turn Daily Action Into Proof"
-        description="Eblocki judges your work, predicts behavioural drift, and gives you the next proof action that changes the path."
+        title="Eblocki — Stop Fake Productivity. Log Proof."
+        description="Eblocki helps students turn intention into proof, detect avoidance, and get the next action that actually counts. Join the 7-day Proof Week beta."
         path="/"
       />
       <header className="border-b border-border bg-background/95 backdrop-blur">
@@ -52,7 +52,7 @@ export default function Landing() {
               How it works
             </a>
             <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">Sign in</Link>
-            <Link to="/auth"><Button size="sm">Start today</Button></Link>
+            <Link to="/auth"><Button size="sm">Join Proof Week</Button></Link>
           </nav>
         </div>
       </header>
@@ -62,18 +62,27 @@ export default function Landing() {
           <div className="container grid gap-10 py-14 md:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.75fr)] md:items-center md:py-20 lg:py-24">
             <div className="max-w-3xl">
               <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-primary">
-                Behavioural Evidence Operating System
+                Proof-based performance app
               </span>
               <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-6xl">
-                Turn daily action into proof.
+                Stop fake productivity.
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
-                Eblocki judges your work, predicts where your behaviour is heading, and gives you the next proof action that changes the path.
+                Eblocki helps students turn intention into proof, detect avoidance, and get the next action that actually counts.
               </p>
+              <ol className="mt-5 grid gap-1.5 text-sm text-muted-foreground md:grid-cols-4">
+                <li><span className="text-foreground font-medium">1.</span> Check in.</li>
+                <li><span className="text-foreground font-medium">2.</span> Log one proof artifact.</li>
+                <li><span className="text-foreground font-medium">3.</span> Get your command.</li>
+                <li><span className="text-foreground font-medium">4.</span> See if your work counted.</li>
+              </ol>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/auth"><Button size="lg">Start Today<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
-                <a href="#how-it-works"><Button size="lg" variant="outline">See how it works</Button></a>
+                <Link to="/auth"><Button size="lg">Join the 7-day Proof Week beta<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+                <Link to="/auth"><Button size="lg" variant="outline">Submit first proof</Button></Link>
               </div>
+              <p className="mt-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                Free beta · No card required · Built for university students
+              </p>
               <div className="mt-8 grid gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground sm:grid-cols-3">
                 <ProofLaw label="No vague intention" />
                 <ProofLaw label="No proof, no claim" />
@@ -190,11 +199,11 @@ export default function Landing() {
           <div className="container py-14 md:py-16">
             <div className="max-w-3xl">
               <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Start</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-4xl">Open today with one command and one proof standard.</h2>
+              <h2 className="mt-2 text-2xl font-semibold md:text-4xl">Find out in 7 days if your study is real.</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                No ceremony. State the work, get the correction, submit the artifact, and let the evidence change the path.
+                One command a day. One proof artifact. By day 7, Eblocki shows you whether your work produced real evidence — or just made you feel productive.
               </p>
-              <Link to="/auth" className="mt-7 inline-flex"><Button size="lg">Start Today<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+              <Link to="/auth" className="mt-7 inline-flex"><Button size="lg">Join Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
             </div>
           </div>
         </section>
