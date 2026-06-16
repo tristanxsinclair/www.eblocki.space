@@ -10,7 +10,9 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Crosshair } from "lucide-react";
 
-export default function Auth() {
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {	ext
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
