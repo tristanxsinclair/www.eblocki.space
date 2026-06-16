@@ -371,7 +371,16 @@ export default function Settings() {
           <div className="min-w-0">
             <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Account & data</span>
             <h2 className="text-xl font-semibold mt-2">Account</h2>
-            <p className="text-sm text-muted-foreground mt-1 break-all">{user?.email}</p>
+          <p className="text-sm text-muted-foreground mt-1 break-all">{user?.email}</p>
+          <Button
+            variant="outline"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="mt-3 w-full md:w-auto"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            {signingOut ? "Signing out…" : "Sign out"}
+          </Button>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <Button variant="outline" onClick={exportAllData} disabled={exporting} className="justify-start">
