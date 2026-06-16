@@ -192,8 +192,9 @@ export function selectDomainStandard(input: DomainStandardSelectionInput = {}): 
   // bare word "implementation" (which appears in "implementation path stated"
   // for product critiques).
   if (hasAny(combined, [
-    "file changes", "shipped change", "commit reference", "tests added",
-    "build result", "test result", "code change", "pull request", "deployed",
+    "file changes", "commit reference", "tests added",
+    "build result", "test result", "code change", "pull request",
+    "merged pr", "deployed to production",
   ])) {
     return DOMAIN_STANDARD_REGISTRY.eblocki_implementation_standard;
   }
