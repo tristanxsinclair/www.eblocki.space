@@ -12,7 +12,14 @@ import { Crosshair } from "lucide-react";
 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) return error.message;
-  if (typeof error === "object" && error !== null && "message" in error) {	ext
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === "string") return maybeMessage;
+  }
+  return fallback;
+}
+
+export default function Auth() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
