@@ -192,6 +192,18 @@ export default function Settings() {
     }
   };
 
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+      nav("/", { replace: true });
+    } catch {
+      toast.error("Sign out failed. Please try again.");
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   return (
     <AppShell>
       <Seo title="Settings | EBLOCKI" description="Operator config — model preferences, profile, and identity claims." path="/settings" />
