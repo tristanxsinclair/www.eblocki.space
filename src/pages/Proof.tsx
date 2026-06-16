@@ -642,11 +642,11 @@ export default function Proof() {
         </Card>
 
         {/* Strength tally */}
-        <Card className="panel p-4">
+        <Card className="panel p-4 max-w-full overflow-hidden">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="grid grid-cols-4 gap-2 flex-1">
               {(["weak", "moderate", "strong", "elite"] as const).map((s) => (
-                <div key={s} className="rounded-sm border border-border p-2 text-center">
+                <div key={s} className="rounded-sm border border-border p-2 text-center min-w-0">
                   <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{s}</div>
                   <div className={"mt-1 text-lg font-semibold font-mono " + (s === "elite" ? "text-primary" : "")}>{strengthCount(s)}</div>
                 </div>
@@ -658,7 +658,7 @@ export default function Proof() {
                 id="proof-domain-filter"
                 value={filterDomain}
                 onChange={(e) => setFilterDomain(e.target.value)}
-                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm max-w-full"
               >
                 <option value="all">all modes</option>
                 {activeModes.map((mode) => (
@@ -671,7 +671,7 @@ export default function Proof() {
 
         {/* Verdict card */}
         {verdict && (
-          <Card className="panel p-4 md:p-5 border-primary/40">
+          <Card className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
