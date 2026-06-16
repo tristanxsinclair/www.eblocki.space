@@ -22,6 +22,7 @@ import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLi
 import { Seo } from "@/components/Seo";
 import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
 import { extractNextUpgrade } from "@/lib/eblocki/next-upgrade-extract";
+import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -598,20 +599,41 @@ export default function Proof() {
         description="Submit proof artifacts, score evidence strength, and close pending Proof Contracts."
         path="/proof"
       />
-      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
-        <header>
+      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 min-w-0 max-w-full text-wrap-safe">
+        <header className="min-w-0">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Court of Evidence</span>
-          <h1 className="text-2xl md:text-3xl font-semibold mt-1">Receipts, scored.</h1>
+          <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Receipts, scored.</h1>
         </header>
 
-        <Card className="panel p-4 border-primary/20">
+        {/* First-proof guidance — primary mobile CTA */}
+        <Card className="panel p-4 border-primary/30 max-w-full overflow-hidden">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+            Today’s one move
+          </span>
+          <h2 className="text-lg font-semibold mt-1 break-words">
+            Submit one measurable artifact from today.
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1 break-words">
+            One real output beats a day of intention. Examples:
+          </p>
+          <ul className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+            <li>• one paragraph written</li>
+            <li>• one study answer drafted</li>
+            <li>• one sales insight captured</li>
+            <li>• one training reflection</li>
+            <li>• one shipped app change</li>
+            <li>• one closed life-admin loop</li>
+          </ul>
+        </Card>
+
+        <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
           <div className="flex items-start gap-3">
             <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-            <div>
+            <div className="min-w-0">
               <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
                 Definitions
               </span>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-1 break-words">
                 A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
                 A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
               </p>
@@ -620,11 +642,11 @@ export default function Proof() {
         </Card>
 
         {/* Strength tally */}
-        <Card className="panel p-4">
+        <Card className="panel p-4 max-w-full overflow-hidden">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="grid grid-cols-4 gap-2 flex-1">
               {(["weak", "moderate", "strong", "elite"] as const).map((s) => (
-                <div key={s} className="rounded-sm border border-border p-2 text-center">
+                <div key={s} className="rounded-sm border border-border p-2 text-center min-w-0">
                   <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{s}</div>
                   <div className={"mt-1 text-lg font-semibold font-mono " + (s === "elite" ? "text-primary" : "")}>{strengthCount(s)}</div>
                 </div>
@@ -636,7 +658,7 @@ export default function Proof() {
                 id="proof-domain-filter"
                 value={filterDomain}
                 onChange={(e) => setFilterDomain(e.target.value)}
-                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                className="rounded-md border border-input bg-background px-3 py-1.5 text-sm max-w-full"
               >
                 <option value="all">all modes</option>
                 {activeModes.map((mode) => (
@@ -649,7 +671,7 @@ export default function Proof() {
 
         {/* Verdict card */}
         {verdict && (
-          <Card className="panel p-4 md:p-5 border-primary/40">
+          <Card className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -689,7 +711,7 @@ export default function Proof() {
         )}
 
         {/* Submission form */}
-        <Card className="panel p-4 md:p-5">
+        <Card className="panel p-4 md:p-5 max-w-full overflow-hidden">
           <div className="flex items-center gap-2">
             <Gavel className="h-4 w-4 text-primary" />
             <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Submit a Proof Artifact</h2>
@@ -1054,42 +1076,47 @@ export default function Proof() {
         </Card>
 
         {/* Pending contracts */}
-        <Card className="panel p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Gavel className="h-4 w-4 text-primary" />
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Pending Proof Contracts</h2>
-          </div>
-          {filteredPending.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No pending contracts. Open the Coach to forge one.</p>
-          ) : (
-            <div className="space-y-2">
-              {filteredPending.map((p) => (
-                <Card key={p.id} className="panel p-4 flex items-start justify-between gap-3 flex-wrap">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-mono text-[10px] uppercase text-muted-foreground">{p.domain} - {p.mode}</div>
-                    <div className="text-sm font-medium">{p.title}</div>
-                    {p.required_artifact && <div className="text-xs text-muted-foreground mt-1">Required: {p.required_artifact}</div>}
-                    {p.evidence_standard && <div className="text-xs text-muted-foreground mt-0.5">Standard: {p.evidence_standard}</div>}
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setLinkedContractId(p.id);
-                      setTitle(p.title);
-                      if (p.mode) setSelectedModeId(p.mode);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                  >
-                    Submit Proof
-                  </Button>
-                </Card>
-              ))}
+        <MobileCollapse
+          eyebrow="Pending"
+          label={`Pending Proof Contracts (${filteredPending.length})`}
+        >
+          <Card className="panel p-4 max-w-full overflow-hidden">
+            <div className="flex items-center gap-2 mb-3">
+              <Gavel className="h-4 w-4 text-primary" />
+              <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Pending Proof Contracts</h2>
             </div>
-          )}
-        </Card>
+            {filteredPending.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No pending contracts. Open the Coach to forge one.</p>
+            ) : (
+              <div className="space-y-2">
+                {filteredPending.map((p) => (
+                  <Card key={p.id} className="panel p-4 flex items-start justify-between gap-3 flex-wrap max-w-full overflow-hidden">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-mono text-[10px] uppercase text-muted-foreground break-words">{p.domain} - {p.mode}</div>
+                      <div className="text-sm font-medium break-words">{p.title}</div>
+                      {p.required_artifact && <div className="text-xs text-muted-foreground mt-1 break-words">Required: {p.required_artifact}</div>}
+                      {p.evidence_standard && <div className="text-xs text-muted-foreground mt-0.5 break-words">Standard: {p.evidence_standard}</div>}
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setLinkedContractId(p.id);
+                        setTitle(p.title);
+                        if (p.mode) setSelectedModeId(p.mode);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                    >
+                      Submit Proof
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </Card>
+        </MobileCollapse>
 
         {/* Completed artifacts */}
-        <Card className="panel p-4">
+        <Card className="panel p-4 max-w-full overflow-hidden">
           <div className="flex items-center gap-2 mb-3">
             <Gavel className="h-4 w-4 text-primary" />
             <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Completed Proof Artifacts</h2>
@@ -1104,19 +1131,24 @@ export default function Proof() {
         </Card>
 
         {/* Missed */}
-        <Card className="panel p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Gavel className="h-4 w-4 text-primary" />
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Missed Proof Contracts</h2>
-          </div>
-          {filteredMissed.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No missed contracts.</p>
-          ) : (
-            filteredMissed.map((p) => (
-              <Card key={p.id} className="panel p-3 mb-2"><div className="text-sm">{p.title}</div></Card>
-            ))
-          )}
-        </Card>
+        <MobileCollapse
+          eyebrow="Missed"
+          label={`Missed Proof Contracts (${filteredMissed.length})`}
+        >
+          <Card className="panel p-4 max-w-full overflow-hidden">
+            <div className="flex items-center gap-2 mb-3">
+              <Gavel className="h-4 w-4 text-primary" />
+              <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Missed Proof Contracts</h2>
+            </div>
+            {filteredMissed.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No missed contracts.</p>
+            ) : (
+              filteredMissed.map((p) => (
+                <Card key={p.id} className="panel p-3 mb-2 max-w-full overflow-hidden"><div className="text-sm break-words">{p.title}</div></Card>
+              ))
+            )}
+          </Card>
+        </MobileCollapse>
       </div>
     </AppShell>
   );
@@ -1124,9 +1156,9 @@ export default function Proof() {
 
 function VerdictRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-sm border border-border p-3">
+    <div className="rounded-sm border border-border p-3 min-w-0 max-w-full overflow-hidden">
       <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-      <p className="mt-1 text-sm">{value}</p>
+      <p className="mt-1 text-sm break-words whitespace-pre-wrap">{value}</p>
     </div>
   );
 }
