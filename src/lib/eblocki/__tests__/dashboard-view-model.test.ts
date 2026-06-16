@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { computeTemporal, type ProofArtifactLike } from "../temporal-engine";
 import { buildDashboardViewModel } from "../dashboard-view-model";
 
-const now = new Date("2026-06-05T04:00:00Z");
-const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
+const now = new Date();
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
 
 type TestProofOverrides = Partial<ProofArtifactLike> & {
   title?: string;
