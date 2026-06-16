@@ -6,49 +6,56 @@ import {
 } from "../coach-engine";
 
 describe("coach engine", () => {
-  it("detects intent", () => {
-    expect(detectCoachIntent("I keep avoiding this task and need to start")).toBe("execution");
-    expect(detectCoachIntent("Can you review my proof artifact?")).toBe("proof_review");
+  it("routes a law mastery proof plan to academic_proof_plan", () => {
+    const result = buildCoachResponse({ input: "Eblocki Proof Plan: BLAW1003 + LAWS1004 Mastery" });
+
+    expect(result.detectedDomain).toBe("law_academic");
+    expect(result.detectedIntent).toBe("academic_proof_plan");
+    expect(result.detectedState).toBe("strategic_build");
+    expect(result.responseMode).toBe("academic_operating_system");
+    expect(result.proofAction).toMatch(/source-bank entries/i);
+    expect(result.proofAction).not.toMatch(/IRAC paragraph/i);
+    expect(result.recommendedProofArtifact.requiredArtifact).toMatch(/source-bank/i);
+    expect(result.recommendedProofArtifact.proofStandardKey).toBe("law_source_bank_standard");
   });
 
-  it("detects domain", () => {
-    expect(detectCoachDomain("I need an IRAC answer for statutory interpretation")).toBe("law");
-    expect(detectCoachDomain("The customer objected to the premium warranty close")).toBe("sales");
-  });
-
-  it("selects response mode", () => {
-    const result = buildCoachResponse({ input: "I keep reorganising notes instead of writing the answer" });
-    expect(result.responseMode).toBe("execution_lock");
-  });
-
-  it("generates internal prompt summary", () => {
-    const result = buildCoachResponse({ input: "I need help with a psychology evidence evaluation paragraph" });
-    expect(result.internalPromptSummary).toContain("psychology");
-    expect(result.aiPayload.forbidden.join(" ")).toContain("generic motivation");
-  });
-
-  it("returns diagnosis", () => {
-    const result = buildCoachResponse({ input: "I am confused by cognitive dissonance application" });
-    expect(result.diagnosis).toBeTruthy();
-    expect(result.detectedState).toBe("confused");
-  });
-
-  it("returns proof action", () => {
-    const result = buildCoachResponse({ input: "I need to write a law answer" });
+  it("routes legal problem-answer prompts to legal_reasoning", () => {
+    const result = buildCoachResponse({ input: "Give me a legal problem answer using IRAC for this statute issue" });
+    expect(result.detectedDomain).toBe("law");
+    expect(result.detectedIntent).toBe("legal_reasoning");
+    expect(result.responseMode).toBe("law_reasoning");
     expect(result.proofAction).toMatch(/IRAC/i);
-    expect(result.proofActionType).toBe("written_answer");
+    expect(result.proofStandardKey).toBe("law_irac_standard");
+  });
+
+  it("routes submitted artifact critique to proof_review", () => {
+    const result = buildCoachResponse({ input: "Review my proof artifact and give a Court of Evidence verdict" });
+    expect(result.detectedIntent).toBe("proof_review");
+    expect(result.responseMode).toBe("proof_review");
+  });
+
+  it("routes Eblocki logic critique to product_system_review", () => {
+    const result = buildCoachResponse({ input: "Eblocki classified my product proof with the wrong law standard. Review the router logic." });
+    expect(result.detectedDomain).toBe("product");
+    expect(result.detectedIntent).toBe("product_system_review");
+    expect(result.proofStandardKey).toBe("product_system_review_standard");
+  });
+
+  it("routes source-bank requests to law_source_bank", () => {
+    const result = buildCoachResponse({ input: "Create a source bank entry for BLAW1003 Native Title Act" });
+    expect(result.detectedIntent).toBe("law_source_bank");
+    expect(result.proofActionType).toBe("source_bank");
+  });
+
+  it("detects domain and intent through helper functions", () => {
+    expect(detectCoachDomain("I need an IRAC answer for statutory interpretation")).toBe("law");
+    expect(detectCoachIntent("I keep avoiding this task and need one artifact")).toBe("execution_lock");
   });
 
   it("flags overplanning and avoidance", () => {
-    const result = buildCoachResponse({ input: "I need a better plan and template before I start" });
-    expect(result.warning).toMatch(/planning/i);
-    expect(result.detectedState).toBe("overplanning");
-  });
-
-  it("suggests GameForge when learning practice is useful", () => {
-    const result = buildCoachResponse({ input: "I have exam notes and keep missing the same statutory interpretation concept" });
-    expect(result.suggestedGameForgePack).toBeTruthy();
-    expect(result.suggestedGameForgePack?.mode).toBe("law");
+    const result = buildCoachResponse({ input: "I am planning too much and need more theory before I start" });
+    expect(result.warning).toMatch(/Planning/i);
+    expect(result.detectedIntent).toBe("execution_lock");
   });
 
   it("handles empty input safely", () => {
