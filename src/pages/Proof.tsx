@@ -933,6 +933,7 @@ export default function Proof() {
                 <div
                   role="button"
                   tabIndex={0}
+                  aria-label="Upload supporting evidence file"
                   onClick={() => fileInputRef.current?.click()}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
@@ -993,7 +994,7 @@ export default function Proof() {
 
                   {attachmentBusy && (
                     <div className="mt-2">
-                      <Progress value={attachState.progress} className="h-1.5" />
+                      <Progress value={attachState.progress} className="h-1.5" aria-label="Upload progress" />
                       <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                         {attachState.message}
                       </div>
@@ -1091,7 +1092,7 @@ export default function Proof() {
               disabled={submitting || attachmentBusy || !artifactType.trim() || !content.trim() || !title.trim()}
               className="w-full sm:w-auto"
             >
-              {submitting ? "Filing..." : attachmentBusy ? "Processing attachment..." : "Score & File Proof Artifact"}
+              {submitting ? "Filing..." : attachmentBusy ? "Processing attachment..." : "Submit to Court of Evidence"}
             </Button>
           </div>
         </Card>
