@@ -148,7 +148,8 @@ export function routeCoachInput(input: string): CoachRouteResult {
   const academicPlan = has(text, /\b(study system|mastery plan|proof plan|unit plan|weekly law proof|academic workflow|unit preparation|source strategy)\b/);
   const legalAnswer = has(text, /\b(irac|legal answer|problem answer|legal reasoning|issue|rule|application|case explanation|statute explanation|legal analysis)\b/);
   const proofReview = has(text, /\b(review|judge|verdict|court of evidence|score|critique|audit|mark my|feedback on)\b/) && has(text, /\b(proof|artifact|answer|paragraph|submission|work)\b/);
-  const productReview = has(text, /\b(eblocki|coach router|router|routing|court|proof standard|product system|ux|dashboard|logic|bug|behaviour|behavior)\b/) && has(text, /\b(review|critique|wrong|fix|bug|mismatch|standard|classified|classification|logic)\b/);
+  // Note: "court" intentionally excluded — "Court of Evidence" is proof-review terminology, not a product-system signal.
+  const productReview = has(text, /\b(eblocki|coach router|router|routing|product system|ux|dashboard|logic|bug|behaviour|behavior)\b/) && has(text, /\b(review|critique|wrong|fix|bug|mismatch|standard|classified|classification|logic)\b/);
   const executionLock = has(text, /\b(overbuild|overbuilding|planning too much|more theory|drifting|avoid|procrastinat|one artifact|required now)\b/);
 
   if (productReview) {
