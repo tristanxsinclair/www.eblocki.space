@@ -1198,3 +1198,12 @@ function VerdictRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function VerdictCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <Card className={"panel p-4 " + (accent ? "border-primary/30 bg-primary/5" : "border-border/80 bg-card/50")}>
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <p className="mt-1.5 text-sm leading-relaxed">{value}</p>
+    </Card>
+  );
+}
