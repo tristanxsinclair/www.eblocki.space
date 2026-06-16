@@ -17,6 +17,7 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && user) nav("/dashboard", { replace: true });
@@ -43,6 +44,22 @@ export default function Auth() {
       toast.error(err.message ?? "Auth failed");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const sendReset = async () => {
+    if (!email) {
+      toast.error("Enter your email above first.");
+      return;
+    }
+    setResetBusy(true);
+    try {
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + "/reset-password",
+      });
+      toast.success("Password reset email sent if this email exists.");
+    } finally {
+      setResetBusy(false);
     }
   };
 
@@ -84,6 +101,16 @@ export default function Auth() {
           >
             {mode === "signin" ? "No account? Create one." : "Have an account? Sign in."}
           </button>
+          {mode === "signin" && (
+            <button
+              type="button"
+              onClick={sendReset}
+              disabled={resetBusy}
+              className="mt-2 w-full text-xs text-muted-foreground hover:text-foreground font-mono"
+            >
+              {resetBusy ? "Sending…" : "Forgot password?"}
+            </button>
+          )}
           <p className="mt-4 text-[10px] text-muted-foreground font-mono">
             {/* Google sign-in: enable via Lovable Cloud → Authentication Settings, then wire `lovable.auth.signInWithOAuth("google")` */}
             Google sign-in available via Cloud auth settings.
