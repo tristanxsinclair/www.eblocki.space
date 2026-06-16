@@ -1120,3 +1120,79 @@ function VerdictRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+const COMPLETED_MOBILE_LIMIT = 3;
+
+function CompletedArtifactsList({ items }: { items: any[] }) {
+  const [showAll, setShowAll] = useState(false);
+  const desktopVisible = items.length;
+  return (
+    <div className="space-y-3">
+      {items.slice(0, desktopVisible).map((a, idx) => (
+        <div
+          key={a.id}
+          className={idx >= COMPLETED_MOBILE_LIMIT && !showAll ? "hidden md:block" : "block"}
+        >
+          <CompletedArtifactCard artifact={a} />
+        </div>
+      ))}
+      {items.length > COMPLETED_MOBILE_LIMIT && (
+        <button
+          type="button"
+          onClick={() => setShowAll((open) => !open)}
+          className="md:hidden font-mono text-[10px] uppercase tracking-widest text-primary hover:underline"
+        >
+          {showAll ? "Show fewer" : `Show all (${items.length - COMPLETED_MOBILE_LIMIT} more)`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function CompletedArtifactCard({ artifact }: { artifact: any }) {
+  const [open, setOpen] = useState(false);
+  const fullFeedback: string = artifact.feedback ?? "";
+  const summary = summariseArtifactContent(fullFeedback);
+  const isLong = fullFeedback.length > summary.length;
+  return (
+    <Card className="panel p-4 max-w-full overflow-hidden">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="font-mono text-[10px] uppercase text-muted-foreground break-words min-w-0">
+          {artifact.domain} - {artifact.artifact_type ?? "artifact"} - {artifact.created_at?.slice(0, 10)}
+        </div>
+        {artifact.evidence_strength && (
+          <EvidenceStrengthBadge strength={artifact.evidence_strength} score={artifact.quality_score} />
+        )}
+      </div>
+      <div className="text-sm font-medium mt-1 break-words">{artifact.title}</div>
+      {fullFeedback && (
+        <p className="text-xs text-muted-foreground mt-2 whitespace-pre-wrap break-words">
+          {open || !isLong ? fullFeedback : summary}
+        </p>
+      )}
+      {artifact.next_upgrade && (
+        <p className="text-xs text-primary mt-1 break-words">Next upgrade: {artifact.next_upgrade}</p>
+      )}
+      {artifact.attachment_url && (
+        <a
+          href={artifact.attachment_url}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline break-all"
+        >
+          <Paperclip className="h-3 w-3 shrink-0" />
+          {artifact.attachment_name ?? "attached evidence"}
+        </a>
+      )}
+      {isLong && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="mt-2 font-mono text-[10px] uppercase tracking-widest text-primary hover:underline"
+        >
+          {open ? "Hide full artifact" : "Show full artifact"}
+        </button>
+      )}
+    </Card>
+  );
+}
