@@ -27,7 +27,7 @@ const MODELS = [
 ];
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const nav = useNavigate();
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
