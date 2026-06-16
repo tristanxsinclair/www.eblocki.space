@@ -389,6 +389,9 @@ function EvidenceCommandPanel({
   topPending: any;
   latestArtifact: any;
 }) {
+  const [showAllRecent, setShowAllRecent] = useState(false);
+  const mobileLimit = mobileRecentProofLimit(recent.length, showAllRecent);
+  const desktopLimit = Math.min(recent.length, 4);
   return (
     <section className="space-y-3">
       <SectionHeader eyebrow="Zone 3" title="Evidence" detail={`${view.evidenceSummary.weekArtifacts} this week`} />
@@ -418,15 +421,29 @@ function EvidenceCommandPanel({
           {recent.length === 0 ? (
             <p className="text-sm text-muted-foreground">No proof logged yet. The system has no evidence.</p>
           ) : (
-            recent.slice(0, 4).map((proof) => (
-              <div key={proof.id} className="flex items-center justify-between gap-3 rounded-sm border border-border px-3 py-2">
-                <div className="min-w-0">
-                  <div className="truncate text-sm">{proof.title}</div>
-                  <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{proof.domain}</div>
+            <>
+              {recent.slice(0, desktopLimit).map((proof, idx) => (
+                <div
+                  key={proof.id}
+                  className={`flex items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 ${idx >= mobileLimit ? "hidden md:flex" : "flex"}`}
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm">{proof.title}</div>
+                    <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{proof.domain}</div>
+                  </div>
+                  {proof.evidence_strength && <EvidenceStrengthBadge strength={proof.evidence_strength} score={proof.quality_score} />}
                 </div>
-                {proof.evidence_strength && <EvidenceStrengthBadge strength={proof.evidence_strength} score={proof.quality_score} />}
-              </div>
-            ))
+              ))}
+              {recent.length > mobileLimit && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllRecent((open) => !open)}
+                  className="md:hidden mt-1 font-mono text-[10px] uppercase tracking-widest text-primary hover:underline self-start"
+                >
+                  {showAllRecent ? "Show fewer" : `Show recent proof (${recent.length - mobileLimit} more)`}
+                </button>
+              )}
+            </>
           )}
         </div>
 
