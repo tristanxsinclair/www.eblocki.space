@@ -118,7 +118,7 @@ function VerdictFeedback({ artifactId }: { artifactId: string }) {
         user_id: user.id,
         signal_type: "verdict_feedback",
         source: "proof_verdict",
-        notes: [`vote=${value}`, `artifact=${artifactId}`, note.trim() ? `note=${note.trim().slice(0, 500)}` : null]
+        note: [`vote=${value}`, `artifact=${artifactId}`, note.trim() ? `note=${note.trim().slice(0, 500)}` : null]
           .filter(Boolean)
           .join(" | "),
       });
