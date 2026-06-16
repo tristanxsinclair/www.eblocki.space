@@ -35,8 +35,10 @@ import { TemporalMap } from "@/components/eblocki/TemporalMap";
 import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
 import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 import { InterestSignalCard } from "@/components/eblocki/InterestSignalCard";
+import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { computeTemporal, type TemporalResult } from "@/lib/eblocki/temporal-engine";
 import { buildDashboardViewModel } from "@/lib/eblocki/dashboard-view-model";
+import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
 
 export default function Dashboard() {
@@ -205,8 +207,14 @@ export default function Dashboard() {
         <ProofWeekPanel artifactDates={allArtifacts.map((a: any) => a.created_at).filter(Boolean)} />
 
         <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-4 items-start">
-          <section className="space-y-3">
+          <section className="space-y-3 min-w-0">
             <SectionHeader eyebrow="Zone 2" title="Forecast" detail={view.futureSummary.status} />
+            <MobileCollapse
+              eyebrow="Zone 2"
+              label="View forecast, calibration, and intel"
+              trackId="forecast_tabs"
+              onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "forecast_tabs" })}
+            >
             <Tabs value={futureTab} onValueChange={openFutureSection} className="space-y-3">
               <TabsList className="grid w-full grid-cols-3 h-auto bg-card/60 border border-border p-1">
                 <TabsTrigger value="forecast" className="text-xs">Map</TabsTrigger>
@@ -249,6 +257,7 @@ export default function Dashboard() {
                 <InterventionCard state={(currentState as BehaviouralState) ?? state} />
               </TabsContent>
             </Tabs>
+            </MobileCollapse>
           </section>
 
           <EvidenceCommandPanel
@@ -260,19 +269,28 @@ export default function Dashboard() {
           />
         </div>
 
-        <section className="space-y-3">
+        <section className="space-y-3 min-w-0">
           <SectionHeader eyebrow="Zone 4" title="Product match" detail="trust-gated" />
-          <ProductMatchPanel
-            artifacts={allArtifacts}
-            temporal={temporalResult}
-            accessLevel="free"
-            operatingProfile={{
-              primaryDomain: activeDomains[0] ?? null,
-              recommendationsAllowed: true,
-              trustPreference: "neutral",
-            }}
-          />
-          <InterestSignalCard />
+          <MobileCollapse
+            eyebrow="Zone 4"
+            label="View product match"
+            trackId="product_match"
+            onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "product_match" })}
+          >
+            <div className="space-y-3">
+              <ProductMatchPanel
+                artifacts={allArtifacts}
+                temporal={temporalResult}
+                accessLevel="free"
+                operatingProfile={{
+                  primaryDomain: activeDomains[0] ?? null,
+                  recommendationsAllowed: true,
+                  trustPreference: "neutral",
+                }}
+              />
+              <InterestSignalCard />
+            </div>
+          </MobileCollapse>
         </section>
 
         <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 items-start">
