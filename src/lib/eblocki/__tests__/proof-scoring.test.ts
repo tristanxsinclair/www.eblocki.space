@@ -7,6 +7,8 @@ describe("Court verdict standards", () => {
     const standard = selectDomainStandard({ domain: "product", intent: "product_system_review", artifactType: "product system review" });
     expect(standard.key).toBe("product_system_review_standard");
     expect(standard.criteria.join(" ")).not.toMatch(/AGLC|jurisdiction|rule stated/i);
+    expect(standard.missingStandard).toMatch(/implementation|test/i);
+    expect(standard.missingStandard).not.toMatch(/AGLC|jurisdiction|binding|persuasive|text-context-purpose/i);
   });
 
   it("does not give source-bank proof an IRAC standard", () => {
