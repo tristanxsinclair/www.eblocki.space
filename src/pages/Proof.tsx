@@ -20,6 +20,7 @@ import { logEvent } from "@/lib/eblocki/analytics";
 import { toast } from "sonner";
 import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLine, AlertTriangle } from "lucide-react";
 import { Seo } from "@/components/Seo";
+import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -1088,32 +1089,7 @@ export default function Proof() {
               No proof yet. Submit one measurable artifact to activate the command layer.
             </p>
           ) : (
-            <div className="space-y-3">
-              {filteredCompleted.map((a) => (
-                <Card key={a.id} className="panel p-4">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="font-mono text-[10px] uppercase text-muted-foreground">
-                      {a.domain} - {a.artifact_type ?? "artifact"} - {a.created_at?.slice(0, 10)}
-                    </div>
-                    {a.evidence_strength && <EvidenceStrengthBadge strength={a.evidence_strength} score={a.quality_score} />}
-                  </div>
-                  <div className="text-sm font-medium mt-1">{a.title}</div>
-                  {a.feedback && <p className="text-xs text-muted-foreground mt-2">{a.feedback}</p>}
-                  {a.next_upgrade && <p className="text-xs text-primary mt-1">Next upgrade: {a.next_upgrade}</p>}
-                  {a.attachment_url && (
-                    <a
-                      href={a.attachment_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-                    >
-                      <Paperclip className="h-3 w-3" />
-                      {a.attachment_name ?? "attached evidence"}
-                    </a>
-                  )}
-                </Card>
-              ))}
-            </div>
+            <CompletedArtifactsList items={filteredCompleted} />
           )}
         </Card>
 
