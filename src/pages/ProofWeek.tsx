@@ -155,8 +155,8 @@ export default function ProofWeek() {
               ))}
             </div>
             <div className="flex flex-wrap gap-2 pt-1">
-              <Link to="/proof"><Button size="sm"><Target className="h-3 w-3 mr-1.5" />Submit today's proof</Button></Link>
-              <Link to="/coach"><Button size="sm" variant="outline">Get the command</Button></Link>
+              <Link to={`/proof?source=proof-week&day=${status.currentDay}`}><Button size="sm"><Target className="h-3 w-3 mr-1.5" />Submit today's proof</Button></Link>
+              <Link to={`/coach?prompt=${encodeURIComponent(`Proof Week Day ${status.currentDay}: ${status.today!.command} What is the smallest artifact I can produce in 20 minutes that meets the standard?`)}`}><Button size="sm" variant="outline">Stuck? Ask Coach</Button></Link>
               <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
             </div>
           </Card>
