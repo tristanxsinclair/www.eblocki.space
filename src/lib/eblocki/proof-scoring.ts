@@ -111,8 +111,7 @@ export function scoreProof(domain: string, content: string, mode?: Mode): ProofS
         : "Tighten the strongest section to publishable standard.";
 
   return { score, strength, feedback, nextUpgrade };
-}
-
+}\n
 export type ProofDomain =
   | "law"
   | "psychology"
@@ -169,6 +168,10 @@ function countDomainMarkers(domain: string, text: string): number {
   return markers.reduce((count, marker) => lower.includes(marker.toLowerCase()) ? count + 1 : count, 0);
 }
 
+function hasImplementationProof(text: string): boolean {
+  return /\b(file changes|logic implemented|tests added|build result|test result|commit|pull request|deployed|implemented)\b/i.test(text);
+}
+
 export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult {
   const domain = String(input.domain || "general").toLowerCase();
   const title = input.title?.trim() || "";
@@ -197,7 +200,10 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
   const hasCorrectionLanguage = /\b(correct|improve|revise|upgrade|next time|weakness|feedback|mistake|fix|implementation|test)\b/i.test(combined);
   if (hasCorrectionLanguage) score += 1;
 
-  const finalScore = clampScore(score);
+  let finalScore = clampScore(score);
+  if (standard.key === "product_system_review_standard" && !hasImplementationProof(combined)) {
+    finalScore = Math.min(finalScore, 8);
+  }
   const evidenceStrength = evidenceStrengthFromScore(finalScore);
 
   let feedback = "";
