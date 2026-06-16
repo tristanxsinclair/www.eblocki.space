@@ -6,17 +6,17 @@ export function ProofStandardPreviewPanel({ preview }: { preview: ProofStandardP
     <div className="rounded-sm border border-primary/25 bg-primary/5 p-3 text-xs">
       <div className="flex items-center gap-2">
         <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-        <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Selected Court Standard</span>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Selected Standard</span>
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
-        <PreviewCell label="Selected domain" value={preview.selectedDomain} />
-        <PreviewCell label="Artifact type" value={preview.artifactType} />
-        <PreviewCell label="Selected standard" value={preview.standardLabel} />
-        <PreviewCell label="Alignment" value={preview.alignmentMessage} />
+        <PreviewCell label="Selected Domain" value={preview.selectedDomain} />
+        <PreviewCell label="Artifact Type" value={preview.artifactType} />
+        <PreviewCell label="Selected Standard" value={preview.standardLabel} />
+        <PreviewCell label="Contract Alignment" value={preview.alignmentMessage} />
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <div className="rounded-sm border border-border/80 bg-background/40 p-3">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Required evidence</div>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Required Evidence</div>
           <ul className="mt-2 space-y-1 text-muted-foreground">
             {preview.requiredEvidence.map((item) => (
               <li key={item} className="flex gap-2">
@@ -27,10 +27,15 @@ export function ProofStandardPreviewPanel({ preview }: { preview: ProofStandardP
           </ul>
         </div>
         <div className="rounded-sm border border-border/80 bg-background/40 p-3">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Elite version</div>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Elite Version</div>
           <p className="mt-2 text-muted-foreground">{preview.eliteVersion}</p>
-          <div className="mt-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Identity rule</div>
-          <p className="mt-2 text-muted-foreground">{preview.identityRule}</p>
+          <div className="mt-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Identity Escalation</div>
+          <p className="mt-2 text-muted-foreground">
+            <span className={preview.identityEscalationAllowed ? "text-primary" : "text-foreground"}>
+              {preview.identityEscalationAllowed ? "Allowed: " : "Blocked: "}
+            </span>
+            {preview.identityRule}
+          </p>
         </div>
       </div>
     </div>
