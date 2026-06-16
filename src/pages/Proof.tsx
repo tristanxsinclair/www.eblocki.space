@@ -20,6 +20,8 @@ import { logEvent } from "@/lib/eblocki/analytics";
 import { toast } from "sonner";
 import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLine, AlertTriangle } from "lucide-react";
 import { Seo } from "@/components/Seo";
+import { PROOF_WEEK_DAYS } from "@/lib/eblocki/proof-week";
+import { MessageSquare, ArrowRight, Flame } from "lucide-react";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -163,6 +165,11 @@ function VerdictFeedback({ artifactId }: { artifactId: string }) {
 export default function Proof() {
   const { user } = useAuth();
   const [params] = useSearchParams();
+  const proofWeekSource = params.get("source") === "proof-week";
+  const proofWeekDayParam = Number(params.get("day") || "0");
+  const proofWeekDay = proofWeekSource && proofWeekDayParam >= 1 && proofWeekDayParam <= 7
+    ? PROOF_WEEK_DAYS[proofWeekDayParam - 1]
+    : null;
 
   const [pending, setPending] = useState<any[]>([]);
   const [completed, setCompleted] = useState<any[]>([]);
