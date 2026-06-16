@@ -33,6 +33,8 @@ import { TemporalIntelligencePanel } from "@/components/eblocki/TemporalIntellig
 import { TemporalModelAuditPanel } from "@/components/eblocki/TemporalModelAuditPanel";
 import { TemporalMap } from "@/components/eblocki/TemporalMap";
 import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
+import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
+import { InterestSignalCard } from "@/components/eblocki/InterestSignalCard";
 import { computeTemporal, type TemporalResult } from "@/lib/eblocki/temporal-engine";
 import { buildDashboardViewModel } from "@/lib/eblocki/dashboard-view-model";
 import { logEvent } from "@/lib/eblocki/analytics";
@@ -200,6 +202,8 @@ export default function Dashboard() {
 
         <CommandHero view={view} state={currentState} />
 
+        <ProofWeekPanel artifactDates={allArtifacts.map((a: any) => a.created_at).filter(Boolean)} />
+
         <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-4 items-start">
           <section className="space-y-3">
             <SectionHeader eyebrow="Zone 2" title="Forecast" detail={view.futureSummary.status} />
@@ -268,6 +272,7 @@ export default function Dashboard() {
               trustPreference: "neutral",
             }}
           />
+          <InterestSignalCard />
         </section>
 
         <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 items-start">
