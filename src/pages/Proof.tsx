@@ -663,45 +663,72 @@ export default function Proof() {
           </div>
         </Card>
 
-        {/* Verdict card */}
+        {/* Verdict — split into focused cards */}
         {verdict && (
-          <Card className="panel p-4 md:p-5 border-primary/40">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Court of Evidence - Verdict</span>
+          <section aria-label="Court of Evidence verdict" className="space-y-3">
+            <Card className="panel p-4 md:p-5 border-primary/40">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Verdict — Artifact Summary</span>
+                </div>
+                <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
               </div>
-              <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
-            </div>
-            <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
-              <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
-              <VerdictRow label="Why it scored that way" value={verdict.why} />
-              <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
-              <VerdictRow label="Missing standard" value={verdict.missingStandard} />
-              <VerdictRow label="Next upgrade" value={verdict.nextUpgrade} />
-              <VerdictRow label="Elite version" value={verdict.eliteVersion} />
-              <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
-              <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
-              <VerdictRow
+              <p className="mt-2 text-sm">
+                <span className="text-muted-foreground">Standard:</span> {verdict.selectedStandard}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Contract alignment: {verdict.contractAlignment}
+                {verdict.contractClosed ? " · Linked Proof Contract closed." : ""}
+              </p>
+              {verdict.attachmentUrl && (
+                <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
+                  <Paperclip className="h-3 w-3 text-primary" />
+                  <span className="text-muted-foreground">Attached evidence:</span>
+                  <a href={verdict.attachmentUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate">
+                    {verdict.attachmentName ?? "view file"}
+                  </a>
+                </div>
+              )}
+            </Card>
+
+            <div className="grid md:grid-cols-2 gap-3">
+              <VerdictCard label="What this proves" value={verdict.why} />
+              <VerdictCard label="Required evidence" value={verdict.requiredEvidence.join(" · ")} />
+              <VerdictCard label="Missing standard" value={verdict.missingStandard} />
+              <VerdictCard label="Next required proof" value={verdict.nextUpgrade} />
+              <VerdictCard
                 label="Identity escalation"
-                value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
+                value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"} — ${verdict.identityEscalationReason}`}
+                accent={verdict.identityEscalationAllowed}
               />
+              <VerdictCard label="Elite version" value={verdict.eliteVersion} />
             </div>
-            {verdict.attachmentUrl && (
-              <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
-                <Paperclip className="h-3 w-3 text-primary" />
-                <span className="text-muted-foreground">Attached evidence:</span>
-                <a href={verdict.attachmentUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate">
-                  {verdict.attachmentName ?? "view file"}
-                </a>
+
+            <Card className="panel p-4 border-primary/30 bg-primary/5">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Next action</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {proofWeekSource ? (
+                  <Link to="/proof-week">
+                    <Button size="sm">Continue Proof Week — Day {proofWeekDayParam}<ArrowRight className="h-3 w-3 ml-1.5" /></Button>
+                  </Link>
+                ) : (
+                  <Button size="sm" onClick={() => setVerdict(null)}>Submit another proof</Button>
+                )}
+                <Link
+                  to={`/coach?prompt=${encodeURIComponent(
+                    `Help me upgrade this proof. Title: ${verdict.artifactId ? "(see artifact)" : ""}. Missing standard: ${verdict.missingStandard}. Next upgrade: ${verdict.nextUpgrade}. Suggest the next artifact.`,
+                  )}`}
+                >
+                  <Button size="sm" variant="outline"><MessageSquare className="h-3 w-3 mr-1.5" />Ask Coach how to upgrade this</Button>
+                </Link>
+                {!proofWeekSource && (
+                  <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
+                )}
               </div>
-            )}
-            <VerdictFeedback artifactId={verdict.artifactId} />
-            <div className="mt-4 flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setVerdict(null)}>Submit another</Button>
-              <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
-            </div>
-          </Card>
+              <VerdictFeedback artifactId={verdict.artifactId} />
+            </Card>
+          </section>
         )}
 
         {/* Submission form */}
