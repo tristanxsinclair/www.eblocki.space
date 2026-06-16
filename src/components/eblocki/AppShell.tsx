@@ -1,13 +1,13 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageSquare, Gavel, Settings, LogOut, Crosshair, Flame, Hexagon, Swords } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Gavel, Settings, LogOut, Crosshair, Sparkles, Hexagon, Swords } from "lucide-react";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 import { LevelUpListener } from "./LevelUpListener";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/proof-week", label: "Proof Week", icon: Flame },
+  { to: "/start-today", label: "Start Today", icon: Sparkles },
   { to: "/proof", label: "Proof", icon: Gavel },
   { to: "/coach", label: "Coach", icon: MessageSquare },
   { to: "/gameforge", label: "GameForge", icon: Swords },
@@ -29,14 +29,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <span className="font-mono text-sm tracking-[0.2em]">EBLOCKI</span>
         </Link>
-        <nav aria-label="Primary" className="flex-1 flex md:flex-col gap-0.5 p-2 overflow-x-auto">
+        <nav className="flex-1 flex md:flex-col gap-0.5 p-2 overflow-x-auto">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-2 px-3 py-2 min-h-11 md:min-h-0 rounded-sm font-mono text-xs uppercase tracking-wider whitespace-nowrap native-tap",
+                  "flex items-center gap-2 px-3 py-2 rounded-sm font-mono text-xs uppercase tracking-wider whitespace-nowrap native-tap",
                   isActive
                     ? "bg-primary/10 text-primary border border-primary/30"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50",

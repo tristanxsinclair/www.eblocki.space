@@ -238,7 +238,7 @@ export default function Onboarding() {
 
       haptics.success();
       toast.success("Your Eblocki OS is live.");
-      navigate("/proof-week");
+      navigate("/dashboard");
     } catch (error: any) {
       haptics.error();
       toast.error(error?.message || "Failed to save onboarding.");

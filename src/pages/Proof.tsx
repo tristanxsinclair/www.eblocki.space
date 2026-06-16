@@ -18,9 +18,8 @@ import { computeTemporal } from "@/lib/eblocki/temporal-engine";
 import { buildTemporalSnapshotPayload, stripSensitiveTemporalSnapshotFields } from "@/lib/eblocki/temporal-snapshot";
 import { logEvent } from "@/lib/eblocki/analytics";
 import { toast } from "sonner";
-import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLine, AlertTriangle, MessageSquare, ArrowRight, Flame } from "lucide-react";
+import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLine, AlertTriangle } from "lucide-react";
 import { Seo } from "@/components/Seo";
-import { PROOF_WEEK_DAYS } from "@/lib/eblocki/proof-week";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -164,11 +163,6 @@ function VerdictFeedback({ artifactId }: { artifactId: string }) {
 export default function Proof() {
   const { user } = useAuth();
   const [params] = useSearchParams();
-  const proofWeekSource = params.get("source") === "proof-week";
-  const proofWeekDayParam = Number(params.get("day") || "0");
-  const proofWeekDay = proofWeekSource && proofWeekDayParam >= 1 && proofWeekDayParam <= 7
-    ? PROOF_WEEK_DAYS[proofWeekDayParam - 1]
-    : null;
 
   const [pending, setPending] = useState<any[]>([]);
   const [completed, setCompleted] = useState<any[]>([]);
@@ -599,26 +593,6 @@ export default function Proof() {
           <h1 className="text-2xl md:text-3xl font-semibold mt-1">Receipts, scored.</h1>
         </header>
 
-        {proofWeekDay && (
-          <Card className="panel p-3 md:p-4 border-primary/40 bg-primary/5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-start gap-2 min-w-0">
-                <Flame className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                    Proof Week — Day {proofWeekDayParam} / 7 · {proofWeekDay.label}
-                  </div>
-                  <p className="mt-1 text-sm leading-snug">{proofWeekDay.command}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{proofWeekDay.proofRequired}</p>
-                </div>
-              </div>
-              <Link to="/proof" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground">
-                Exit context
-              </Link>
-            </div>
-          </Card>
-        )}
-
         <Card className="panel p-4 border-primary/20">
           <div className="flex items-start gap-3">
             <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -662,72 +636,45 @@ export default function Proof() {
           </div>
         </Card>
 
-        {/* Verdict — split into focused cards */}
+        {/* Verdict card */}
         {verdict && (
-          <section aria-label="Court of Evidence verdict" className="space-y-3">
-            <Card className="panel p-4 md:p-5 border-primary/40">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Verdict — Artifact Summary</span>
-                </div>
-                <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
+          <Card className="panel p-4 md:p-5 border-primary/40">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Court of Evidence - Verdict</span>
               </div>
-              <p className="mt-2 text-sm">
-                <span className="text-muted-foreground">Standard:</span> {verdict.selectedStandard}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Contract alignment: {verdict.contractAlignment}
-                {verdict.contractClosed ? " · Linked Proof Contract closed." : ""}
-              </p>
-              {verdict.attachmentUrl && (
-                <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
-                  <Paperclip className="h-3 w-3 text-primary" />
-                  <span className="text-muted-foreground">Attached evidence:</span>
-                  <a href={verdict.attachmentUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate">
-                    {verdict.attachmentName ?? "view file"}
-                  </a>
-                </div>
-              )}
-            </Card>
-
-            <div className="grid md:grid-cols-2 gap-3">
-              <VerdictCard label="What this proves" value={verdict.why} />
-              <VerdictCard label="Required evidence" value={verdict.requiredEvidence.join(" · ")} />
-              <VerdictCard label="Missing standard" value={verdict.missingStandard} />
-              <VerdictCard label="Next required proof" value={verdict.nextUpgrade} />
-              <VerdictCard
-                label="Identity escalation"
-                value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"} — ${verdict.identityEscalationReason}`}
-                accent={verdict.identityEscalationAllowed}
-              />
-              <VerdictCard label="Elite version" value={verdict.eliteVersion} />
+              <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
             </div>
-
-            <Card className="panel p-4 border-primary/30 bg-primary/5">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Next action</div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {proofWeekSource ? (
-                  <Link to="/proof-week">
-                    <Button size="sm">Continue Proof Week — Day {proofWeekDayParam}<ArrowRight className="h-3 w-3 ml-1.5" /></Button>
-                  </Link>
-                ) : (
-                  <Button size="sm" onClick={() => setVerdict(null)}>Submit another proof</Button>
-                )}
-                <Link
-                  to={`/coach?prompt=${encodeURIComponent(
-                    `Help me upgrade this proof. Title: ${verdict.artifactId ? "(see artifact)" : ""}. Missing standard: ${verdict.missingStandard}. Next upgrade: ${verdict.nextUpgrade}. Suggest the next artifact.`,
-                  )}`}
-                >
-                  <Button size="sm" variant="outline"><MessageSquare className="h-3 w-3 mr-1.5" />Ask Coach how to upgrade this</Button>
-                </Link>
-                {!proofWeekSource && (
-                  <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
-                )}
+            <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
+              <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
+              <VerdictRow label="Why it scored that way" value={verdict.why} />
+              <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
+              <VerdictRow label="Missing standard" value={verdict.missingStandard} />
+              <VerdictRow label="Next upgrade" value={verdict.nextUpgrade} />
+              <VerdictRow label="Elite version" value={verdict.eliteVersion} />
+              <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
+              <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
+              <VerdictRow
+                label="Identity escalation"
+                value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
+              />
+            </div>
+            {verdict.attachmentUrl && (
+              <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
+                <Paperclip className="h-3 w-3 text-primary" />
+                <span className="text-muted-foreground">Attached evidence:</span>
+                <a href={verdict.attachmentUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate">
+                  {verdict.attachmentName ?? "view file"}
+                </a>
               </div>
-              <VerdictFeedback artifactId={verdict.artifactId} />
-            </Card>
-          </section>
+            )}
+            <VerdictFeedback artifactId={verdict.artifactId} />
+            <div className="mt-4 flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setVerdict(null)}>Submit another</Button>
+              <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
+            </div>
+          </Card>
         )}
 
         {/* Submission form */}
@@ -932,7 +879,6 @@ export default function Proof() {
                 <div
                   role="button"
                   tabIndex={0}
-                  aria-label="Upload supporting evidence file"
                   onClick={() => fileInputRef.current?.click()}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
@@ -993,7 +939,7 @@ export default function Proof() {
 
                   {attachmentBusy && (
                     <div className="mt-2">
-                      <Progress value={attachState.progress} className="h-1.5" aria-label="Upload progress" />
+                      <Progress value={attachState.progress} className="h-1.5" />
                       <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                         {attachState.message}
                       </div>
@@ -1091,7 +1037,7 @@ export default function Proof() {
               disabled={submitting || attachmentBusy || !artifactType.trim() || !content.trim() || !title.trim()}
               className="w-full sm:w-auto"
             >
-              {submitting ? "Filing..." : attachmentBusy ? "Processing attachment..." : "Submit to Court of Evidence"}
+              {submitting ? "Filing..." : attachmentBusy ? "Processing attachment..." : "Score & File Proof Artifact"}
             </Button>
           </div>
         </Card>
@@ -1196,14 +1142,5 @@ function VerdictRow({ label, value }: { label: string; value: string }) {
       <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
       <p className="mt-1 text-sm">{value}</p>
     </div>
-  );
-}
-
-function VerdictCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <Card className={"panel p-4 " + (accent ? "border-primary/30 bg-primary/5" : "border-border/80 bg-card/50")}>
-      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-      <p className="mt-1.5 text-sm leading-relaxed">{value}</p>
-    </Card>
   );
 }

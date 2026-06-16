@@ -15,13 +15,14 @@ import {
   Crosshair,
   FileText,
   Gavel,
+  Layers,
   MessageSquare,
   Radar,
   ShieldAlert,
+  Sparkles,
   Target,
 } from "lucide-react";
 import { detectMode, MODE_LABELS, type Mode } from "@/lib/eblocki/modes";
-import { computeProofWeek } from "@/lib/eblocki/proof-week";
 import { detectState, STATE_LABELS, STATE_PRESCRIPTION, type BehaviouralState } from "@/lib/eblocki/states";
 import { Seo } from "@/components/Seo";
 import { MomentumPanel } from "@/components/eblocki/MomentumPanel";
@@ -141,24 +142,6 @@ export default function Dashboard() {
     queryFailed,
   }), [today, pending, recent, allArtifacts, recentCoach, activeDomains.length, temporalResult, queryFailed]);
 
-  // Proof Week-aware command override (UI-only, derived from artifact dates;
-  // joinedAt fetched separately would add a request — we rely on artifact
-  // timestamps which the dashboard already loads, matching ProofWeekPanel
-  // fallback semantics).
-  const artifactDates = useMemo(
-    () => allArtifacts.map((a: any) => a.created_at).filter(Boolean),
-    [allArtifacts],
-  );
-  const proofWeekStatus = useMemo(
-    () => computeProofWeek({
-      joinedAt: artifactDates.length > 0 ? artifactDates[artifactDates.length - 1] : null,
-      artifactDates,
-    }),
-    [artifactDates],
-  );
-  const proofWeekActive = proofWeekStatus.active && proofWeekStatus.today;
-  const hasAnyProof = allArtifacts.length > 0;
-
   const handleCheckIn = () => {
     if (!quick.trim()) return;
     setMode(detectMode(quick).primary);
@@ -200,6 +183,8 @@ export default function Dashboard() {
           <div className="flex gap-2 flex-wrap">
             <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Proof</Button></Link>
             <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
+            <Link to="/start-today"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Start</Button></Link>
+            <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
           </div>
         </header>
 
@@ -215,29 +200,9 @@ export default function Dashboard() {
           </Card>
         )}
 
-        <CommandHero
-          view={view}
-          state={currentState}
-          proofWeekDay={proofWeekActive ? proofWeekStatus.currentDay : null}
-          hasAnyProof={hasAnyProof}
-        />
+        <CommandHero view={view} state={currentState} />
 
-        {!hasAnyProof ? null : <ProofWeekPanel artifactDates={artifactDates} />}
-
-        {!hasAnyProof && (
-          <Card className="panel p-5 border-primary/30 bg-primary/5">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-primary">First proof</div>
-            <h2 className="mt-2 text-lg font-semibold">No proof yet. Submit one measurable artifact to activate the command layer.</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Forecast, identity, and product match unlock once the Court has at least one verdict.</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link to="/proof-week"><Button size="sm">Start Proof Week</Button></Link>
-              <Link to="/proof"><Button size="sm" variant="outline">Submit first proof</Button></Link>
-            </div>
-          </Card>
-        )}
-
-        {hasAnyProof && (
-        <>
+        <ProofWeekPanel artifactDates={allArtifacts.map((a: any) => a.created_at).filter(Boolean)} />
 
         <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-4 items-start">
           <section className="space-y-3">
@@ -357,39 +322,12 @@ export default function Dashboard() {
             </div>
           )}
         </section>
-        </>
-        )}
       </div>
     </AppShell>
   );
 }
 
-function CommandHero({
-  view,
-  state,
-  proofWeekDay,
-  hasAnyProof,
-}: {
-  view: ReturnType<typeof buildDashboardViewModel>;
-  state: BehaviouralState | null;
-  proofWeekDay: number | null;
-  hasAnyProof: boolean;
-}) {
-  const overrideToProofWeek = proofWeekDay !== null;
-  const overrideToFirstProof = !hasAnyProof;
-  const primaryHref = overrideToProofWeek
-    ? "/proof-week"
-    : overrideToFirstProof
-      ? "/proof"
-      : view.commandSummary.primaryHref;
-  const primaryCta = overrideToProofWeek
-    ? `Continue Proof Week — Day ${proofWeekDay}`
-    : overrideToFirstProof
-      ? "Submit first proof"
-      : view.commandSummary.primaryCta;
-  const coachSeed = overrideToProofWeek
-    ? `I am on Proof Week Day ${proofWeekDay}. What is the smallest artifact I can produce in 20 minutes that meets today's standard?`
-    : "Diagnose what is blocking the next proof artifact.";
+function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardViewModel>; state: BehaviouralState | null }) {
   return (
     <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -407,8 +345,8 @@ function CommandHero({
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
-          <Link to={primaryHref}><Button size="sm">{primaryCta}<ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Button></Link>
-          <Link to={`/coach?prompt=${encodeURIComponent(coachSeed)}`}><Button size="sm" variant="outline">Ask Coach</Button></Link>
+          <Link to={view.commandSummary.primaryHref}><Button size="sm">{view.commandSummary.primaryCta}<ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Button></Link>
+          <Link to={view.commandSummary.secondaryHref}><Button size="sm" variant="outline">{view.commandSummary.secondaryCta}</Button></Link>
         </div>
       </div>
       <div className="mt-4 grid md:grid-cols-3 gap-2">

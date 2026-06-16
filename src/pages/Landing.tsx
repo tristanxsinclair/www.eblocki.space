@@ -52,7 +52,7 @@ export default function Landing() {
               How it works
             </a>
             <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">Sign in</Link>
-            <Link to="/auth?redirect=/proof-week"><Button size="sm">Join Proof Week</Button></Link>
+            <Link to="/proof-week"><Button size="sm">Join Proof Week</Button></Link>
           </nav>
         </div>
       </header>
@@ -77,8 +77,8 @@ export default function Landing() {
                 <li><span className="text-foreground font-medium">4.</span> See if your work counted.</li>
               </ol>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/auth?redirect=/proof-week"><Button size="lg">Start Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
-                <Link to="/auth"><Button size="lg" variant="outline">I already have an account</Button></Link>
+                <Link to="/proof-week"><Button size="lg">Start Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+                <Link to="/proof"><Button size="lg" variant="outline">Submit first proof</Button></Link>
               </div>
               <p className="mt-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">
                 Free beta · No card required · Built for university students
@@ -203,7 +203,7 @@ export default function Landing() {
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 One command a day. One proof artifact. By day 7, Eblocki shows you whether your work produced real evidence — or just made you feel productive.
               </p>
-              <Link to="/auth?redirect=/proof-week" className="mt-7 inline-flex"><Button size="lg">Start Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+              <Link to="/proof-week" className="mt-7 inline-flex"><Button size="lg">Start Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
             </div>
           </div>
         </section>
