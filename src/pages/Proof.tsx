@@ -599,20 +599,41 @@ export default function Proof() {
         description="Submit proof artifacts, score evidence strength, and close pending Proof Contracts."
         path="/proof"
       />
-      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
-        <header>
+      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 min-w-0 max-w-full text-wrap-safe">
+        <header className="min-w-0">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Court of Evidence</span>
-          <h1 className="text-2xl md:text-3xl font-semibold mt-1">Receipts, scored.</h1>
+          <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Receipts, scored.</h1>
         </header>
 
-        <Card className="panel p-4 border-primary/20">
+        {/* First-proof guidance — primary mobile CTA */}
+        <Card className="panel p-4 border-primary/30 max-w-full overflow-hidden">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+            Today’s one move
+          </span>
+          <h2 className="text-lg font-semibold mt-1 break-words">
+            Submit one measurable artifact from today.
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1 break-words">
+            One real output beats a day of intention. Examples:
+          </p>
+          <ul className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+            <li>• one paragraph written</li>
+            <li>• one study answer drafted</li>
+            <li>• one sales insight captured</li>
+            <li>• one training reflection</li>
+            <li>• one shipped app change</li>
+            <li>• one closed life-admin loop</li>
+          </ul>
+        </Card>
+
+        <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
           <div className="flex items-start gap-3">
             <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-            <div>
+            <div className="min-w-0">
               <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
                 Definitions
               </span>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-1 break-words">
                 A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
                 A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
               </p>
