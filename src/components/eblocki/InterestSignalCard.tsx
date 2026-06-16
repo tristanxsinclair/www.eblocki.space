@@ -9,6 +9,7 @@ import { CheckCircle2, DollarSign, Sparkles } from "lucide-react";
 import { logEvent } from "@/lib/eblocki/analytics";
 import {
   getInterestSignalDecision,
+  normaliseInterestNote,
   type InterestSignalRecord,
 } from "@/lib/eblocki/interest-signals";
 
@@ -168,7 +169,12 @@ export function InterestSignalCard() {
         return;
       }
 
-      if (!user) writeLocalInterestSignal(candidate);
+      if (!user) {
+        writeLocalInterestSignal({
+          ...candidate,
+          note: normaliseInterestNote(trimmedNote),
+        });
+      }
 
       setSubmitted((s) => new Set(s).add(type));
       setOpenForm(null);
