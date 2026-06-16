@@ -23,6 +23,12 @@ export interface DomainStandardSelectionInput {
   intent?: string | null;
   artifactType?: string | null;
   proofLevel?: ProofLevel | null;
+  /**
+   * Additional free-form text (title + content + reflection) the selector
+   * may scan for product-system / implementation signals. Keeps the Court
+   * from defaulting product critiques to General Proof Standard.
+   */
+  signalText?: string | null;
 }
 
 export const DOMAIN_STANDARD_REGISTRY: Record<DomainStandardKey, DomainStandard> = {
@@ -178,25 +184,46 @@ export function selectDomainStandard(input: DomainStandardSelectionInput = {}): 
   const domain = normalise(input.domain);
   const intent = normalise(input.intent);
   const artifactType = normalise(input.artifactType);
-  const combined = `${domain} ${intent} ${artifactType}`;
+  const signalText = normalise(input.signalText);
+  const slotCombined = `${domain} ${intent} ${artifactType}`;
+  const combined = `${slotCombined} ${signalText}`.trim();
 
-  if (hasAny(combined, ["implementation", "code change", "shipped change", "commit reference"])) {
+  // Implementation standard requires actual shipped-evidence markers, not the
+  // bare word "implementation" (which appears in "implementation path stated"
+  // for product critiques).
+  if (hasAny(combined, [
+    "file changes", "shipped change", "commit reference", "tests added",
+    "build result", "test result", "code change", "pull request", "deployed",
+  ])) {
     return DOMAIN_STANDARD_REGISTRY.eblocki_implementation_standard;
   }
 
-  if (hasAny(combined, ["source bank", "authority log", "authority logging", "statute note", "case note", "issue matrix"])) {
+  if (hasAny(slotCombined, ["source bank", "authority log", "authority logging", "statute note", "case note", "issue matrix"])) {
     return DOMAIN_STANDARD_REGISTRY.law_source_bank_standard;
   }
 
-  if (hasAny(combined, ["academic proof plan", "study system", "mastery plan", "unit plan", "weekly law proof", "academic workflow", "law academic"])) {
+  if (hasAny(slotCombined, ["academic proof plan", "study system", "mastery plan", "unit plan", "weekly law proof", "academic workflow", "law academic"])) {
     return DOMAIN_STANDARD_REGISTRY.academic_proof_plan_standard;
   }
 
-  if (hasAny(combined, ["product system", "router", "routing", "ux", "bug", "logic critique", "product review"])) {
+  // Product-system signals — scan the wider artifact body so coach/router/
+  // proof-action/UI critiques cannot fall through to General Proof Standard.
+  const PRODUCT_SIGNALS = [
+    "product system", "product review", "product issue", "product bug",
+    "router", "routing", "route ", "ux", "ui bug", "ui issue", "ux issue",
+    "logic critique", "bug", "eblocki", "coach output", "coach response",
+    "coach router", "coach routing", "coach mode", "proof action",
+    "proof contract", "proof action card", "court of evidence",
+    "verdict screen", "dashboard", "mobile containment", "implementation path",
+    "acceptance test", "response composer", "standard selection",
+    "scoring bug", "specificity leak", "app behaviour", "app behavior",
+    "lovable", "codex", "build pass", "test pass",
+  ];
+  if (hasAny(combined, PRODUCT_SIGNALS)) {
     return DOMAIN_STANDARD_REGISTRY.product_system_review_standard;
   }
 
-  if (hasAny(combined, ["irac", "legal reasoning", "legal answer", "problem answer", "law answer"])) {
+  if (hasAny(slotCombined, ["irac", "legal reasoning", "legal answer", "problem answer", "law answer"])) {
     return DOMAIN_STANDARD_REGISTRY.law_irac_standard;
   }
 
