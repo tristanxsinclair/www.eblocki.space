@@ -10,7 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
+import { ProofStandardPreviewPanel } from "@/components/eblocki/ProofStandardPreviewPanel";
 import { scoreProofArtifact } from "@/lib/eblocki/proof-scoring";
+import { buildProofStandardPreview, type ProofStandardPreview } from "@/lib/eblocki/proof-standard-preview";
 import type { UserMode } from "@/lib/eblocki/modes";
 import { computeTemporal } from "@/lib/eblocki/temporal-engine";
 import { buildTemporalSnapshotPayload, stripSensitiveTemporalSnapshotFields } from "@/lib/eblocki/temporal-snapshot";
@@ -20,6 +22,11 @@ import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLi
 import { Seo } from "@/components/Seo";
 
 const ARTIFACT_TYPES = [
+  "product system review",
+  "source-bank entries",
+  "IRAC paragraph",
+  "implementation proof",
+  "academic proof plan",
   "written answer",
   "reflection",
   "script",
@@ -40,6 +47,11 @@ interface Verdict {
   eliteVersion: string;
   artifactId: string;
   contractClosed: boolean;
+  selectedStandard: string;
+  requiredEvidence: string[];
+  contractAlignment: string;
+  identityEscalationAllowed: boolean;
+  identityEscalationReason: string;
   attachmentUrl?: string | null;
   attachmentName?: string | null;
 }
@@ -79,6 +91,17 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
+function buildVerdictExtras(
+  preview: ProofStandardPreview,
+  score: { qualityScore: number; evidenceStrength: string; feedback: string; nextUpgrade: string }
+) {
+  const why = `Scored ${score.qualityScore}/10 (${score.evidenceStrength}). ${score.feedback}`;
+  const missingStandard = score.evidenceStrength === "elite"
+    ? `None - meets ${preview.standardLabel}.`
+    : preview.missingStandard;
+  return { why, missingStandard, eliteVersion: preview.eliteVersion };
+}
+
 export default function Proof() {
   const { user } = useAuth();
   const [params] = useSearchParams();
@@ -91,7 +114,7 @@ export default function Proof() {
   const [selectedModeId, setSelectedModeId] = useState<string>("");
   const [linkedContractId, setLinkedContractId] = useState<string>("");
   const [title, setTitle] = useState("");
-  const [artifactType, setArtifactType] = useState<string>(ARTIFACT_TYPES[0]);
+  const [artifactType, setArtifactType] = useState<string>("");
   const [content, setContent] = useState("");
   const [reflection, setReflection] = useState("");
   const [nextUpgrade, setNextUpgrade] = useState("");
@@ -130,7 +153,7 @@ export default function Proof() {
     reload();
   }, [user]);
 
-  // Honour ?mode=… and ?contract=… deep links
+  // Honour ?mode=... and ?contract=... deep links
   useEffect(() => {
     const m = params.get("mode");
     if (m) setSelectedModeId(m.toUpperCase());
@@ -153,10 +176,19 @@ export default function Proof() {
     if (!linkedContract) return;
     if (!title) setTitle(linkedContract.title || "");
     if (!selectedModeId && linkedContract.mode) setSelectedModeId(linkedContract.mode);
-    if (linkedContract.required_artifact && artifactType === ARTIFACT_TYPES[0]) {
-      setArtifactType(linkedContract.required_artifact.length > 60 ? "other" : linkedContract.required_artifact);
+    if (linkedContract.required_artifact && !artifactType) {
+      setArtifactType(linkedContract.required_artifact.length > 80 ? "other" : linkedContract.required_artifact);
     }
   }, [linkedContract]);
+
+  const proofPreview = useMemo(() => buildProofStandardPreview({
+    domain: selectedMode?.mode_id ?? linkedContract?.domain ?? selectedModeId,
+    artifactType,
+    proofAction: linkedContract?.required_artifact ?? linkedContract?.title ?? artifactType,
+    proofContract: linkedContract,
+  }), [artifactType, linkedContract, selectedMode?.mode_id, selectedModeId]);
+
+  const hasStandardSelection = Boolean(artifactType || linkedContract || selectedModeId);
 
   const resetForm = () => {
     setTitle("");
@@ -164,7 +196,7 @@ export default function Proof() {
     setReflection("");
     setNextUpgrade("");
     setLinkedContractId("");
-    setArtifactType(ARTIFACT_TYPES[0]);
+    setArtifactType("");
     setAttachment(null);
     setAttachmentText("");
     setOriginalExtractedText("");
@@ -175,33 +207,9 @@ export default function Proof() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const buildPersonalisedExtras = (
-    mode: UserMode | null,
-    score: { qualityScore: number; evidenceStrength: string; feedback: string; nextUpgrade: string }
-  ) => {
-    const why = `Scored ${score.qualityScore}/10 (${score.evidenceStrength}). ${score.feedback}`;
-    const standardExamples = mode?.strong_evidence_examples?.[0] || mode?.proof_examples?.[0];
-    const eliteExample = mode?.elite_evidence_examples?.[0];
-    const criteria = mode?.scoring_criteria
-      ? Object.values(mode.scoring_criteria).flat().filter(Boolean).join(", ")
-      : "";
-
-    const missingStandard =
-      score.evidenceStrength === "elite"
-        ? "None — meets elite standard for this mode."
-        : standardExamples
-        ? `Aim for: ${standardExamples}${criteria ? ` (criteria: ${criteria})` : ""}`
-        : "Add concrete artifact + applied detail + reflection + next upgrade.";
-
-    const eliteVersion =
-      eliteExample ||
-      "Artifact shows action, applied detail, honest critique, correction, and a next upgrade that survives the Court of Evidence.";
-
-    return { why, missingStandard, eliteVersion };
-  };
-
   const submit = async () => {
     if (!user) return;
+    if (!artifactType.trim()) return toast.error("Choose a proof type first.");
     if (!content.trim()) return toast.error("Add the artifact content first.");
     if (!title.trim()) return toast.error("Give the proof a title.");
 
@@ -214,6 +222,12 @@ export default function Proof() {
     try {
       const modeId = selectedMode?.mode_id ?? linkedContract?.mode ?? "GENERAL_EXECUTION";
       const domainValue = (selectedMode?.mode_id ?? linkedContract?.domain ?? modeId).toLowerCase();
+      const submissionPreview = buildProofStandardPreview({
+        domain: domainValue,
+        artifactType,
+        proofAction: linkedContract?.required_artifact ?? linkedContract?.title ?? artifactType,
+        proofContract: linkedContract,
+      });
 
       // Combine attachment-extracted text (e.g. .txt/.md/.csv) into scoring context
       const scoringContent = attachmentText
@@ -334,7 +348,7 @@ export default function Proof() {
         if (!upErr) contractClosed = true;
       }
 
-      const extras = buildPersonalisedExtras(selectedMode, score);
+      const extras = buildVerdictExtras(submissionPreview, score);
 
       setVerdict({
         qualityScore: score.qualityScore,
@@ -346,11 +360,16 @@ export default function Proof() {
         eliteVersion: extras.eliteVersion,
         artifactId: artifact!.id,
         contractClosed,
+        selectedStandard: submissionPreview.standardLabel,
+        requiredEvidence: submissionPreview.requiredEvidence,
+        contractAlignment: submissionPreview.alignmentMessage,
+        identityEscalationAllowed: submissionPreview.identityEscalationAllowed,
+        identityEscalationReason: submissionPreview.identityRule,
         attachmentUrl,
         attachmentName: attachment?.name ?? null,
       });
 
-      toast.success(`Verdict: ${score.qualityScore}/10 — ${score.evidenceStrength}`);
+      toast.success(`Verdict: ${score.qualityScore}/10 - ${score.evidenceStrength}`);
       resetForm();
       reload();
     } catch (e: any) {
@@ -372,7 +391,7 @@ export default function Proof() {
   const validateFile = (file: File): string | null => {
     if (file.size === 0) return "File is empty.";
     if (file.size > MAX_ATTACHMENT_BYTES) {
-      return `File is ${(file.size / 1024 / 1024).toFixed(1)} MB — limit is 10 MB.`;
+      return `File is ${(file.size / 1024 / 1024).toFixed(1)} MB - limit is 10 MB.`;
     }
     const isTextByName = /\.(md|txt|csv)$/i.test(file.name);
     const mime = file.type || (isTextByName ? "text/plain" : "");
@@ -390,7 +409,7 @@ export default function Proof() {
       return;
     }
 
-    setAttachState({ ...INITIAL_ATTACH, file, status: "validating", progress: 5, message: "Validating…" });
+    setAttachState({ ...INITIAL_ATTACH, file, status: "validating", progress: 5, message: "Validating..." });
 
     const err = validateFile(file);
     if (err) {
@@ -409,7 +428,7 @@ export default function Proof() {
 
     try {
       if (isText) {
-        setAttachState((s) => ({ ...s, status: "reading", progress: 40, message: "Reading text file…" }));
+        setAttachState((s) => ({ ...s, status: "reading", progress: 40, message: "Reading text file..." }));
         const text = await file.text();
         const clipped = text.slice(0, 20000);
         setAttachmentText(clipped);
@@ -417,19 +436,19 @@ export default function Proof() {
         setExtractedEdited(false);
         setAttachState({
           file, status: "ready", progress: 100,
-          message: `Text indexed — ${clipped.length.toLocaleString()} chars added to verdict context.`,
+          message: `Text indexed - ${clipped.length.toLocaleString()} chars added to verdict context.`,
           error: null, extractedSource: "text-file", ocrTruncated: text.length > 20000,
         });
         return;
       }
 
       if (isImage || isPdf) {
-        setAttachState((s) => ({ ...s, status: "reading", progress: 25, message: "Reading file…" }));
+        setAttachState((s) => ({ ...s, status: "reading", progress: 25, message: "Reading file..." }));
         const dataUrl = await readFileAsDataUrl(file);
 
         setAttachState((s) => ({
           ...s, status: "extracting", progress: 60,
-          message: isPdf ? "OCR extracting from PDF…" : "OCR extracting from image…",
+          message: isPdf ? "OCR extracting from PDF..." : "OCR extracting from image...",
         }));
 
         const { data, error } = await supabase.functions.invoke("ocr-extract", {
@@ -453,7 +472,7 @@ export default function Proof() {
         } else {
           setAttachState({
             file, status: "ready", progress: 100,
-            message: `OCR captured ${extracted.length.toLocaleString()} chars${truncated ? " (truncated)" : ""} — added to verdict context.`,
+            message: `OCR captured ${extracted.length.toLocaleString()} chars${truncated ? " (truncated)" : ""} - added to verdict context.`,
             error: null, extractedSource: "ocr", ocrTruncated: truncated,
           });
         }
@@ -565,21 +584,24 @@ export default function Proof() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Court of Evidence — Verdict</span>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Court of Evidence - Verdict</span>
               </div>
               <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
             </div>
             <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
+              <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
               <VerdictRow label="Why it scored that way" value={verdict.why} />
+              <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
               <VerdictRow label="Missing standard" value={verdict.missingStandard} />
               <VerdictRow label="Next upgrade" value={verdict.nextUpgrade} />
               <VerdictRow label="Elite version" value={verdict.eliteVersion} />
+              <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
+              <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
+              <VerdictRow
+                label="Identity escalation"
+                value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
+              />
             </div>
-            {verdict.contractClosed && (
-              <div className="mt-3 rounded-sm border border-primary/40 bg-primary/5 p-2.5 text-xs text-primary font-mono">
-                ✓ Linked Proof Contract marked completed.
-              </div>
-            )}
             {verdict.attachmentUrl && (
               <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
                 <Paperclip className="h-3 w-3 text-primary" />
@@ -618,7 +640,7 @@ export default function Proof() {
                     onChange={(e) => setSelectedModeId(e.target.value)}
                     className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
-                    <option value="">— pick a mode —</option>
+                    <option value="">- pick a mode -</option>
                     {activeModes.map((mode) => (
                       <option key={mode.mode_id} value={mode.mode_id}>{mode.display_name}</option>
                     ))}
@@ -634,10 +656,10 @@ export default function Proof() {
                   onChange={(e) => setLinkedContractId(e.target.value)}
                   className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  <option value="">— none —</option>
+                  <option value="">- none -</option>
                   {pending.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.mode ?? p.domain} · {p.title}
+                      {p.mode ?? p.domain} - {p.title}
                     </option>
                   ))}
                 </select>
@@ -655,7 +677,7 @@ export default function Proof() {
                   <div className="mt-0.5 text-muted-foreground">Standard: {linkedContract.evidence_standard}</div>
                 )}
                 {linkedContract.proof_artifact_id && (
-                  <div className="mt-1 text-destructive">Already closed — submitting will create a new artifact but won't reopen.</div>
+                  <div className="mt-1 text-destructive">Already closed - submitting will create a new artifact but won't reopen.</div>
                 )}
               </div>
             )}
@@ -678,12 +700,21 @@ export default function Proof() {
                   onChange={(e) => setArtifactType(e.target.value)}
                   className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
+                  <option value="">choose proof type</option>
                   {ARTIFACT_TYPES.map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
               </div>
             </div>
+
+            {hasStandardSelection ? (
+              <ProofStandardPreviewPanel preview={proofPreview} />
+            ) : (
+              <div className="rounded-sm border border-border bg-background/40 p-3 text-sm text-muted-foreground">
+                No proof standard selected yet. Choose a proof type to see how the Court will judge it.
+              </div>
+            )}
 
             <div>
               <Label htmlFor="proof-content">Content</Label>
@@ -734,11 +765,11 @@ export default function Proof() {
                     Pressure XP
                   </span>
                   <span className={"font-mono text-[10px] " + (pressureFlag ? "text-primary" : "text-muted-foreground")}>
-                    {pressureFlag ? "ON ×1.3" : "OFF"}
+                    {pressureFlag ? "ON x1.3" : "OFF"}
                   </span>
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                  Shipped under real pressure — deadline, exam, live, fatigue, avoidance overcome.
+                  Shipped under real pressure - deadline, exam, live, fatigue, avoidance overcome.
                 </p>
               </button>
 
@@ -758,11 +789,11 @@ export default function Proof() {
                     Transfer XP
                   </span>
                   <span className={"font-mono text-[10px] " + (transferFlag ? "text-primary" : "text-muted-foreground")}>
-                    {transferFlag ? "ON ×1.4" : "OFF"}
+                    {transferFlag ? "ON x1.4" : "OFF"}
                   </span>
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                  Skill transferred to the real world — match, mark, revenue, client outcome.
+                  Skill transferred to the real world - match, mark, revenue, client outcome.
                 </p>
               </button>
             </div>
@@ -773,7 +804,7 @@ export default function Proof() {
                 Attach supporting evidence (optional)
               </Label>
               <p className="mt-1 text-xs text-muted-foreground">
-                PDF, image, or text up to 10MB. Images & PDFs are run through OCR; text files are read directly. Extracted text is added to the verdict context.
+                PDF, image, or text up to 10MB. Images and PDFs are run through OCR; text files are read directly. Extracted text is added to the verdict context.
               </p>
 
               <input
@@ -812,7 +843,7 @@ export default function Proof() {
                     {isDragOver ? "Drop to attach" : "Drop a file here or click to upload"}
                   </div>
                   <div className="mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                    PDF · PNG · JPG · WEBP · TXT · MD · CSV — max 10MB
+                    PDF / PNG / JPG / WEBP / TXT / MD / CSV - max 10MB
                   </div>
                 </div>
               )}
@@ -868,7 +899,7 @@ export default function Proof() {
                     <div className="flex items-center gap-2 text-xs">
                       <ScanLine className="h-3.5 w-3.5 text-primary" />
                       <span className="font-mono uppercase tracking-widest text-[10px] text-muted-foreground">
-                        Extracted text {attachState.extractedSource === "ocr" ? "(OCR)" : "(text file)"} — editable
+                        Extracted text ({attachState.extractedSource === "ocr" ? "OCR" : "text file"}) - editable
                       </span>
                       {extractedEdited && (
                         <span className="font-mono uppercase tracking-widest text-[9px] text-primary">edited</span>
@@ -911,7 +942,7 @@ export default function Proof() {
                     className="mt-2 min-h-[140px] max-h-[280px] font-mono text-xs leading-relaxed"
                   />
                   <div className="mt-1 flex justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                    <span>{attachmentText.length.toLocaleString()} chars · fed into verdict</span>
+                    <span>{attachmentText.length.toLocaleString()} chars / fed into verdict</span>
                     {attachState.ocrTruncated && <span className="text-primary">truncated at 20k</span>}
                   </div>
                 </div>
@@ -937,17 +968,17 @@ export default function Proof() {
               <div className="rounded-sm border border-border p-3 text-xs text-muted-foreground">
                 Scoring against <span className="text-foreground font-mono">{selectedMode.display_name}</span>.
                 {selectedMode.elite_evidence_examples?.[0] && (
-                  <div className="mt-1">Elite target: <span className="text-foreground">{selectedMode.elite_evidence_examples[0]}</span></div>
+                  <div className="mt-1">Mode target: <span className="text-foreground">{selectedMode.elite_evidence_examples[0]}</span></div>
                 )}
               </div>
             )}
 
             <Button
               onClick={submit}
-              disabled={submitting || attachmentBusy || !content.trim() || !title.trim()}
+              disabled={submitting || attachmentBusy || !artifactType.trim() || !content.trim() || !title.trim()}
               className="w-full sm:w-auto"
             >
-              {submitting ? "Filing…" : attachmentBusy ? "Processing attachment…" : "Score & File Proof Artifact"}
+              {submitting ? "Filing..." : attachmentBusy ? "Processing attachment..." : "Score & File Proof Artifact"}
             </Button>
           </div>
         </Card>
@@ -965,7 +996,7 @@ export default function Proof() {
               {filteredPending.map((p) => (
                 <Card key={p.id} className="panel p-4 flex items-start justify-between gap-3 flex-wrap">
                   <div className="min-w-0 flex-1">
-                    <div className="font-mono text-[10px] uppercase text-muted-foreground">{p.domain} · {p.mode}</div>
+                    <div className="font-mono text-[10px] uppercase text-muted-foreground">{p.domain} - {p.mode}</div>
                     <div className="text-sm font-medium">{p.title}</div>
                     {p.required_artifact && <div className="text-xs text-muted-foreground mt-1">Required: {p.required_artifact}</div>}
                     {p.evidence_standard && <div className="text-xs text-muted-foreground mt-0.5">Standard: {p.evidence_standard}</div>}
@@ -995,7 +1026,7 @@ export default function Proof() {
           </div>
           {filteredCompleted.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              The Court of Evidence is empty. Create one artifact to start compounding.
+              No proof yet. Submit one measurable artifact to activate the command layer.
             </p>
           ) : (
             <div className="space-y-3">
@@ -1003,7 +1034,7 @@ export default function Proof() {
                 <Card key={a.id} className="panel p-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="font-mono text-[10px] uppercase text-muted-foreground">
-                      {a.domain} · {a.artifact_type ?? "artifact"} · {a.created_at?.slice(0, 10)}
+                      {a.domain} - {a.artifact_type ?? "artifact"} - {a.created_at?.slice(0, 10)}
                     </div>
                     {a.evidence_strength && <EvidenceStrengthBadge strength={a.evidence_strength} score={a.quality_score} />}
                   </div>
