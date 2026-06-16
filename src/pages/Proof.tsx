@@ -18,10 +18,9 @@ import { computeTemporal } from "@/lib/eblocki/temporal-engine";
 import { buildTemporalSnapshotPayload, stripSensitiveTemporalSnapshotFields } from "@/lib/eblocki/temporal-snapshot";
 import { logEvent } from "@/lib/eblocki/analytics";
 import { toast } from "sonner";
-import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLine, AlertTriangle } from "lucide-react";
+import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLine, AlertTriangle, MessageSquare, ArrowRight, Flame } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { PROOF_WEEK_DAYS } from "@/lib/eblocki/proof-week";
-import { MessageSquare, ArrowRight, Flame } from "lucide-react";
 
 const ARTIFACT_TYPES = [
   "product system review",
