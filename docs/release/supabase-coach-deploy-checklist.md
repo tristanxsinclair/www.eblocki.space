@@ -4,6 +4,14 @@ Function name: `coach`
 
 Deployment status: not deployed by this checklist. Do not mark deployed until the Supabase CLI command succeeds against the production project.
 
+## Required environment variables check
+
+Before deploy, confirm the target Supabase project has the existing required environment variables for the coach function. Do not print secret values in logs, screenshots, PRs, or release notes.
+
+- Supabase project is linked to the intended production project.
+- Function secrets already used by `supabase/functions/coach/index.ts` are present in the target project.
+- No new secret is required for Phase 6.2.
+
 ## Expected changed behaviour
 
 - BLAW1003 + LAWS1004 mastery prompts route to `academic_proof_plan` / `academic_operating_system`.
@@ -20,7 +28,7 @@ supabase functions deploy coach
 
 Run from the repository root with the correct Supabase project linked and authenticated.
 
-## Smoke test prompt 1
+## Smoke prompt A
 
 Prompt:
 
@@ -28,16 +36,16 @@ Prompt:
 Eblocki Proof Plan: BLAW1003 + LAWS1004 Mastery
 ```
 
-Expected output:
+Expected A:
 
 - route intent: `academic_proof_plan`
 - mode: `academic_operating_system`
-- recommended artifact: `source_bank_entries`
+- recommended artifact: source-bank entries / `source_bank_entries`
 - proof standard: `law_source_bank_standard` or `academic_proof_plan_standard` with a source-bank first task
 - proof contract: one contract requiring source-bank entries
-- must not require an IRAC paragraph before authority/source-bank work exists
+- no premature IRAC requirement before authority/source-bank work exists
 
-## Smoke test prompt 2
+## Smoke prompt B
 
 Prompt:
 
@@ -45,7 +53,7 @@ Prompt:
 Review this Eblocki coach output. It routed an academic proof plan as law reasoning and created mismatched proof contracts.
 ```
 
-Expected output:
+Expected B:
 
 - route intent: `product_system_review`
 - standard: `product_system_review_standard`
@@ -53,6 +61,10 @@ Expected output:
 - identity escalation: blocked until implementation or external test evidence exists
 - must not show law-answer criteria such as jurisdiction, text-context-purpose, AGLC4, or binding/persuasive source standards
 
-## Post-deploy proof required
+## Rollback note
+
+If production smoke tests fail after deployment, redeploy the last known good `coach` function version from the previous commit and record the failing prompt, response, timestamp, and rollback commit.
+
+## Production verification note
 
 Record the function deployment command output, timestamp, and the two smoke-test responses before claiming production behaviour changed.
