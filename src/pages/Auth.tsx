@@ -10,6 +10,15 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Crosshair } from "lucide-react";
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === "string") return maybeMessage;
+  }
+  return fallback;
+}
+
 export default function Auth() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
@@ -44,8 +53,8 @@ export default function Auth() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-    } catch (err: any) {
-      toast.error(err.message ?? "Auth failed");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Auth failed"));
     } finally {
       setBusy(false);
     }
