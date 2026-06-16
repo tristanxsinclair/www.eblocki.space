@@ -1,5 +1,6 @@
 import type { TemporalResult } from "./temporal-engine";
 import { getTemporalSnapshotSummary } from "./temporal-snapshot";
+import { buildProofStandardPreview, type ProofStandardPreview } from "./proof-standard-preview";
 
 export type DashboardStatus = "new_user" | "needs_proof" | "active" | "degraded";
 
@@ -7,8 +8,12 @@ export interface DashboardProofRow {
   id?: string;
   domain?: string | null;
   title?: string | null;
+  artifact_type?: string | null;
   evidence_strength?: string | null;
   quality_score?: number | null;
+  next_upgrade?: string | null;
+  transfer_flag?: boolean | null;
+  pressure_flag?: boolean | null;
   created_at?: string | null;
   temporal_snapshot?: unknown;
 }
@@ -19,6 +24,7 @@ export interface DashboardCommitmentRow {
   domain?: string | null;
   mode?: string | null;
   required_artifact?: string | null;
+  evidence_standard?: string | null;
   status?: string | null;
 }
 
@@ -57,6 +63,17 @@ export interface DashboardViewModel {
     primaryHref: string;
     secondaryCta: string;
     secondaryHref: string;
+  };
+  commandLayer: {
+    todayCommand: string;
+    activeRoute: string;
+    proofContract: string;
+    selectedStandard: string;
+    requiredEvidence: string[];
+    riskIfIgnored: string;
+    nextCheckpoint: string;
+    latestCourtSignal: string;
+    proofPreview: ProofStandardPreview;
   };
   futureSummary: {
     status: string;
@@ -119,6 +136,57 @@ function average(values: number[]): number {
   return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
 }
 
+function normalise(value?: string | null): string {
+  return (value ?? "").toLowerCase().replace(/[_-]+/g, " ").trim();
+}
+
+function inferActiveRoute(preview: ProofStandardPreview, pending?: DashboardCommitmentRow | null, latest?: DashboardProofRow | null): string {
+  const text = normalise(`${preview.standardKey} ${preview.artifactType} ${pending?.mode ?? ""} ${pending?.domain ?? ""} ${latest?.domain ?? ""}`);
+  if (text.includes("source bank")) return "law_source_bank";
+  if (text.includes("academic proof plan") || text.includes("law academic")) return "academic_proof_plan";
+  if (text.includes("product system")) return "product_system_review";
+  if (text.includes("irac") || text.includes("legal reasoning")) return "legal_reasoning";
+  if (text.includes("implementation")) return "implementation_proof";
+  return pending ? "execution_lock" : "activation";
+}
+
+function timeboxFor(preview: ProofStandardPreview): string {
+  switch (preview.standardKey) {
+    case "law_source_bank_standard": return "35 minutes";
+    case "law_irac_standard": return "30 minutes";
+    case "product_system_review_standard": return "25 minutes";
+    case "eblocki_implementation_standard": return "45 minutes";
+    default: return "25 minutes";
+  }
+}
+
+function riskFor(route: string): string {
+  if (route === "law_source_bank" || route === "academic_proof_plan") return "Planning will replace assessed academic proof.";
+  if (route === "product_system_review") return "Review will replace implementation or test evidence.";
+  if (route === "legal_reasoning") return "Answer style will replace authority-backed application.";
+  if (route === "implementation_proof") return "Claims will outrun shipped behaviour.";
+  return "Interpretation will replace visible proof.";
+}
+
+function checkpointFor(preview: ProofStandardPreview, route: string): string {
+  if (route === "law_source_bank") return "After two source-bank entries exist, generate one issue matrix.";
+  if (route === "academic_proof_plan") return "After the first source-bank entry exists, lock the next weekly proof artifact.";
+  if (route === "product_system_review") return "After corrected logic exists, capture implementation or external test evidence.";
+  if (route === "legal_reasoning") return "After one IRAC answer exists, review authority precision and fact application.";
+  if (route === "implementation_proof") return "After implementation exists, attach test, build, or release evidence.";
+  return preview.nextUpgrade;
+}
+
+function courtSignalFor(latest?: DashboardProofRow | null): string {
+  if (!latest) return "No proof yet. Submit one measurable artifact to activate the command layer.";
+  const score = typeof latest.quality_score === "number" ? `${latest.quality_score}/10` : "unscored";
+  const strength = latest.evidence_strength ?? "unclassified";
+  const identity = strengthRank(latest.evidence_strength) >= 3 && (latest.transfer_flag || latest.pressure_flag)
+    ? "identity escalation review allowed"
+    : "identity escalation blocked until stronger external proof exists";
+  return `${strength} ${score}. ${identity}.`;
+}
+
 export function buildDashboardViewModel(input: DashboardViewModelInput = {}): DashboardViewModel {
   const pending = input.pending ?? [];
   const recentProofs = input.recentProofs ?? [];
@@ -161,20 +229,26 @@ export function buildDashboardViewModel(input: DashboardViewModelInput = {}): Da
           : "active";
 
   const temporalCommand = temporal?.intervention.command ?? "Submit one proof artifact today. Baseline first.";
-  const nextBestAction = safeText(
-    input.today?.next_best_action,
-    temporalCommand,
-  );
-  const highestRisk = temporal?.risk.primaryFailureMode
+  const proofPreview = buildProofStandardPreview({
+    domain: topPending?.domain ?? topPending?.mode ?? latestProof?.domain ?? "general",
+    artifactType: topPending?.required_artifact ?? latestProof?.artifact_type ?? "visible artifact",
+    proofAction: topPending?.required_artifact ?? topPending?.title ?? temporalCommand,
+    proofContract: topPending,
+  });
+  const activeRoute = inferActiveRoute(proofPreview, topPending, latestProof);
+  const proofContract = `One artifact: ${proofPreview.artifactType}. One standard: ${proofPreview.standardLabel}. Timebox: ${timeboxFor(proofPreview)}.`;
+  const nextCheckpoint = checkpointFor(proofPreview, activeRoute);
+  const riskIfIgnored = temporal?.risk.primaryFailureMode
     ? temporal.risk.primaryFailureMode.replace(/_/g, " ")
-    : !hasProof
-      ? "no proof baseline"
-      : untouchedDomain
-        ? `${untouchedDomain} neglect`
-        : "standard drift";
+    : riskFor(activeRoute);
+  const latestCourtSignal = courtSignalFor(latestProof);
+  const todayCommand = safeText(
+    input.today?.prime_objective,
+    topPending?.title ?? (hasProof ? proofPreview.nextUpgrade : "Submit one measurable artifact to activate the command layer."),
+  );
 
   const emptyStateMessage = dashboardStatus === "new_user"
-    ? "Eblocki is waiting for the first proof artifact. One receipt activates the operating loop."
+    ? "No proof yet. Submit one measurable artifact to activate the command layer."
     : dashboardStatus === "needs_proof"
       ? "Contracts exist, but the Court has no completed proof yet. Close one artifact to start calibration."
       : dashboardStatus === "degraded"
@@ -183,15 +257,26 @@ export function buildDashboardViewModel(input: DashboardViewModelInput = {}): Da
 
   return {
     commandSummary: {
-      label: dashboardStatus === "active" ? "Command" : "Activation",
-      title: safeText(input.today?.prime_objective, topPending?.title ?? "File the next real proof."),
-      nextBestAction,
-      proofRequired: safeText(topPending?.required_artifact, temporalCommand),
-      highestRisk,
+      label: activeRoute,
+      title: todayCommand,
+      nextBestAction: nextCheckpoint,
+      proofRequired: proofContract,
+      highestRisk: riskIfIgnored,
       primaryCta: hasProof || topPending ? "Submit Proof" : "Create First Proof",
       primaryHref: "/proof",
       secondaryCta: topPending ? "Open Coach" : "Start Today",
       secondaryHref: topPending ? "/coach" : "/start",
+    },
+    commandLayer: {
+      todayCommand,
+      activeRoute,
+      proofContract,
+      selectedStandard: proofPreview.standardLabel,
+      requiredEvidence: proofPreview.requiredEvidence,
+      riskIfIgnored,
+      nextCheckpoint,
+      latestCourtSignal,
+      proofPreview,
     },
     futureSummary: {
       status: temporal?.hasEvidence ? "forecasting" : "standby",
@@ -199,7 +284,7 @@ export function buildDashboardViewModel(input: DashboardViewModelInput = {}): Da
       primaryPath: temporal?.primary ?? latestSnapshotSummary.primaryPath ?? "current_path",
       confidenceLevel: temporal?.confidence.band ?? latestSnapshotSummary.confidenceLevel ?? "low",
       futurePowerScore: temporal?.futurePowerScore ?? 0,
-      riskKind: highestRisk,
+      riskKind: riskIfIgnored,
       temporalCommand,
       snapshotValid: latestSnapshotSummary.valid,
       snapshotReason: latestSnapshotSummary.reason,
