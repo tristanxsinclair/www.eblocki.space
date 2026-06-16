@@ -50,4 +50,21 @@ describe("proof-week", () => {
     });
     expect(r.artifactsThisWeek).toBe(0);
   });
+
+  it("each day has exactly one command and one proof requirement", async () => {
+    const { PROOF_WEEK_DAYS } = await import("../proof-week");
+    expect(PROOF_WEEK_DAYS).toHaveLength(7);
+    for (const d of PROOF_WEEK_DAYS) {
+      expect(d.command.trim().length).toBeGreaterThan(0);
+      expect(d.proofRequired.trim().length).toBeGreaterThan(0);
+      expect(d.label.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it("day 2 exposes fake productivity and day 6 requires transfer", async () => {
+    const { PROOF_WEEK_DAYS } = await import("../proof-week");
+    expect(PROOF_WEEK_DAYS[1].label).toMatch(/fake productivity/i);
+    expect(PROOF_WEEK_DAYS[5].label).toMatch(/transfer/i);
+    expect(PROOF_WEEK_DAYS[6].label).toMatch(/weekly review/i);
+  });
 });
