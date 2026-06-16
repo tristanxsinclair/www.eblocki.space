@@ -246,7 +246,8 @@ export default function Proof() {
     artifactType,
     proofAction: linkedContract?.required_artifact ?? linkedContract?.title ?? artifactType,
     proofContract: linkedContract,
-  }), [artifactType, linkedContract, selectedMode?.mode_id, selectedModeId]);
+    signalText: [title, content, reflection].filter(Boolean).join("\n"),
+  }), [artifactType, linkedContract, selectedMode?.mode_id, selectedModeId, title, content, reflection]);
 
   const hasStandardSelection = Boolean(artifactType || linkedContract || selectedModeId);
 
@@ -1180,7 +1181,9 @@ function CompletedArtifactCard({ artifact }: { artifact: any }) {
         </p>
       )}
       {artifact.next_upgrade && (
-        <p className="text-xs text-primary mt-1 break-words">Next upgrade: {artifact.next_upgrade}</p>
+        <p className="text-xs text-primary mt-1 break-words">
+          Next upgrade: {extractNextUpgrade({ nextUpgrade: artifact.next_upgrade, content: artifact.content })}
+        </p>
       )}
       {artifact.attachment_url && (
         <a
