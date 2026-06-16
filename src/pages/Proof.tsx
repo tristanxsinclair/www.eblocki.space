@@ -711,7 +711,7 @@ export default function Proof() {
         )}
 
         {/* Submission form */}
-        <Card className="panel p-4 md:p-5">
+        <Card className="panel p-4 md:p-5 max-w-full overflow-hidden">
           <div className="flex items-center gap-2">
             <Gavel className="h-4 w-4 text-primary" />
             <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Submit a Proof Artifact</h2>
