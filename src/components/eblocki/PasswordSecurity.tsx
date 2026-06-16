@@ -79,40 +79,40 @@ export function PasswordSecurity() {
   };
 
   return (
-    <Card className="panel p-5 space-y-4">
-      <div>
+    <Card className="panel p-4 md:p-5 space-y-4 max-w-full overflow-hidden">
+      <div className="min-w-0">
         <span className="font-mono text-[10px] uppercase tracking-widest text-primary inline-flex items-center gap-1">
           <Lock className="h-3 w-3" /> Password & Security
         </span>
-        <h2 className="text-xl font-semibold mt-2">Password & Security</h2>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h2 className="text-xl font-semibold mt-2 break-words">Password & Security</h2>
+        <p className="text-sm text-muted-foreground mt-1 break-words">
           Update your password. Keep your account protected.
         </p>
       </div>
 
       {!hasEmailIdentity && (
-        <p className="text-xs text-muted-foreground border border-border rounded-sm p-3">
+        <p className="text-xs text-muted-foreground border border-border rounded-sm p-3 break-words">
           This account may use a social login. Use password reset by email if you want to set or recover a password.
         </p>
       )}
 
-      <form onSubmit={submit} className="grid gap-3 max-w-full">
-        <div>
+      <form onSubmit={submit} className="grid gap-3 max-w-full min-w-0">
+        <div className="min-w-0">
           <Label htmlFor="pw-current">Current password</Label>
-          <Input id="pw-current" type="password" autoComplete="current-password"
+          <Input id="pw-current" type="password" autoComplete="current-password" className="w-full max-w-full"
             value={current} onChange={(e) => setCurrent(e.target.value)} />
         </div>
-        <div>
+        <div className="min-w-0">
           <Label htmlFor="pw-new">New password</Label>
-          <Input id="pw-new" type="password" autoComplete="new-password" minLength={8}
+          <Input id="pw-new" type="password" autoComplete="new-password" minLength={8} className="w-full max-w-full"
             value={next} onChange={(e) => setNext(e.target.value)} />
         </div>
-        <div>
+        <div className="min-w-0">
           <Label htmlFor="pw-confirm">Confirm new password</Label>
-          <Input id="pw-confirm" type="password" autoComplete="new-password" minLength={8}
+          <Input id="pw-confirm" type="password" autoComplete="new-password" minLength={8} className="w-full max-w-full"
             value={confirm} onChange={(e) => setConfirm(e.target.value)} />
         </div>
-        {err && <p className="text-xs text-destructive font-mono" role="alert">{err}</p>}
+        {err && <p className="text-xs text-destructive font-mono break-words" role="alert">{err}</p>}
         <div className="flex flex-col sm:flex-row gap-2">
           <Button type="submit" disabled={busy} className="w-full sm:w-auto">
             {busy ? "Updating…" : "Update password"}

@@ -267,12 +267,12 @@ export default function Coach() {
         description="Diagnose the situation, get the answer, create proof, and generate a practice pack when skill repetition is the right move."
         path="/coach"
       />
-      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-5">
-        <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-          <div>
+      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-5 min-w-0 max-w-full text-wrap-safe">
+        <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end min-w-0">
+          <div className="min-w-0">
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Coach // Diagnosis Engine</span>
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1">Bring the messy problem. Leave with proof.</h1>
-            <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Bring the messy problem. Leave with proof.</h1>
+            <p className="text-sm text-muted-foreground mt-1 max-w-2xl break-words">
               Coach classifies the domain, intent, state, urgency, and response mode. It answers directly, creates a proof action, and suggests GameForge when practice is the right intervention.
             </p>
           </div>
@@ -281,20 +281,20 @@ export default function Coach() {
           </Link>
         </header>
 
-        <Card className="panel overflow-hidden border-primary/25 bg-card/60">
-          <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-3">
-            <div>
+        <Card className="panel overflow-hidden border-primary/25 bg-card/60 max-w-full">
+          <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-3 min-w-0">
+            <div className="min-w-0">
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Input Console</div>
-              <div className="mt-1 text-sm text-foreground">Question, notes, thought dump, sales situation, legal issue, or avoidance pattern.</div>
+              <div className="mt-1 text-sm text-foreground break-words">Question, notes, thought dump, sales situation, legal issue, or avoidance pattern.</div>
             </div>
-            <BrainCircuit className="h-4 w-4 text-primary" />
+            <BrainCircuit className="h-4 w-4 text-primary shrink-0" />
           </div>
           <div className="p-4 md:p-5 space-y-4">
             <Textarea
               placeholder="Paste a problem, note, thought dump, question, or situation. Eblocki will diagnose it and give the next proof action."
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              className="min-h-[170px] resize-none"
+              className="min-h-[170px] resize-none w-full max-w-full"
             />
             <div>
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Mode chips</div>
@@ -316,7 +316,7 @@ export default function Coach() {
             </div>
             <div className="flex items-center justify-between gap-3 flex-wrap border-t border-border pt-4">
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{input.length}/5000</div>
-              <Button onClick={send} disabled={loading} className="gap-2">
+              <Button onClick={send} disabled={loading} className="gap-2 w-full sm:w-auto">
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Diagnosing</> : <><Send className="h-4 w-4" /> Diagnose</>}
               </Button>
             </div>
@@ -324,8 +324,13 @@ export default function Coach() {
         </Card>
 
         {!engineResult && !loading && (
-          <Card className="panel p-4 md:p-5 border-border/80 bg-card/50">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Empty State</div>
+          <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 max-w-full overflow-hidden">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Start here</div>
+            <p className="mt-2 text-sm text-muted-foreground break-words">
+              Paste a real problem above (one paragraph is enough): a question, a stuck task,
+              an avoidance pattern, a sales situation, a study block. Coach will diagnose it
+              and return one proof action you can complete today.
+            </p>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <EmptyCell icon={<Radar />} title="Diagnose" body="Find the real domain, intent, state, and urgency." />
               <EmptyCell icon={<Target />} title="Proof" body="Convert the answer into one artifact requirement." />
@@ -335,27 +340,27 @@ export default function Coach() {
         )}
 
         {loading && engineResult && (
-          <Card className="panel p-4 border-primary/30 bg-primary/5">
+          <Card className="panel p-4 border-primary/30 bg-primary/5 max-w-full overflow-hidden">
             <div className="flex items-start gap-2 text-sm text-muted-foreground">
-              <Info className="h-4 w-4 text-primary mt-0.5" />
-              <span>Deterministic diagnosis is ready. The existing coach function is being checked for an enhanced response.</span>
+              <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <span className="break-words">Deterministic diagnosis is ready. The existing coach function is being checked for an enhanced response.</span>
             </div>
           </Card>
         )}
 
         {error && (
-          <Card className="panel p-4 border-destructive/40">
+          <Card className="panel p-4 border-destructive/40 max-w-full overflow-hidden">
             <div className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircle className="h-4 w-4 shrink-0" />
               <span className="font-mono text-[10px] uppercase tracking-widest">Coach function note</span>
             </div>
-            <p className="text-sm mt-1 text-muted-foreground">{error}</p>
+            <p className="text-sm mt-1 text-muted-foreground break-words">{error}</p>
           </Card>
         )}
 
         {engineResult && (
           <div className="space-y-4">
-            <Card className="panel p-4 border-border/80 bg-card/50">
+            <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
                 <Signal label="Domain" value={engineResult.detectedDomain} icon={<Radar />} />
                 <Signal label="Intent" value={engineResult.detectedIntent.replace(/_/g, " ")} icon={<Crosshair />} />
@@ -363,15 +368,15 @@ export default function Coach() {
                 <Signal label="Mode" value={engineResult.responseMode.replace(/_/g, " ")} icon={<MessageSquare />} />
                 <Signal label="Urgency" value={engineResult.urgency.replace(/_/g, " ")} icon={<ShieldCheck />} />
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">
+              <p className="mt-3 text-xs text-muted-foreground break-words">
                 Internal prompt summary: {engineResult.internalPromptSummary}
               </p>
             </Card>
 
             {engineResult.warning && (
-              <Card className="panel p-4 border-primary/35 bg-primary/5">
+              <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Reality Check</div>
-                <p className="mt-2 text-sm">{engineResult.warning}</p>
+                <p className="mt-2 text-sm break-words whitespace-pre-wrap">{engineResult.warning}</p>
               </Card>
             )}
 
@@ -381,30 +386,30 @@ export default function Coach() {
                 <ResponseSection title="Answer" icon={<MessageSquare />}>{responseAnswer}</ResponseSection>
                 <ResponseSection title="Plan" icon={<Target />}>
                   <ol className="space-y-2">
-                    {engineResult.plan.map((step, index) => <li key={step}>{index + 1}. {step}</li>)}
+                    {engineResult.plan.map((step, index) => <li key={step} className="break-words">{index + 1}. {step}</li>)}
                   </ol>
                 </ResponseSection>
               </div>
               <div className="space-y-3">
-                <Card className="panel p-4 border-primary/35 bg-primary/5">
-                  <div className="flex items-center justify-between gap-3">
+                <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Action</div>
                     <Button size="sm" variant="outline" onClick={copyProofAction} className="gap-1.5"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</Button>
                   </div>
-                  <p className="mt-2 text-sm leading-6">{engineResult.proofAction}</p>
+                  <p className="mt-2 text-sm leading-6 break-words whitespace-pre-wrap">{engineResult.proofAction}</p>
                   <div className="mt-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{engineResult.proofActionType.replace(/_/g, " ")}</div>
                 </Card>
                 <ResponseSection title="Next Checkpoint" icon={<Crosshair />}>{engineResult.nextCheckpoint}</ResponseSection>
                 {engineResult.followUpQuestion && <ResponseSection title="Follow-up" icon={<Info />}>{engineResult.followUpQuestion}</ResponseSection>}
                 {engineResult.suggestedGameForgePack && (
-                  <Card className="panel p-4 border-border/80 bg-card/50">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
+                  <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="min-w-0">
                         <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional GameForge Pack</div>
-                        <h3 className="mt-1 text-sm font-semibold">{engineResult.suggestedGameForgePack.title}</h3>
-                        <p className="mt-2 text-xs leading-5 text-muted-foreground">{engineResult.suggestedGameForgePack.reason}</p>
+                        <h3 className="mt-1 text-sm font-semibold break-words">{engineResult.suggestedGameForgePack.title}</h3>
+                        <p className="mt-2 text-xs leading-5 text-muted-foreground break-words">{engineResult.suggestedGameForgePack.reason}</p>
                       </div>
-                      <Gamepad2 className="h-4 w-4 text-primary" />
+                      <Gamepad2 className="h-4 w-4 text-primary shrink-0" />
                     </div>
                     <Link
                       to="/gameforge"
@@ -433,10 +438,10 @@ export default function Coach() {
             )}
 
             {committedId && (
-              <Card className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3">
-                <div>
+              <Card className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3 max-w-full overflow-hidden">
+                <div className="min-w-0">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Next step</span>
-                  <p className="text-sm mt-1">Contract saved. Submit the proof artifact in the Court of Evidence.</p>
+                  <p className="text-sm mt-1 break-words">Contract saved. Submit the proof artifact in the Court of Evidence.</p>
                 </div>
                 <Link to="/proof"><Button size="sm">Submit Proof <ArrowRight className="h-3 w-3 ml-1" /></Button></Link>
               </Card>
@@ -444,7 +449,7 @@ export default function Coach() {
           </div>
         )}
 
-        <Card className="panel p-4 border-border/80 bg-card/50">
+        <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
           <div className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Quick prompts</span>
@@ -455,7 +460,7 @@ export default function Coach() {
                 key={prompt}
                 size="sm"
                 variant="outline"
-                className="text-xs"
+                className="text-xs whitespace-normal text-left h-auto py-2"
                 onClick={() => setInput((prev) => (prev.trim() ? `${prev.trim()}\n\n${prompt}` : prompt))}
               >
                 {prompt}
@@ -464,16 +469,16 @@ export default function Coach() {
           </div>
         </Card>
 
-        <Card className="panel p-4 border-border/80 bg-card/50">
+        <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
           <h2 className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground m-0">Recent interactions</h2>
           {history.length === 0 ? (
-            <p className="text-sm text-muted-foreground mt-2">No coach interactions yet. Name a real bottleneck above to start the loop.</p>
+            <p className="text-sm text-muted-foreground mt-2 break-words">No coach interactions yet. Name a real bottleneck above to start the loop.</p>
           ) : (
             <ul className="mt-3 divide-y divide-border">
               {history.map((h) => (
-                <li key={h.id} className="py-2 text-xs">
+                <li key={h.id} className="py-2 text-xs break-words">
                   <span className="font-mono uppercase tracking-wider text-muted-foreground">{h.mode ?? "none"}</span>
-                  <span className="ml-2 text-foreground">{h.user_input.slice(0, 110)}{h.user_input.length > 110 ? "..." : ""}</span>
+                  <span className="ml-2 text-foreground break-words">{h.user_input.slice(0, 110)}{h.user_input.length > 110 ? "..." : ""}</span>
                 </li>
               ))}
             </ul>
@@ -510,12 +515,12 @@ function Signal({ label, value, icon }: { label: string; value: string; icon: Re
 
 function ResponseSection({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <Card className="panel p-4 border-border/80 bg-card/50">
+    <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
       <div className="flex items-center gap-2 text-primary [&_svg]:h-3.5 [&_svg]:w-3.5">
         {icon}
         <h2 className="font-mono text-[10px] uppercase tracking-widest m-0">{title}</h2>
       </div>
-      <div className="mt-2 text-sm leading-6 whitespace-pre-wrap text-muted-foreground">{children}</div>
+      <div className="mt-2 text-sm leading-6 whitespace-pre-wrap break-words text-muted-foreground min-w-0">{children}</div>
     </Card>
   );
 }

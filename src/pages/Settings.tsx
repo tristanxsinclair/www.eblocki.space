@@ -194,16 +194,16 @@ export default function Settings() {
   return (
     <AppShell>
       <Seo title="Settings | EBLOCKI" description="Operator config — model preferences, profile, and identity claims." path="/settings" />
-      <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
-        <header>
+      <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6 min-w-0 max-w-full text-wrap-safe">
+        <header className="min-w-0">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Settings</span>
-          <h1 className="text-2xl md:text-3xl font-semibold mt-1">Operator config.</h1>
+          <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Operator config.</h1>
         </header>
 
-        <Card className="panel p-5 space-y-5">
+        <Card className="panel p-4 md:p-5 space-y-5 max-w-full overflow-hidden">
           <div>
             <Label>Preferred model</Label>
-            <select className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={cfg.model ?? MODELS[0]} onChange={(e) => setCfgField("model", e.target.value)}>
+            <select className="mt-1 w-full max-w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={cfg.model ?? MODELS[0]} onChange={(e) => setCfgField("model", e.target.value)}>
               {MODELS.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
@@ -222,11 +222,11 @@ export default function Settings() {
           <Button onClick={save} disabled={saving} className="w-full">{saving ? "Saving…" : "Save"}</Button>
         </Card>
 
-        <Card className="panel p-5 space-y-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
+        <Card className="panel p-4 md:p-5 space-y-5 max-w-full overflow-hidden">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
               <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Personalised Eblocki OS</span>
-              <h2 className="text-xl font-semibold mt-2">Onboarding profile</h2>
+              <h2 className="text-xl font-semibold mt-2 break-words">Onboarding profile</h2>
             </div>
             <Button variant="outline" onClick={resetOnboarding}>Reset onboarding</Button>
           </div>
@@ -271,18 +271,18 @@ export default function Settings() {
             </div>
           </div>
 
-          <div className="flex justify-between gap-3 pt-3">
-            <Button variant="secondary" onClick={exportProfile}>Export profile JSON</Button>
-            <Button onClick={saveProfile} disabled={savingProfile}>{savingProfile ? "Saving…" : "Save onboarding profile"}</Button>
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-3 pt-3">
+            <Button variant="secondary" onClick={exportProfile} className="w-full sm:w-auto">Export profile JSON</Button>
+            <Button onClick={saveProfile} disabled={savingProfile} className="w-full sm:w-auto">{savingProfile ? "Saving…" : "Save onboarding profile"}</Button>
           </div>
         </Card>
 
-        <Card className="panel p-5 space-y-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
+        <Card className="panel p-4 md:p-5 space-y-5 max-w-full overflow-hidden">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
               <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Mode management</span>
-              <h2 className="text-xl font-semibold mt-2">Active modes</h2>
-              <p className="text-sm text-muted-foreground mt-1">Edit your personalised modes and toggle whether each arena is active.</p>
+              <h2 className="text-xl font-semibold mt-2 break-words">Active modes</h2>
+              <p className="text-sm text-muted-foreground mt-1 break-words">Edit your personalised modes and toggle whether each arena is active.</p>
             </div>
           </div>
 
@@ -295,14 +295,14 @@ export default function Settings() {
               modes.map((mode) => {
                 const draft = modeDrafts[mode.mode_id] ?? {};
                 return (
-                  <Card key={mode.mode_id} className="panel p-4">
+                  <Card key={mode.mode_id} className="panel p-4 max-w-full overflow-hidden">
                     <div className="flex items-start justify-between gap-3 flex-wrap">
-                      <div>
-                        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{mode.mode_id}</div>
-                        <div className="text-lg font-semibold mt-2">{mode.display_name}</div>
-                        <div className="text-xs text-muted-foreground mt-1">{mode.description}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground break-words">{mode.mode_id}</div>
+                        <div className="text-lg font-semibold mt-2 break-words">{mode.display_name}</div>
+                        <div className="text-xs text-muted-foreground mt-1 break-words">{mode.description}</div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Button size="sm" variant="ghost" onClick={() => toggleModeActive(mode)}>{mode.is_active ? "Disable" : "Enable"}</Button>
                         <Button size="sm" variant="secondary" onClick={() => startEditMode(mode)}>{editingModeId === mode.mode_id ? "Close" : "Edit"}</Button>
                       </div>
@@ -354,11 +354,11 @@ export default function Settings() {
           </div>
         </Card>
 
-        <Card className="panel p-5 space-y-4">
-          <div>
+        <Card className="panel p-4 md:p-5 space-y-4 max-w-full overflow-hidden">
+          <div className="min-w-0">
             <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Account & data</span>
             <h2 className="text-xl font-semibold mt-2">Account</h2>
-            <p className="text-sm text-muted-foreground mt-1">{user?.email}</p>
+            <p className="text-sm text-muted-foreground mt-1 break-all">{user?.email}</p>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <Button variant="outline" onClick={exportAllData} disabled={exporting} className="justify-start">
@@ -368,7 +368,7 @@ export default function Settings() {
               <Trash2 className="h-4 w-4 mr-2" /> {deleting ? "Deleting…" : "Delete my account"}
             </Button>
           </div>
-          <div className="pt-3 border-t border-border grid sm:grid-cols-4 gap-2 text-xs">
+          <div className="pt-3 border-t border-border grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
             <Link to="/legal/privacy" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><Shield className="h-3 w-3" /> Privacy</Link>
             <Link to="/legal/terms" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><FileTextIcon className="h-3 w-3" /> Terms</Link>
             <Link to="/legal/data-handling" className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><Shield className="h-3 w-3" /> Data handling</Link>
