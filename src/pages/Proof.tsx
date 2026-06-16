@@ -22,6 +22,7 @@ import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLi
 import { Seo } from "@/components/Seo";
 import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
 import { extractNextUpgrade } from "@/lib/eblocki/next-upgrade-extract";
+import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 
 const ARTIFACT_TYPES = [
   "product system review",
