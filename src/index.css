@@ -184,3 +184,19 @@ body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ── Phase 7.3 mobile containment safety rail ───────────────────────────
+   Prevent body-level horizontal scroll on phone widths. Individual
+   components must still fix their own overflow; this is a backstop.
+*/
+html, body, #root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@layer utilities {
+  .mobile-safe-page { width: 100%; max-width: 100%; min-width: 0; }
+  .mobile-safe-card { min-width: 0; max-width: 100%; }
+  .text-wrap-safe { overflow-wrap: anywhere; word-break: break-word; }
+  .contained-scroll { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
