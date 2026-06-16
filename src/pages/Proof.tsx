@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Gavel, Scale, Paperclip, X, FileText, UploadCloud, ScanLine, AlertTriangle } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
+import { extractNextUpgrade } from "@/lib/eblocki/next-upgrade-extract";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -286,6 +287,7 @@ export default function Proof() {
         artifactType,
         proofAction: linkedContract?.required_artifact ?? linkedContract?.title ?? artifactType,
         proofContract: linkedContract,
+        signalText: [title, content, reflection].filter(Boolean).join("\n"),
       });
 
       // Combine attachment-extracted text (e.g. .txt/.md/.csv) into scoring context
@@ -409,11 +411,18 @@ export default function Proof() {
 
       const extras = buildVerdictExtras(submissionPreview, score);
 
+      const verdictNextUpgrade = extractNextUpgrade({
+        nextUpgrade,
+        content,
+        reflection,
+        fallback: score.nextUpgrade,
+      });
+
       setVerdict({
         qualityScore: score.qualityScore,
         evidenceStrength: score.evidenceStrength,
         feedback: score.feedback,
-        nextUpgrade: nextUpgrade.trim() || score.nextUpgrade,
+        nextUpgrade: verdictNextUpgrade,
         why: extras.why,
         missingStandard: extras.missingStandard,
         eliteVersion: extras.eliteVersion,
