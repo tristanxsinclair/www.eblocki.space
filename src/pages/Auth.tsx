@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -13,14 +13,18 @@ import { Crosshair } from "lucide-react";
 export default function Auth() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
+  const [params] = useSearchParams();
+  const rawRedirect = params.get("redirect") || "/dashboard";
+  // Only honour same-origin relative paths.
+  const redirect = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/dashboard";
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) nav("/dashboard", { replace: true });
-  }, [user, loading, nav]);
+    if (!loading && user) nav(redirect, { replace: true });
+  }, [user, loading, nav, redirect]);
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +34,7 @@ export default function Auth() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin + "/dashboard" },
+          options: { emailRedirectTo: window.location.origin + redirect },
         });
         if (error) throw error;
         toast.success("Account created. Check your email if confirmation is required, or sign in.");
