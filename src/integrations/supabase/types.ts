@@ -484,6 +484,42 @@ export type Database = {
         }
         Relationships: []
       }
+      interest_signals: {
+        Row: {
+          created_at: string
+          currency: string | null
+          email: string | null
+          id: string
+          note: string | null
+          preferred_price_cents: number | null
+          signal_type: string
+          source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          id?: string
+          note?: string | null
+          preferred_price_cents?: number | null
+          signal_type: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          id?: string
+          note?: string | null
+          preferred_price_cents?: number | null
+          signal_type?: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       momentum_state: {
         Row: {
           avg_quality: number | null
