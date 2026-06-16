@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Seo } from "@/components/Seo";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { Shield, Download, Trash2, FileText as FileTextIcon } from "lucide-react";
+import { Shield, Download, Trash2, FileText as FileTextIcon, LogOut } from "lucide-react";
 import { track, reset as resetAnalytics, EVENTS } from "@/lib/analytics";
 import { BetaFeedback } from "@/components/eblocki/BetaFeedback";
 import { NotificationPreferences } from "@/components/eblocki/NotificationPreferences";
@@ -27,7 +27,7 @@ const MODELS = [
 ];
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const nav = useNavigate();
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -39,6 +39,7 @@ export default function Settings() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [editingModeId, setEditingModeId] = useState<string | null>(null);
   const [modeDrafts, setModeDrafts] = useState<Record<string, any>>({});
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -188,6 +189,18 @@ export default function Settings() {
     } catch (e: any) {
       toast.error(e?.message || "Delete failed.");
       setDeleting(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+      nav("/", { replace: true });
+    } catch {
+      toast.error("Sign out failed. Please try again.");
+    } finally {
+      setSigningOut(false);
     }
   };
 
@@ -358,7 +371,16 @@ export default function Settings() {
           <div className="min-w-0">
             <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Account & data</span>
             <h2 className="text-xl font-semibold mt-2">Account</h2>
-            <p className="text-sm text-muted-foreground mt-1 break-all">{user?.email}</p>
+          <p className="text-sm text-muted-foreground mt-1 break-all">{user?.email}</p>
+          <Button
+            variant="outline"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="mt-3 w-full md:w-auto"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            {signingOut ? "Signing out…" : "Sign out"}
+          </Button>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <Button variant="outline" onClick={exportAllData} disabled={exporting} className="justify-start">
