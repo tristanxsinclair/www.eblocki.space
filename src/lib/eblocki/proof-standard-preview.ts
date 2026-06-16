@@ -63,7 +63,7 @@ function identityRuleForStandard(key: DomainStandardKey): { allowed: boolean; ru
     case "law_source_bank_standard":
       return {
         allowed: false,
-        rule: "Source-bank proof can be accepted, but identity escalation waits for an issue matrix, paragraph, or assessed output built from the authority.",
+        rule: "Source-bank proof can support academic progress, but identity escalation requires later applied use such as an issue matrix, paragraph, or problem answer.",
       };
     case "academic_proof_plan_standard":
       return {
@@ -145,7 +145,7 @@ export function buildProofStandardPreview(input: ProofStandardPreviewInput = {})
     identityRule: identity.rule,
     alignmentStatus: alignment.aligned ? "aligned" : "not_aligned",
     alignmentMessage: alignment.aligned
-      ? "Proof Action and Proof Contract require the same artifact type."
+      ? "Proof Action and Proof Contract require the same artifact type. Proof accepted only if the artifact matches the contract."
       : `Contract alignment failed: ${alignment.issues.join(", ")}. Use one visible artifact with one evidence standard.`,
     contractCompletedLabel: alignment.aligned ? "Aligned contract" : "Fallback contract required",
   };
