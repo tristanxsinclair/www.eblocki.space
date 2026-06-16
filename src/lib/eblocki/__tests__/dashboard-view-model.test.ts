@@ -5,7 +5,16 @@ import { buildDashboardViewModel } from "../dashboard-view-model";
 const now = new Date("2026-06-05T04:00:00Z");
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString();
 
-function proof(over: Partial<ProofArtifactLike> & { title?: string; temporal_snapshot?: unknown; artifact_type?: string; next_upgrade?: string } = {}) {
+type TestProofOverrides = Partial<ProofArtifactLike> & {
+  title?: string;
+  temporal_snapshot?: unknown;
+  artifact_type?: string;
+  next_upgrade?: string;
+  transfer_flag?: boolean;
+  pressure_flag?: boolean;
+};
+
+function proof(over: TestProofOverrides = {}) {
   return {
     id: Math.random().toString(36).slice(2),
     domain: "law",
@@ -74,9 +83,10 @@ describe("dashboard view model", () => {
   });
 
   it("shows the latest court signal without inventing identity escalation", () => {
+    const row = proof({ quality_score: 8, evidence_strength: "strong", transfer_flag: false, pressure_flag: false });
     const view = buildDashboardViewModel({
-      recentProofs: [proof({ quality_score: 8, evidence_strength: "strong", transfer_flag: false, pressure_flag: false }) as any],
-      allArtifacts: [proof({ quality_score: 8, evidence_strength: "strong", transfer_flag: false, pressure_flag: false }) as any],
+      recentProofs: [row],
+      allArtifacts: [row],
     });
 
     expect(view.commandLayer.latestCourtSignal).toContain("8/10");
