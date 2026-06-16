@@ -102,6 +102,64 @@ function buildVerdictExtras(
   return { why, missingStandard, eliteVersion: preview.eliteVersion };
 }
 
+function VerdictFeedback({ artifactId }: { artifactId: string }) {
+  const { user } = useAuth();
+  const [choice, setChoice] = useState<"yes" | "kind_of" | "no" | null>(null);
+  const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const submit = async (value: "yes" | "kind_of" | "no") => {
+    if (!user || submitting) return;
+    setChoice(value);
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from("interest_signals").insert({
+        user_id: user.id,
+        signal_type: "verdict_feedback",
+        source: "proof_verdict",
+        note: [`vote=${value}`, `artifact=${artifactId}`, note.trim() ? `note=${note.trim().slice(0, 500)}` : null]
+          .filter(Boolean)
+          .join(" | "),
+      });
+      if (error) {
+        toast.error("Could not save feedback. Your verdict is still recorded.");
+      } else {
+        setSubmitted(true);
+        logEvent("recommendation_outcome_logged", { outcome: `verdict_feedback_${value}` });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="mt-4 rounded-sm border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
+        Feedback recorded. Thanks — this directly shapes how the Court judges proof next.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 rounded-sm border border-border bg-background/40 p-3">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Was this judgment useful?</div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Button size="sm" variant={choice === "yes" ? "default" : "outline"} disabled={submitting} onClick={() => submit("yes")}>Yes</Button>
+        <Button size="sm" variant={choice === "kind_of" ? "default" : "outline"} disabled={submitting} onClick={() => submit("kind_of")}>Kind of</Button>
+        <Button size="sm" variant={choice === "no" ? "default" : "outline"} disabled={submitting} onClick={() => submit("no")}>No</Button>
+      </div>
+      <Textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value.slice(0, 500))}
+        rows={2}
+        placeholder="Optional: what was confusing or wrong?"
+        className="mt-2 text-xs"
+      />
+    </div>
+  );
+}
+
 export default function Proof() {
   const { user } = useAuth();
   const [params] = useSearchParams();
@@ -611,6 +669,7 @@ export default function Proof() {
                 </a>
               </div>
             )}
+            <VerdictFeedback artifactId={verdict.artifactId} />
             <div className="mt-4 flex gap-2">
               <Button size="sm" variant="outline" onClick={() => setVerdict(null)}>Submit another</Button>
               <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
