@@ -15,11 +15,9 @@ import {
   Crosshair,
   FileText,
   Gavel,
-  Layers,
   MessageSquare,
   Radar,
   ShieldAlert,
-  Sparkles,
   Target,
 } from "lucide-react";
 import { detectMode, MODE_LABELS, type Mode } from "@/lib/eblocki/modes";
