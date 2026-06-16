@@ -176,9 +176,9 @@ export default function Dashboard() {
         description="Command-centre overview: next proof, forecast, evidence, identity, and weekly calibration."
         path="/dashboard"
       />
-      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-5">
-        <header className="flex items-end justify-between gap-4 flex-wrap">
-          <div>
+      <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-5">
+        <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">
+          <div className="min-w-0">
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Operating System // Command Centre</span>
             <h1 className="text-2xl md:text-3xl font-semibold mt-1">Command surface</h1>
           </div>
@@ -206,12 +206,23 @@ export default function Dashboard() {
 
         <ProofWeekPanel artifactDates={allArtifacts.map((a: any) => a.created_at).filter(Boolean)} />
 
-        <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-4 items-start">
+        <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-4 items-start min-w-0">
           <section className="space-y-3 min-w-0">
             <SectionHeader eyebrow="Zone 2" title="Forecast" detail={view.futureSummary.status} />
+            {/* Always-visible mobile forecast summary so a beta tester sees
+                one clear signal without expanding the advanced map. */}
+            <Card className="md:hidden panel p-3 border-border/80 bg-card/50 mobile-safe-card">
+              <div className="grid grid-cols-2 gap-2">
+                <MetricCell label="Power" value={`${view.futureSummary.futurePowerScore}/100`} />
+                <MetricCell label="Confidence" value={view.futureSummary.confidenceLevel} />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground text-wrap-safe">
+                <span className="text-foreground">Command:</span> {view.futureSummary.temporalCommand}
+              </p>
+            </Card>
             <MobileCollapse
               eyebrow="Zone 2"
-              label="View forecast, calibration, and intel"
+              label="Open forecast map, calibration & intel"
               trackId="forecast_tabs"
               onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "forecast_tabs" })}
             >
@@ -293,31 +304,41 @@ export default function Dashboard() {
           </MobileCollapse>
         </section>
 
-        <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 items-start">
-          <QuickCheckInCard
-            quick={quick}
-            setQuick={setQuick}
-            mode={mode}
-            state={state}
-            onDiagnose={handleCheckIn}
-          />
-          <Card className="panel p-4 border-border/80 bg-card/50">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Identity</div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {currentMode ? `Last coach mode: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
-                </p>
-              </div>
-              {currentState && <StateBadge state={currentState as BehaviouralState} />}
+        <section className="space-y-3 min-w-0">
+          <SectionHeader eyebrow="Zone 5" title="Check-in & identity" />
+          <MobileCollapse
+            eyebrow="Zone 5"
+            label="Quick check-in & identity signal"
+            trackId="check_in_identity"
+            onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "check_in_identity" })}
+          >
+            <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 items-start min-w-0">
+              <QuickCheckInCard
+                quick={quick}
+                setQuick={setQuick}
+                mode={mode}
+                state={state}
+                onDiagnose={handleCheckIn}
+              />
+              <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
+                <div className="flex items-center justify-between gap-3 min-w-0">
+                  <div className="min-w-0">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Identity</div>
+                    <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
+                      {currentMode ? `Last coach mode: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
+                    </p>
+                  </div>
+                  {currentState && <StateBadge state={currentState as BehaviouralState} />}
+                </div>
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <MetricCell label="Modes" value={String(view.evidenceSummary.modesCount)} />
+                  <MetricCell label="Latest" value={view.evidenceSummary.latestProofTitle ?? "none"} />
+                  <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
+                </div>
+              </Card>
             </div>
-            <div className="mt-3 grid sm:grid-cols-3 gap-2">
-              <MetricCell label="Modes" value={String(view.evidenceSummary.modesCount)} />
-              <MetricCell label="Latest" value={view.evidenceSummary.latestProofTitle ?? "none"} />
-              <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
-            </div>
-          </Card>
-        </div>
+          </MobileCollapse>
+        </section>
 
         <section className="space-y-3">
           <button
@@ -347,8 +368,8 @@ export default function Dashboard() {
 
 function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardViewModel>; state: BehaviouralState | null }) {
   return (
-    <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
+      <div className="flex items-start justify-between gap-4 flex-wrap min-w-0">
         <div className="min-w-0 max-w-3xl">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Zone 1 // {view.commandSummary.label}</span>
@@ -357,17 +378,17 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
             </span>
             {state && <StateBadge state={state} />}
           </div>
-          <h2 className="mt-3 text-xl md:text-2xl font-semibold leading-tight">{view.commandSummary.title}</h2>
-          <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
+          <h2 className="mt-3 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">{view.commandSummary.title}</h2>
+          <p className="mt-2 text-sm text-muted-foreground max-w-2xl text-wrap-safe">
             <span className="text-foreground">Next best action:</span> {view.commandSummary.nextBestAction}
           </p>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex gap-2 flex-wrap">
           <Link to={view.commandSummary.primaryHref}><Button size="sm">{view.commandSummary.primaryCta}<ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Button></Link>
           <Link to={view.commandSummary.secondaryHref}><Button size="sm" variant="outline">{view.commandSummary.secondaryCta}</Button></Link>
         </div>
       </div>
-      <div className="mt-4 grid md:grid-cols-3 gap-2">
+      <div className="mt-4 hidden md:grid md:grid-cols-3 gap-2">
         <CommandSignal icon={<Target />} label="Proof required" value={view.commandSummary.proofRequired} />
         <CommandSignal icon={<ShieldAlert />} label="Highest risk" value={view.commandSummary.highestRisk} />
         <CommandSignal icon={<Radar />} label="Future path" value={`${view.futureSummary.primaryPath.replace(/_/g, " ")} - ${view.futureSummary.confidenceLevel}`} />
@@ -390,12 +411,13 @@ function EvidenceCommandPanel({
   latestArtifact: any;
 }) {
   const [showAllRecent, setShowAllRecent] = useState(false);
+  const [showSecondary, setShowSecondary] = useState(false);
   const mobileLimit = mobileRecentProofLimit(recent.length, showAllRecent);
   const desktopLimit = Math.min(recent.length, 4);
   return (
     <section className="space-y-3">
       <SectionHeader eyebrow="Zone 3" title="Evidence" detail={`${view.evidenceSummary.weekArtifacts} this week`} />
-      <Card className="panel p-4 md:p-5 border-border/80 bg-card/50">
+      <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 mobile-safe-card">
         <div className="grid grid-cols-3 gap-2">
           <MetricCell label="Artifacts" value={String(view.evidenceSummary.weekArtifacts)} />
           <MetricCell label="Strong+" value={String(view.evidenceSummary.strongCount + view.evidenceSummary.eliteCount)} />
@@ -406,14 +428,23 @@ function EvidenceCommandPanel({
           <EvidenceBlock icon={<FileText />} label="Pending proof" action="Submit" href="/proof">
             {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open Coach to forge one."}
           </EvidenceBlock>
-          <EvidenceBlock icon={<Gavel />} label="Latest verdict" action="Court" href="/proof">
-            {latestArtifact ? `${latestArtifact.title} - ${latestArtifact.evidence_strength ?? "unscored"}` : "Court of Evidence is empty."}
-          </EvidenceBlock>
-          <EvidenceBlock icon={<CircleDot />} label="Domain signal" action="Modes" href="/modes">
-            {view.evidenceSummary.strongestDomain
-              ? `Strongest: ${view.evidenceSummary.strongestDomain}. Weakest: ${view.evidenceSummary.weakestDomain ?? "none flagged"}.`
-              : "No weekly domain signal yet."}
-          </EvidenceBlock>
+          <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3`}>
+            <EvidenceBlock icon={<Gavel />} label="Latest verdict" action="Court" href="/proof">
+              {latestArtifact ? `${latestArtifact.title} - ${latestArtifact.evidence_strength ?? "unscored"}` : "Court of Evidence is empty."}
+            </EvidenceBlock>
+            <EvidenceBlock icon={<CircleDot />} label="Domain signal" action="Modes" href="/modes">
+              {view.evidenceSummary.strongestDomain
+                ? `Strongest: ${view.evidenceSummary.strongestDomain}. Weakest: ${view.evidenceSummary.weakestDomain ?? "none flagged"}.`
+                : "No weekly domain signal yet."}
+            </EvidenceBlock>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSecondary((open) => !open)}
+            className="md:hidden font-mono text-[10px] uppercase tracking-widest text-primary hover:underline self-start"
+          >
+            {showSecondary ? "Hide verdict & domain" : "Show verdict & domain"}
+          </button>
         </div>
 
         <div className="mt-4 grid gap-2">
@@ -527,7 +558,7 @@ function CommandSignal({ icon, label, value }: { icon: ReactNode; label: string;
 
 function MetricCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-sm border border-border bg-background/30 p-2 min-w-0">
+    <div className="rounded-sm border border-border bg-background/30 p-2 min-w-0 max-w-full">
       <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
       <div className="mt-0.5 truncate text-sm text-foreground">{value}</div>
     </div>
@@ -536,15 +567,15 @@ function MetricCell({ label, value }: { label: string; value: string }) {
 
 function EvidenceBlock({ icon, label, action, href, children }: { icon: ReactNode; label: string; action: string; href: string; children: ReactNode }) {
   return (
-    <div className="rounded-sm border border-border bg-background/30 p-3">
-      <div className="flex items-center justify-between gap-3">
+    <div className="rounded-sm border border-border bg-background/30 p-3 min-w-0 max-w-full">
+      <div className="flex items-center justify-between gap-3 min-w-0">
         <div className="flex items-center gap-1.5 text-muted-foreground [&_svg]:h-3.5 [&_svg]:w-3.5">
           {icon}
           <span className="font-mono text-[9px] uppercase tracking-widest">{label}</span>
         </div>
-        <Link to={href} className="font-mono text-[10px] uppercase tracking-widest text-primary hover:underline">{action}</Link>
+        <Link to={href} className="font-mono text-[10px] uppercase tracking-widest text-primary hover:underline shrink-0">{action}</Link>
       </div>
-      <div className="mt-1 text-sm leading-snug text-foreground">{children}</div>
+      <div className="mt-1 text-sm leading-snug text-foreground text-wrap-safe">{children}</div>
     </div>
   );
 }
