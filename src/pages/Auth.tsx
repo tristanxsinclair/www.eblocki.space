@@ -53,8 +53,8 @@ export default function Auth() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-    } catch (err: any) {
-      toast.error(err.message ?? "Auth failed");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Auth failed"));
     } finally {
       setBusy(false);
     }
