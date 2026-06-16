@@ -1076,42 +1076,47 @@ export default function Proof() {
         </Card>
 
         {/* Pending contracts */}
-        <Card className="panel p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Gavel className="h-4 w-4 text-primary" />
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Pending Proof Contracts</h2>
-          </div>
-          {filteredPending.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No pending contracts. Open the Coach to forge one.</p>
-          ) : (
-            <div className="space-y-2">
-              {filteredPending.map((p) => (
-                <Card key={p.id} className="panel p-4 flex items-start justify-between gap-3 flex-wrap">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-mono text-[10px] uppercase text-muted-foreground">{p.domain} - {p.mode}</div>
-                    <div className="text-sm font-medium">{p.title}</div>
-                    {p.required_artifact && <div className="text-xs text-muted-foreground mt-1">Required: {p.required_artifact}</div>}
-                    {p.evidence_standard && <div className="text-xs text-muted-foreground mt-0.5">Standard: {p.evidence_standard}</div>}
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setLinkedContractId(p.id);
-                      setTitle(p.title);
-                      if (p.mode) setSelectedModeId(p.mode);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                  >
-                    Submit Proof
-                  </Button>
-                </Card>
-              ))}
+        <MobileCollapse
+          eyebrow="Pending"
+          label={`Pending Proof Contracts (${filteredPending.length})`}
+        >
+          <Card className="panel p-4 max-w-full overflow-hidden">
+            <div className="flex items-center gap-2 mb-3">
+              <Gavel className="h-4 w-4 text-primary" />
+              <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Pending Proof Contracts</h2>
             </div>
-          )}
-        </Card>
+            {filteredPending.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No pending contracts. Open the Coach to forge one.</p>
+            ) : (
+              <div className="space-y-2">
+                {filteredPending.map((p) => (
+                  <Card key={p.id} className="panel p-4 flex items-start justify-between gap-3 flex-wrap max-w-full overflow-hidden">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-mono text-[10px] uppercase text-muted-foreground break-words">{p.domain} - {p.mode}</div>
+                      <div className="text-sm font-medium break-words">{p.title}</div>
+                      {p.required_artifact && <div className="text-xs text-muted-foreground mt-1 break-words">Required: {p.required_artifact}</div>}
+                      {p.evidence_standard && <div className="text-xs text-muted-foreground mt-0.5 break-words">Standard: {p.evidence_standard}</div>}
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setLinkedContractId(p.id);
+                        setTitle(p.title);
+                        if (p.mode) setSelectedModeId(p.mode);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                    >
+                      Submit Proof
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </Card>
+        </MobileCollapse>
 
         {/* Completed artifacts */}
-        <Card className="panel p-4">
+        <Card className="panel p-4 max-w-full overflow-hidden">
           <div className="flex items-center gap-2 mb-3">
             <Gavel className="h-4 w-4 text-primary" />
             <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Completed Proof Artifacts</h2>
@@ -1126,19 +1131,24 @@ export default function Proof() {
         </Card>
 
         {/* Missed */}
-        <Card className="panel p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Gavel className="h-4 w-4 text-primary" />
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Missed Proof Contracts</h2>
-          </div>
-          {filteredMissed.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No missed contracts.</p>
-          ) : (
-            filteredMissed.map((p) => (
-              <Card key={p.id} className="panel p-3 mb-2"><div className="text-sm">{p.title}</div></Card>
-            ))
-          )}
-        </Card>
+        <MobileCollapse
+          eyebrow="Missed"
+          label={`Missed Proof Contracts (${filteredMissed.length})`}
+        >
+          <Card className="panel p-4 max-w-full overflow-hidden">
+            <div className="flex items-center gap-2 mb-3">
+              <Gavel className="h-4 w-4 text-primary" />
+              <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Missed Proof Contracts</h2>
+            </div>
+            {filteredMissed.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No missed contracts.</p>
+            ) : (
+              filteredMissed.map((p) => (
+                <Card key={p.id} className="panel p-3 mb-2 max-w-full overflow-hidden"><div className="text-sm break-words">{p.title}</div></Card>
+              ))
+            )}
+          </Card>
+        </MobileCollapse>
       </div>
     </AppShell>
   );
