@@ -7,6 +7,8 @@ export interface ProofStandardPreviewInput {
   artifactType?: string | null;
   proofAction?: string | null;
   proofContract?: ProofContractLike | null;
+  /** Optional title/content/reflection text used purely to refine standard selection. */
+  signalText?: string | null;
 }
 
 export interface ProofStandardPreview {
@@ -104,6 +106,7 @@ export function buildProofStandardPreview(input: ProofStandardPreviewInput = {})
     domain: selectedDomain,
     intent: input.intent,
     artifactType: selectionArtifact || artifactType,
+    signalText: input.signalText,
   });
   const identity = identityRuleForStandard(standard.key);
 

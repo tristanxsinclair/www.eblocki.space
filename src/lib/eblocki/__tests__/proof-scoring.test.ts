@@ -47,4 +47,76 @@ describe("Court verdict standards", () => {
     expect(result.evidenceStrength).toBe("strong");
     expect(result.feedback).toMatch(/Product System Review Standard/i);
   });
+
+  it("Soft Reset coach specificity review routes to Product System Review Standard at strong 8/10", () => {
+    const result = scoreProofArtifact({
+      domain: "general",
+      artifactType: "reflection",
+      title: "Coach mode specificity test — Soft Reset",
+      content: `I tested Eblocki Coach using a randomised Soft Reset creative recovery mode. The coach correctly routed the prompt as execution_lock, state overplanning, and identified that planning was replacing proof. It gave a suitable creative command in the answer: open the rough digital sketch and add exactly three deliberate layers of detail or colour. However, the Proof Action card fell back to generic wording: "Produce one visible artifact in 25 minutes." This shows the router worked but the response composer did not fully propagate the specific creative action into the proof card. Acceptance test: For Soft Reset mode, Coach should output one calm creative proof action and the Proof Action card should match.`,
+      reflection: "Specificity leak in the response composer means strong routing without elite implementation proof.",
+      nextUpgrade: "When the answer contains a specific proof action, the Proof Action card should inherit it.",
+    });
+
+    expect(result.feedback).toMatch(/Product System Review Standard/i);
+    expect(result.qualityScore).toBeLessThanOrEqual(8);
+    expect(result.evidenceStrength).not.toBe("elite");
+  });
+
+  it("future intent in nextUpgrade does not satisfy implementation evidence", () => {
+    const result = scoreProofArtifact({
+      domain: "product",
+      artifactType: "product system review",
+      title: "Router critique",
+      content: "Specific product issue identified. Evidence from actual output. Corrected logic proposed. Implementation path stated. Acceptance test defined.",
+      reflection: "Diagnosis only.",
+      nextUpgrade: "Will add file changes, tests added, and build result later.",
+    });
+    expect(result.qualityScore).toBeLessThanOrEqual(8);
+    expect(result.feedback).toMatch(/Product System Review Standard/i);
+  });
+
+  it("verdict nextUpgrade does not include the full artifact body", () => {
+    const longBody = "Content: huge artifact body ".repeat(40) +
+      "\nNext upgrade: Fix specificity propagation into Proof Action card.\nAcceptance test: Proof Action card matches answer.";
+    const result = scoreProofArtifact({
+      domain: "general",
+      artifactType: "reflection",
+      title: "Coach review",
+      content: longBody,
+      reflection: "Diagnosis only.",
+      nextUpgrade: longBody,
+    });
+    expect(result.nextUpgrade).toBe("Fix specificity propagation into Proof Action card.");
+    expect(result.nextUpgrade).not.toMatch(/huge artifact body/);
+  });
+});
+
+describe("Standard selection signal scan", () => {
+  it("manual product-system artifact type never falls back to General Proof Standard", () => {
+    const result = scoreProofArtifact({
+      domain: "general",
+      artifactType: "product system review",
+      title: "Anything",
+      content: "Specific issue identified. Output evidence. Corrected logic.",
+      reflection: "ok",
+      nextUpgrade: "ok",
+    });
+    expect(result.feedback).toMatch(/Product System Review Standard/i);
+    expect(result.feedback).not.toMatch(/General Proof Standard/i);
+  });
+
+  it("a clearly completed concrete general artifact can still use General Proof Standard", () => {
+    const longConcrete = "I wrote and shipped a 600-word reflection on practice. ".repeat(8) +
+      "I produced a visible artifact and attached it. Feedback awareness: I noticed the weak section. Next upgrade: tighten the opening.";
+    const result = scoreProofArtifact({
+      domain: "general",
+      artifactType: "written answer",
+      title: "Practice reflection",
+      content: longConcrete,
+      reflection: "Honest feedback about what I produced and what to tighten next time.",
+      nextUpgrade: "Tighten the opening paragraph.",
+    });
+    expect(result.feedback).toMatch(/General Proof Standard/i);
+  });
 });

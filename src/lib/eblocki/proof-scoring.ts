@@ -1,5 +1,6 @@
 import type { Mode } from "./modes";
 import { selectDomainStandard } from "./domain-standards";
+import { extractNextUpgrade } from "./next-upgrade-extract";
 
 export type EvidenceStrength = "weak" | "moderate" | "strong" | "elite";
 
@@ -180,7 +181,11 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
   const content = input.content?.trim() || "";
   const reflection = input.reflection?.trim() || "";
   const nextUpgrade = input.nextUpgrade?.trim() || "";
-  const standard = selectDomainStandard({ domain, artifactType });
+  // Standard selection scans title/content/reflection so product-system
+  // critiques (coach, router, proof action card, specificity leak…) cannot
+  // fall through to General Proof Standard just because artifactType is vague.
+  const signalText = [title, content, reflection].filter(Boolean).join("\n");
+  const standard = selectDomainStandard({ domain, artifactType, signalText });
 
   const combined = [title, artifactType, content, reflection, nextUpgrade].filter(Boolean).join("\n");
   const standardHits = standard.criteria.filter((criterion) => combined.toLowerCase().includes(criterion.split(" ")[0].toLowerCase())).length;
@@ -202,11 +207,21 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
   if (hasCorrectionLanguage) score += 1;
 
   let finalScore = clampScore(score);
-  if (standard.key === "product_system_review_standard") {
-    // Identity escalation requires actual shipped implementation evidence,
-    // not aspirational language in the next-upgrade field.
-    const evidenceBody = [title, artifactType, content, reflection].filter(Boolean).join("\n");
-    if (!hasImplementationProof(evidenceBody)) {
+  const evidenceBody = [title, artifactType, content, reflection].filter(Boolean).join("\n");
+  const implementationProven = hasImplementationProof(evidenceBody);
+  if (standard.key === "product_system_review_standard" && !implementationProven) {
+    // Product-system reviews cap at strong 8 without shipped implementation
+    // or external test evidence. Aspirational language in `nextUpgrade` does
+    // not count.
+    finalScore = Math.min(finalScore, 8);
+  }
+  if (standard.key === "general_proof_standard") {
+    // General Proof Standard is a fallback, not a loophole. Elite requires a
+    // concrete completed artifact (length + applied detail + feedback). Cap
+    // at 8 otherwise so meta-analysis / plans / future intentions cannot
+    // accidentally reach elite via the general path.
+    const hasConcreteArtifact = content.length >= 250 && reflection.length >= 40 && /\b(shipped|completed|wrote|produced|published|submitted|recorded|delivered|built|drafted|ran|published|attached)\b/i.test(combined);
+    if (!hasConcreteArtifact) {
       finalScore = Math.min(finalScore, 8);
     }
   }
@@ -229,10 +244,17 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
     suggestedUpgrade = "Preserve this standard and repeat it across the next proof cycle.";
   }
 
+  const resolvedNextUpgrade = extractNextUpgrade({
+    nextUpgrade,
+    content,
+    reflection,
+    fallback: suggestedUpgrade,
+  });
+
   return {
     qualityScore: finalScore,
     evidenceStrength,
     feedback,
-    nextUpgrade: nextUpgrade || suggestedUpgrade,
+    nextUpgrade: resolvedNextUpgrade,
   };
 }
