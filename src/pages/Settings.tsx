@@ -39,6 +39,7 @@ export default function Settings() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [editingModeId, setEditingModeId] = useState<string | null>(null);
   const [modeDrafts, setModeDrafts] = useState<Record<string, any>>({});
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (!user) return;
