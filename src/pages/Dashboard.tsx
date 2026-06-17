@@ -202,7 +202,7 @@ export default function Dashboard() {
           </Card>
         )}
 
-        <CommandHero view={view} state={currentState} />
+        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} />}
 
         <ProofWeekPanel artifactDates={allArtifacts.map((a: any) => a.created_at).filter(Boolean)} />
 
