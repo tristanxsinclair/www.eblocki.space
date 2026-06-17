@@ -202,10 +202,35 @@ export default function Dashboard() {
           </Card>
         )}
 
-        <CommandHero view={view} state={currentState} />
+        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} />}
 
         <ProofWeekPanel artifactDates={allArtifacts.map((a: any) => a.created_at).filter(Boolean)} />
 
+        {allArtifacts.length === 0 ? (
+          <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
+              Zone 1 // Activation
+            </div>
+            <h2 className="mt-2 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">
+              Submit one measurable artifact to activate the command layer.
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground text-wrap-safe">
+              One artifact. One standard. 25-minute timebox. Done and yes are rejected on purpose.
+            </p>
+            <div className="mt-4 flex gap-2 flex-wrap">
+              <Link to="/proof?first=1">
+                <Button size="sm">
+                  Create my first proof
+                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
+              </Link>
+              <Link to="/start-today">
+                <Button size="sm" variant="outline">Start Today</Button>
+              </Link>
+            </div>
+          </Card>
+        ) : (
+        <>
         <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-4 items-start min-w-0">
           <section className="space-y-3 min-w-0">
             <SectionHeader eyebrow="Zone 2" title="Forecast" detail={view.futureSummary.status} />
@@ -361,6 +386,8 @@ export default function Dashboard() {
             </div>
           )}
         </section>
+        </>
+        )}
       </div>
     </AppShell>
   );
