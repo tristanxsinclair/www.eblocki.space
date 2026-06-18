@@ -1145,6 +1145,7 @@ export default function Proof() {
         </Card>
 
         {/* Pending contracts */}
+        {!firstProofMode && (
         <MobileCollapse
           eyebrow="Pending"
           label={`Pending Proof Contracts (${filteredPending.length})`}
@@ -1183,8 +1184,10 @@ export default function Proof() {
             )}
           </Card>
         </MobileCollapse>
+        )}
 
         {/* Completed artifacts */}
+        {!firstProofMode && (
         <Card className="panel p-4 max-w-full overflow-hidden">
           <div className="flex items-center gap-2 mb-3">
             <Gavel className="h-4 w-4 text-primary" />
@@ -1198,8 +1201,10 @@ export default function Proof() {
             <CompletedArtifactsList items={filteredCompleted} />
           )}
         </Card>
+        )}
 
         {/* Missed */}
+        {!firstProofMode && (
         <MobileCollapse
           eyebrow="Missed"
           label={`Missed Proof Contracts (${filteredMissed.length})`}
@@ -1218,6 +1223,7 @@ export default function Proof() {
             )}
           </Card>
         </MobileCollapse>
+        )}
       </div>
     </AppShell>
   );
