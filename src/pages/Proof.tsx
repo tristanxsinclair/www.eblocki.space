@@ -447,6 +447,10 @@ export default function Proof() {
       });
 
       toast.success(`Verdict: ${score.qualityScore}/10 - ${score.evidenceStrength}`);
+      if (firstProofMode) {
+        setFirstProofSubmitted(true);
+        logEvent("proof_capture_completed", { first_proof: true });
+      }
       resetForm();
       reload();
     } catch (e: any) {
