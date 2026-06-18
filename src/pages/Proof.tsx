@@ -23,6 +23,11 @@ import { Seo } from "@/components/Seo";
 import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
 import { extractNextUpgrade } from "@/lib/eblocki/next-upgrade-extract";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
+import {
+  FIRST_PROOF_COPY,
+  FIRST_PROOF_EXAMPLES,
+  isFirstProofMode,
+} from "@/lib/eblocki/first-proof";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -166,6 +171,8 @@ function VerdictFeedback({ artifactId }: { artifactId: string }) {
 export default function Proof() {
   const { user } = useAuth();
   const [params] = useSearchParams();
+  const firstProofMode = isFirstProofMode(params);
+  const [firstProofSubmitted, setFirstProofSubmitted] = useState(false);
 
   const [pending, setPending] = useState<any[]>([]);
   const [completed, setCompleted] = useState<any[]>([]);
@@ -440,6 +447,10 @@ export default function Proof() {
       });
 
       toast.success(`Verdict: ${score.qualityScore}/10 - ${score.evidenceStrength}`);
+      if (firstProofMode) {
+        setFirstProofSubmitted(true);
+        logEvent("proof_capture_completed", { first_proof: true });
+      }
       resetForm();
       reload();
     } catch (e: any) {
@@ -600,12 +611,65 @@ export default function Proof() {
         path="/proof"
       />
       <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 min-w-0 max-w-full text-wrap-safe">
-        <header className="min-w-0">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Court of Evidence</span>
-          <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Receipts, scored.</h1>
-        </header>
+        {firstProofMode ? (
+          <header className="min-w-0">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+              Activation · First Proof
+            </span>
+            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">
+              {FIRST_PROOF_COPY.title}
+            </h1>
+            <p className="mt-2 text-sm md:text-base text-muted-foreground break-words">
+              {FIRST_PROOF_COPY.subtitle}
+            </p>
+          </header>
+        ) : (
+          <header className="min-w-0">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Court of Evidence</span>
+            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Receipts, scored.</h1>
+          </header>
+        )}
 
-        {/* First-proof guidance — primary mobile CTA */}
+        {firstProofSubmitted && firstProofMode && (
+          <Card className="panel p-4 border-primary/50 bg-primary/5 max-w-full overflow-hidden">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <h2 className="text-base font-semibold break-words">
+                  {FIRST_PROOF_COPY.successTitle}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground break-words">
+                  Your first artifact is filed. Return to the command centre to see how the system reads your signal.
+                </p>
+                <div className="mt-3">
+                  <Link to="/dashboard">
+                    <Button size="sm" className="w-full sm:w-auto">
+                      {FIRST_PROOF_COPY.successCta}
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {firstProofMode ? (
+          <Card className="panel p-4 border-primary/30 max-w-full overflow-hidden">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+              {FIRST_PROOF_COPY.helperHeader}
+            </span>
+            <p className="text-sm text-muted-foreground mt-1 break-words">
+              Examples of one measurable artifact — pick the closest to today and submit it below.
+            </p>
+            <ul className="mt-2 grid gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
+              {FIRST_PROOF_EXAMPLES.map((ex) => (
+                <li key={ex.domain} className="break-words">
+                  <span className="font-mono text-foreground">{ex.domain}:</span> {ex.example}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ) : (
         <Card className="panel p-4 border-primary/30 max-w-full overflow-hidden">
           <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
             Today’s one move
@@ -625,7 +689,9 @@ export default function Proof() {
             <li>• one closed life-admin loop</li>
           </ul>
         </Card>
+        )}
 
+        {!firstProofMode && (
         <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
           <div className="flex items-start gap-3">
             <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -640,8 +706,10 @@ export default function Proof() {
             </div>
           </div>
         </Card>
+        )}
 
         {/* Strength tally */}
+        {!firstProofMode && (
         <Card className="panel p-4 max-w-full overflow-hidden">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="grid grid-cols-4 gap-2 flex-1">
@@ -668,6 +736,7 @@ export default function Proof() {
             </div>
           </div>
         </Card>
+        )}
 
         {/* Verdict card */}
         {verdict && (
@@ -1076,6 +1145,7 @@ export default function Proof() {
         </Card>
 
         {/* Pending contracts */}
+        {!firstProofMode && (
         <MobileCollapse
           eyebrow="Pending"
           label={`Pending Proof Contracts (${filteredPending.length})`}
@@ -1114,8 +1184,10 @@ export default function Proof() {
             )}
           </Card>
         </MobileCollapse>
+        )}
 
         {/* Completed artifacts */}
+        {!firstProofMode && (
         <Card className="panel p-4 max-w-full overflow-hidden">
           <div className="flex items-center gap-2 mb-3">
             <Gavel className="h-4 w-4 text-primary" />
@@ -1129,8 +1201,10 @@ export default function Proof() {
             <CompletedArtifactsList items={filteredCompleted} />
           )}
         </Card>
+        )}
 
         {/* Missed */}
+        {!firstProofMode && (
         <MobileCollapse
           eyebrow="Missed"
           label={`Missed Proof Contracts (${filteredMissed.length})`}
@@ -1149,6 +1223,7 @@ export default function Proof() {
             )}
           </Card>
         </MobileCollapse>
+        )}
       </div>
     </AppShell>
   );
