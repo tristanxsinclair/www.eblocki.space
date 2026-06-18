@@ -171,6 +171,8 @@ function VerdictFeedback({ artifactId }: { artifactId: string }) {
 export default function Proof() {
   const { user } = useAuth();
   const [params] = useSearchParams();
+  const firstProofMode = isFirstProofMode(params);
+  const [firstProofSubmitted, setFirstProofSubmitted] = useState(false);
 
   const [pending, setPending] = useState<any[]>([]);
   const [completed, setCompleted] = useState<any[]>([]);
