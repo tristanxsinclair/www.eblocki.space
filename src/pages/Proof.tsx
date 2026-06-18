@@ -23,6 +23,11 @@ import { Seo } from "@/components/Seo";
 import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
 import { extractNextUpgrade } from "@/lib/eblocki/next-upgrade-extract";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
+import {
+  FIRST_PROOF_COPY,
+  FIRST_PROOF_EXAMPLES,
+  isFirstProofMode,
+} from "@/lib/eblocki/first-proof";
 
 const ARTIFACT_TYPES = [
   "product system review",
