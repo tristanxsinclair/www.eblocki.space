@@ -216,9 +216,15 @@ serve(async (req) => {
       });
     }
 
-    const route = routeCoach(message);
-    const ai = await callAi(message, route);
+    // Require authentication BEFORE invoking AI to prevent unauthenticated
+    // AI credit consumption.
     const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader) {
+      return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
@@ -230,6 +236,15 @@ serve(async (req) => {
     } catch {
       userId = null;
     }
+    if (!userId) {
+      return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const route = routeCoach(message);
+    const ai = await callAi(message, route);
 
     const proofContract = {
       shouldCreate: shouldCreateContract(message, route),
@@ -245,8 +260,8 @@ serve(async (req) => {
 
     let interactionId: string | null = null;
     let commitmentId: string | null = null;
-    let databaseInteractionError: string | null = null;
-    let databaseCommitmentError: string | null = null;
+    let interactionFailed = false;
+    let commitmentFailed = false;
 
     if (userId) {
       const { data, error } = await supabase
@@ -261,8 +276,10 @@ serve(async (req) => {
         })
         .select("id")
         .single();
-      if (error) databaseInteractionError = error.message;
-      else interactionId = data?.id ?? null;
+      if (error) {
+        interactionFailed = true;
+        console.error("coach: coach_interactions insert failed", error.message);
+      } else interactionId = data?.id ?? null;
 
       if (proofContract.shouldCreate) {
         const { data: commitment, error: commitError } = await supabase
@@ -279,11 +296,11 @@ serve(async (req) => {
           })
           .select("id")
           .single();
-        if (commitError) databaseCommitmentError = commitError.message;
-        else commitmentId = commitment?.id ?? null;
+        if (commitError) {
+          commitmentFailed = true;
+          console.error("coach: proof_commitments insert failed", commitError.message);
+        } else commitmentId = commitment?.id ?? null;
       }
-    } else {
-      databaseInteractionError = "USER_NOT_AUTHENTICATED";
     }
 
     return new Response(JSON.stringify({
@@ -299,9 +316,8 @@ serve(async (req) => {
       debug: {
         usedFallback: ai.usedFallback,
         aiConfigured: ai.configured,
-        aiError: ai.error,
-        databaseInteractionError,
-        databaseCommitmentError,
+        interactionFailed,
+        commitmentFailed,
         route: {
           domain: route.domain,
           intent: route.intent,
@@ -315,6 +331,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("coach: top-level error", err);
     const route = routeCoach("");
     return new Response(JSON.stringify({
       success: true,
@@ -336,7 +353,7 @@ serve(async (req) => {
       proofQuestion: "What proof artifact will confirm completion?",
       interactionId: null,
       commitmentId: null,
-      debug: { usedFallback: true, aiError: err instanceof Error ? err.message : "UNKNOWN" },
+      debug: { usedFallback: true },
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

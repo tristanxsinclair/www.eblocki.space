@@ -38,6 +38,18 @@ type ServiceAccount = {
 
 let cachedToken: { token: string; exp: number } | null = null;
 
+function parseJwtClaims(token: string): Record<string, unknown> | null {
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const payload = parts[1]
+      .replaceAll("-", "+")
+      .replaceAll("_", "/")
+      .padEnd(Math.ceil(parts[1].length / 4) * 4, "=");
+    return JSON.parse(atob(payload)) as Record<string, unknown>;
+  } catch { return null; }
+}
+
 async function getAccessToken(sa: ServiceAccount): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   if (cachedToken && cachedToken.exp - 60 > now) return cachedToken.token;
@@ -81,6 +93,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    // Restrict to service-role callers. Push notifications must only be
+    // triggered by trusted backends (notify-momentum, scheduled jobs);
+    // otherwise any caller with a known user_id could spam notifications.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+    const claims = parseJwtClaims(authHeader.slice("Bearer ".length).trim());
+    if (claims?.role !== "service_role") {
+      return jsonResponse({ error: "Forbidden" }, 403);
+    }
+
     const raw = await req.json() as Body;
     if (!raw?.user_id || !raw?.title) return jsonResponse({ error: "user_id and title required" }, 400);
 
