@@ -204,9 +204,7 @@ export default function Dashboard() {
 
         {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} />}
 
-        <ProofWeekPanel artifactDates={allArtifacts.map((a: any) => a.created_at).filter(Boolean)} />
-
-        {allArtifacts.length === 0 ? (
+        {allArtifacts.length === 0 && (
           <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
             <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
               Zone 1 // Activation
@@ -217,34 +215,27 @@ export default function Dashboard() {
             <p className="mt-2 text-sm text-muted-foreground text-wrap-safe">
               One artifact. One standard. 25-minute timebox. Done and yes are rejected on purpose.
             </p>
-            <div className="mt-4 flex gap-2 flex-wrap">
-              <Link to="/proof?first=1">
-                <Button size="sm">
+            <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
+              <Link to="/proof?first=1" className="w-full sm:w-auto">
+                <Button size="sm" className="w-full sm:w-auto">
                   Create my first proof
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               </Link>
-              <Link to="/start-today">
-                <Button size="sm" variant="outline">Start Today</Button>
+              <Link to="/start-today" className="w-full sm:w-auto">
+                <Button size="sm" variant="outline" className="w-full sm:w-auto">Start Today</Button>
               </Link>
             </div>
           </Card>
-        ) : (
+        )}
+
+        <ProofWeekPanel artifactDates={allArtifacts.map((a: any) => a.created_at).filter(Boolean)} />
+
+        {allArtifacts.length > 0 && (
         <>
         <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-4 items-start min-w-0">
           <section className="space-y-3 min-w-0">
             <SectionHeader eyebrow="Zone 2" title="Forecast" detail={view.futureSummary.status} />
-            {/* Always-visible mobile forecast summary so a beta tester sees
-                one clear signal without expanding the advanced map. */}
-            <Card className="md:hidden panel p-3 border-border/80 bg-card/50 mobile-safe-card">
-              <div className="grid grid-cols-2 gap-2">
-                <MetricCell label="Power" value={`${view.futureSummary.futurePowerScore}/100`} />
-                <MetricCell label="Confidence" value={view.futureSummary.confidenceLevel} />
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground text-wrap-safe">
-                <span className="text-foreground">Command:</span> {view.futureSummary.temporalCommand}
-              </p>
-            </Card>
             <MobileCollapse
               eyebrow="Zone 2"
               label="Open forecast map, calibration & intel"
