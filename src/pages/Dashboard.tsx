@@ -401,9 +401,17 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
             <span className="text-foreground">Next best action:</span> {view.commandSummary.nextBestAction}
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Link to={view.commandSummary.primaryHref}><Button size="sm">{view.commandSummary.primaryCta}<ArrowRight className="h-3.5 w-3.5 ml-1.5" /></Button></Link>
-          <Link to={view.commandSummary.secondaryHref}><Button size="sm" variant="outline">{view.commandSummary.secondaryCta}</Button></Link>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-wrap">
+          <Link to={view.commandSummary.primaryHref} className="w-full sm:w-auto">
+            <Button size="sm" className="w-full sm:w-auto">
+              {view.commandSummary.primaryCta}<ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+            </Button>
+          </Link>
+          <Link to={view.commandSummary.secondaryHref} className="w-full sm:w-auto">
+            <Button size="sm" variant="outline" className="w-full sm:w-auto">
+              {view.commandSummary.secondaryCta}
+            </Button>
+          </Link>
         </div>
       </div>
       <div className="mt-4 hidden md:grid md:grid-cols-3 gap-2">
