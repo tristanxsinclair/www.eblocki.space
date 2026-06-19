@@ -1,87 +1,45 @@
-## Status of the 14 findings
+## Goal
 
-**Already fixed in the previous build turn** (scanner snapshot is stale — these will clear on next scan):
-- `coach_debug_leakage` — raw DB/AI errors removed from coach response
-- `coach_no_auth_before_ai` — coach now returns 401 before calling AI
-- `ocr_extract_no_auth` — ocr-extract requires authenticated user
-- `notify_momentum_no_auth` — restricted to service_role JWT
-- `send_push_no_auth` — restricted to service_role JWT
+Adopt the user's exact wording correction — never claim "Eblocki has no security issues"; only claim "no active tool-reported findings remain after the latest remediation pass" — and produce artifact evidence to back the claim.
 
-**Verified safe / accepted posture, no code change needed** (will be re-noted in security memory):
-- `email_unsubscribe_tokens_public_read` — confirmed: only service_role can SELECT/UPDATE; no client/edge-function code touches this table outside server context.
-- `email_send_log_recipient_email_exposure` — confirmed: service_role-only policies; only `process-email-queue` writes to it.
-- `suppressed_emails_no_user_access` — service_role-only by design; GDPR self-service is out of scope for beta and would require a new "request my data" flow.
-- `SUPA_extension_in_public` — only `pg_net` lives in public, used by pg_cron HTTP calls; moving it risks breaking scheduled jobs. Documented as accepted; revisit post-beta.
+## Steps
 
-## What this plan actually changes
+### 1. Replace `@security-memory` with the user-supplied text
+Call `security--update_memory` with the markdown block the user pasted (verbatim, including the "Important wording" caveat, resolved findings list, accepted-posture items, doctrine, and the "Next verification checkpoint" section).
 
-### 1. Migration — tighten RLS, function search paths, and SECURITY DEFINER exposure
+### 2. Rerun the security scan and persist the artifact
+- Call `security--run_security_scan` to get a fresh result.
+- Call `security--get_scan_results` (force=true) to fetch the persisted list.
+- Save both outputs to `.lovable/security-scan-result.md` next to `.lovable/plan.md`, timestamped, with:
+  - Date of scan
+  - Findings list (active, resolved, accepted)
+  - 174/174 test pass reference
+  - Explicit statement: "No active tool-reported findings remain after this remediation pass. This is not a claim of total security."
 
-One additive migration covering five issues:
+### 3. Mark any still-listed-as-open findings appropriately
+For each finding in the fresh scan that maps to work already completed in the prior migration / edge-function pass, call `security--manage_security_finding` with `mark_as_fixed` and a one-line explanation pointing at the migration file or function. For `pg_net`-in-public and `has_role`-callable-by-authenticated, use `ignore` with the accepted-posture rationale from the memory.
 
-**a. `analytics_events` INSERT policy** (`analytics_events_null_user_select`)
-Replace the current `((auth.uid() = user_id) OR (user_id IS NULL))` check with one that only allows NULL `user_id` when the caller is also unauthenticated, so logged-in users cannot insert orphaned rows:
-```sql
-DROP POLICY "analytics insert own" ON public.analytics_events;
-CREATE POLICY "analytics insert own"
-  ON public.analytics_events FOR INSERT TO anon, authenticated
-  WITH CHECK (
-    (auth.uid() IS NOT NULL AND auth.uid() = user_id)
-    OR (auth.uid() IS NULL AND user_id IS NULL)
-  );
-```
+### 4. Update `.lovable/plan.md`
+Append a short "Security remediation pass — closed" footer pointing to `.lovable/security-scan-result.md` and the security memory. Do not restate findings inline.
 
-**b. `user_roles` defense-in-depth write lock** (`user_roles_no_insert_policy`)
-Today there is no INSERT/UPDATE/DELETE policy, so RLS already denies non-service-role writes. Add explicit restrictive policies so the intent is visible in schema and any future permissive policy cannot accidentally open it:
-```sql
-CREATE POLICY "user_roles no client insert" ON public.user_roles
-  AS RESTRICTIVE FOR INSERT TO anon, authenticated WITH CHECK (false);
-CREATE POLICY "user_roles no client update" ON public.user_roles
-  AS RESTRICTIVE FOR UPDATE TO anon, authenticated USING (false) WITH CHECK (false);
-CREATE POLICY "user_roles no client delete" ON public.user_roles
-  AS RESTRICTIVE FOR DELETE TO anon, authenticated USING (false);
-```
-
-**c. Fixed `search_path` on the remaining SECURITY DEFINER queue helpers** (`SUPA_function_search_path_mutable`)
-The four pgmq wrappers lack a pinned search_path. Recreate each with `SET search_path = public, pgmq`:
-- `public.enqueue_email(text, jsonb)`
-- `public.read_email_batch(text, int, int)`
-- `public.delete_email(text, bigint)`
-- `public.move_to_dlq(text, text, bigint, jsonb)`
-
-Bodies stay identical; only the function signature gains `SET search_path = public, pgmq` and we re-declare `SECURITY DEFINER`.
-
-**d. Revoke public EXECUTE on SECURITY DEFINER functions that must never be called from the client** (`SUPA_anon_security_definer_function_executable`, `SUPA_authenticated_security_definer_function_executable`)
-These are trigger-only or service-role-only and have no business being callable via PostgREST:
-```sql
-REVOKE EXECUTE ON FUNCTION public.cle_after_proof_insert()          FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.handle_new_user()                 FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.enqueue_email(text, jsonb)        FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.read_email_batch(text, int, int)  FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.delete_email(text, bigint)        FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.move_to_dlq(text, text, bigint, jsonb) FROM PUBLIC, anon, authenticated;
-```
-`public.has_role(uuid, app_role)` keeps EXECUTE for `authenticated` — RLS policies that call it must be able to execute it.
-
-### 2. Update security memory
-
-Re-state which warnings are intentionally accepted (pg_net in public, email PII tables service_role-only, has_role exposed to authenticated) so future scans don't re-flag them as actionable.
-
-### 3. Verification after migration runs
-
-- `npm run test` (expect 174/174).
-- Spot-check via `supabase--read_query` that the new policies and `proconfig` values exist.
-- Mark all addressable findings via `manage_security_finding`.
-
-## Technical notes
-
-- No app/UI code changes. All edits live in one Supabase migration plus the security memory.
-- The migration is additive and reversible; no data is touched.
-- `pg_net` is left in `public` deliberately — moving it requires updating every `cron.schedule` call site and risks breaking notify-momentum/email cron.
-- The 5 agent_security edge-function findings are already fixed in code; this plan does not re-touch those functions.
+### 5. Verification
+- `npm run test` — expect 174/174.
+- Re-read `.lovable/security-scan-result.md` and confirm the wording matches the doctrine (no "fully secure" / "no issues" phrasing).
+- Final report lists: files changed, scan result counts (active / resolved / accepted), tests run with exact result, and explicit "next verification checkpoint" reminder for Proof Week beta gate.
 
 ## Out of scope
-
+- New migrations or edge-function changes (the previous pass already shipped these).
 - GDPR self-service for `suppressed_emails`.
-- Moving `pg_net` out of the public schema.
+- Moving `pg_net` out of `public`.
 - Repo-wide lint cleanup.
+
+## Technical notes
+- Artifact path: `.lovable/security-scan-result.md` (chosen because `.lovable/` is already the release-gate folder containing `plan.md`).
+- Wording rule enforced everywhere: "no active tool-reported findings remain after the latest remediation pass" — never "Eblocki is secure" or "no security issues".
+- If the fresh scan surfaces a NEW finding not covered by the prior pass, stop and report it instead of marking fixed.
+
+## Security remediation pass — closed
+- Scan artifact: `.lovable/security-scan-result.md` (scanned 2026-06-19T05:42:20Z; 0 active findings, 2 ignored as accepted posture: `pg_net` in `public`, `has_role` executable by `authenticated`).
+- `@security-memory` updated with the tightened wording rule and accepted-posture documentation.
+- Tests: 174/174 passing.
+- Claim policy: only "no active tool-reported findings remain after the latest remediation pass" — never "Eblocki is secure".
