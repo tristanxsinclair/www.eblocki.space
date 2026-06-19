@@ -144,7 +144,7 @@ const WEAK_PATTERNS: Array<{ signal: StudySignal; re: RegExp }> = [
   { signal: "weak_highlighting", re: /\bhighlight(ing|ed)?\b/i },
   { signal: "weak_watching", re: /\bwatch(ed|ing)?\s+(a |the )?(video|lecture|recording|explanation|playlist)\b/i },
   { signal: "weak_copying_notes", re: /\bcop(y|ied|ying) (out |down )?(the )?notes\b/i },
-  { signal: "weak_organisation", re: /\b(made|built|created|organi[sz]ed)\s+(a |my |the )?(dashboard|timetable|schedule|study plan|notion (page|dashboard))\b|\borgani[sz]ed (my )?notes\b/i },
+  { signal: "weak_organisation", re: /\b(made|built|created)\b[^.\n]{0,40}\b(dashboard|timetable|schedule|study plan|notion)\b|\borgani[sz]ed (my )?notes\b/i },
 ];
 
 const FALLBACK_ACTION_RE = /\b(wrote|completed|produced|shipped|submitted|published|delivered)\b/i;
