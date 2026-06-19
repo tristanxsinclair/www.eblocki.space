@@ -12,6 +12,8 @@ import { Progress } from "@/components/ui/progress";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
 import { ProofStandardPreviewPanel } from "@/components/eblocki/ProofStandardPreviewPanel";
 import { scoreProofArtifact } from "@/lib/eblocki/proof-scoring";
+import { classifyStudyActivity } from "@/lib/eblocki/fake-study-detector";
+import { StudyVerdictHint } from "@/components/eblocki/StudyVerdictHint";
 import { buildProofStandardPreview, type ProofStandardPreview } from "@/lib/eblocki/proof-standard-preview";
 import type { UserMode } from "@/lib/eblocki/modes";
 import { computeTemporal } from "@/lib/eblocki/temporal-engine";
@@ -261,6 +263,17 @@ export default function Proof() {
 
   const hasStandardSelection = Boolean(artifactType || linkedContract || selectedModeId);
 
+  // Fake Study Detector v1 — deterministic classification of described study activity.
+  // Live (pre-submit) signal: updates as the student types.
+  const liveStudyClassification = useMemo(
+    () => classifyStudyActivity({ content, title, artifactType }),
+    [content, title, artifactType],
+  );
+  // Frozen (post-submit) classification of the artifact that produced the verdict.
+  const [submittedStudyClassification, setSubmittedStudyClassification] = useState<
+    ReturnType<typeof classifyStudyActivity> | null
+  >(null);
+
   const resetForm = () => {
     setTitle("");
     setContent("");
@@ -447,6 +460,13 @@ export default function Proof() {
         attachmentUrl,
         attachmentName: attachment?.name ?? null,
       });
+
+      // Freeze the Fake Study Detector classification for this submission so the
+      // post-submit hint reflects the artifact the user actually shipped, not
+      // whatever they type next.
+      setSubmittedStudyClassification(
+        classifyStudyActivity({ content, title, artifactType }),
+      );
 
       toast.success(`Verdict: ${score.qualityScore}/10 - ${score.evidenceStrength}`);
       if (firstProofMode) {
@@ -775,6 +795,14 @@ export default function Proof() {
               </div>
             )}
             <VerdictFeedback artifactId={verdict.artifactId} />
+            {submittedStudyClassification && (
+              <div className="mt-4">
+                <StudyVerdictHint
+                  classification={submittedStudyClassification}
+                  label="Fake study detector"
+                />
+              </div>
+            )}
             <div className="mt-4 flex flex-col sm:flex-row gap-2">
               <Link to="/dashboard" className="w-full sm:w-auto">
                 <Button size="sm" className="w-full sm:w-auto">Back to dashboard</Button>
@@ -783,7 +811,7 @@ export default function Proof() {
                 size="sm"
                 variant="outline"
                 className="w-full sm:w-auto"
-                onClick={() => { setVerdict(null); setDetailOpen(false); }}
+                onClick={() => { setVerdict(null); setSubmittedStudyClassification(null); setDetailOpen(false); }}
               >
                 Submit another proof
               </Button>
@@ -887,6 +915,13 @@ export default function Proof() {
               <div className="rounded-sm border border-border bg-background/40 p-3 text-sm text-muted-foreground">
                 No proof standard selected yet. Choose a proof type to see how the Court will judge it.
               </div>
+            )}
+
+            {content.trim().length >= 12 && (
+              <StudyVerdictHint
+                classification={liveStudyClassification}
+                label="Fake study detector"
+              />
             )}
 
             <div>
