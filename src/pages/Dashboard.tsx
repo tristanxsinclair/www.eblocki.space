@@ -6,11 +6,9 @@ import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EvidenceStrengthBadge, ModeBadge, StateBadge } from "@/components/eblocki/Badges";
 import {
   ArrowRight,
-  ChevronDown,
   CircleDot,
   Crosshair,
   FileText,
@@ -35,7 +33,6 @@ import { TemporalMap } from "@/components/eblocki/TemporalMap";
 import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
 import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 import { InterestSignalCard } from "@/components/eblocki/InterestSignalCard";
-import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { DashboardForecastTabs } from "@/components/eblocki/DashboardForecastTabs";
 import { IdentityLedger } from "@/components/eblocki/IdentityLedger";
 import { computeTemporal, type TemporalResult } from "@/lib/eblocki/temporal-engine";
@@ -57,9 +54,6 @@ export default function Dashboard() {
   const [quick, setQuick] = useState("");
   const [mode, setMode] = useState<Mode | null>(null);
   const [state, setStateBadge] = useState<BehaviouralState | null>(null);
-  const [futureTab, setFutureTab] = useState("forecast");
-  const [weeklyOpen, setWeeklyOpen] = useState(false);
-  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [diagnosticsTab, setDiagnosticsTab] = useState("forecast");
   const [queryFailed, setQueryFailed] = useState(false);
 
@@ -153,24 +147,9 @@ export default function Dashboard() {
     setStateBadge(detectState(quick));
   };
 
-  const openFutureSection = (sectionName: string) => {
-    setFutureTab(sectionName);
-    logEvent("dashboard_section_opened", { sectionName });
-  };
-
   const openDiagnosticsTab = (tabName: string) => {
     setDiagnosticsTab(tabName);
     logEvent("dashboard_section_opened", { sectionName: `diagnostics_${tabName}` });
-  };
-
-  const toggleWeekly = () => {
-    setWeeklyOpen((open) => !open);
-    logEvent("dashboard_section_opened", { sectionName: "weekly" });
-  };
-
-  const toggleDiagnostics = () => {
-    setDiagnosticsOpen((open) => !open);
-    logEvent("dashboard_section_opened", { sectionName: "advanced_diagnostics" });
   };
 
   if (welcomeCheck === "needs") {
