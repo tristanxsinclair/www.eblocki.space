@@ -627,7 +627,10 @@ export default function Proof() {
         ) : (
           <header className="min-w-0">
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Court of Evidence</span>
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Receipts, scored.</h1>
+            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Submit Proof</h1>
+            <p className="mt-1 text-sm text-muted-foreground break-words">
+              One measurable artifact. Standard before submission.
+            </p>
           </header>
         )}
 
