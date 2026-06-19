@@ -917,6 +917,13 @@ export default function Proof() {
               </div>
             )}
 
+            {content.trim().length >= 12 && (
+              <StudyVerdictHint
+                classification={liveStudyClassification}
+                label="Fake study detector"
+              />
+            )}
+
             <div>
               <Label htmlFor="proof-content">Content</Label>
               <Textarea
