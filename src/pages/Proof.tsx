@@ -263,6 +263,17 @@ export default function Proof() {
 
   const hasStandardSelection = Boolean(artifactType || linkedContract || selectedModeId);
 
+  // Fake Study Detector v1 — deterministic classification of described study activity.
+  // Live (pre-submit) signal: updates as the student types.
+  const liveStudyClassification = useMemo(
+    () => classifyStudyActivity({ content, title, artifactType }),
+    [content, title, artifactType],
+  );
+  // Frozen (post-submit) classification of the artifact that produced the verdict.
+  const [submittedStudyClassification, setSubmittedStudyClassification] = useState<
+    ReturnType<typeof classifyStudyActivity> | null
+  >(null);
+
   const resetForm = () => {
     setTitle("");
     setContent("");
