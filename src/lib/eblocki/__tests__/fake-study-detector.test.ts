@@ -80,8 +80,8 @@ describe("classifyStudyActivity — fallback", () => {
   });
 
   it("null/undefined fields are safe", () => {
-    // @ts-expect-error — runtime safety check
-    expect(classifyStudyActivity({ content: null, title: undefined }).verdict).toBe("weak");
+    const unsafe = { content: null as unknown as string, title: undefined } as Parameters<typeof classifyStudyActivity>[0];
+    expect(classifyStudyActivity(unsafe).verdict).toBe("weak");
   });
 
   it("long generic action-verb content falls back to useful", () => {
