@@ -1167,9 +1167,9 @@ export default function Proof() {
             <Button
               onClick={submit}
               disabled={submitting || attachmentBusy || !artifactType.trim() || !content.trim() || !title.trim()}
-              className="w-full sm:w-auto"
+              className="w-full"
             >
-              {submitting ? "Filing..." : attachmentBusy ? "Processing attachment..." : "Score & File Proof Artifact"}
+              {submitting ? "Saving proof…" : attachmentBusy ? "Processing attachment…" : "Submit proof"}
             </Button>
           </div>
         </Card>
