@@ -690,24 +690,27 @@ export default function Proof() {
         )}
 
         {!firstProofMode && (
-        <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
-          <div className="flex items-start gap-3">
-            <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                Definitions
-              </span>
-              <p className="text-sm text-muted-foreground mt-1 break-words">
-                A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
-                A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
-              </p>
+        <MobileCollapse eyebrow="Definitions" label="Contract vs Artifact" trackId="proof_definitions">
+          <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
+            <div className="flex items-start gap-3">
+              <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                  Definitions
+                </span>
+                <p className="text-sm text-muted-foreground mt-1 break-words">
+                  A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
+                  A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
+                </p>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </MobileCollapse>
         )}
 
         {/* Strength tally */}
         {!firstProofMode && (
+        <MobileCollapse eyebrow="Stats" label="Strength tally & filter" trackId="proof_stats">
         <Card className="panel p-4 max-w-full overflow-hidden">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="grid grid-cols-4 gap-2 flex-1">
@@ -734,6 +737,7 @@ export default function Proof() {
             </div>
           </div>
         </Card>
+        </MobileCollapse>
         )}
 
         {/* Verdict card */}
