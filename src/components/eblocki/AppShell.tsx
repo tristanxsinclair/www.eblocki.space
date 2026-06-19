@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { LayoutDashboard, MessageSquare, Gavel, Settings, LogOut, Crosshair, Sparkles, Hexagon, Swords } from "lucide-react";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 import { LevelUpListener } from "./LevelUpListener";
+import { MobileBottomNav } from "./MobileBottomNav";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -22,14 +23,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen-safe flex flex-col md:flex-row w-full max-w-full overflow-x-hidden">
-      <aside className="md:w-56 md:min-h-screen border-b md:border-b-0 md:border-r border-border bg-card/40 flex md:flex-col safe-top safe-x md:safe-bottom w-full max-w-full min-w-0">
+      {/* Mobile brand bar — replaces the horizontal-scroll nav on small screens */}
+      <header className="md:hidden flex items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card/40 safe-top safe-x w-full max-w-full">
+        <Link to="/dashboard" className="flex items-center gap-2 native-tap min-w-0">
+          <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground shrink-0">
+            <Crosshair className="h-4 w-4" />
+          </div>
+          <span className="font-mono text-sm tracking-[0.2em] truncate">EBLOCKI</span>
+        </Link>
+      </header>
+
+      {/* Desktop / tablet sidebar — unchanged behaviour, now hidden on mobile */}
+      <aside className="hidden md:flex md:w-56 md:min-h-screen border-r border-border bg-card/40 md:flex-col safe-x md:safe-bottom max-w-full min-w-0">
         <Link to="/dashboard" className="flex items-center gap-2 px-4 py-4 border-b border-border md:w-full native-tap">
           <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground">
             <Crosshair className="h-4 w-4" />
           </div>
           <span className="font-mono text-sm tracking-[0.2em]">EBLOCKI</span>
         </Link>
-        <nav className="flex-1 flex md:flex-col gap-0.5 p-2 overflow-x-auto min-w-0 max-w-full" style={{ WebkitOverflowScrolling: "touch" }}>
+        <nav className="flex-1 flex md:flex-col gap-0.5 p-2 min-w-0 max-w-full">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
@@ -58,7 +70,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0 w-full max-w-full overflow-x-hidden" id="main">{children}</main>
+      <main className="flex-1 min-w-0 w-full max-w-full overflow-x-hidden pb-24 md:pb-0" id="main">{children}</main>
+      <MobileBottomNav />
       <LevelUpListener />
     </div>
   );
