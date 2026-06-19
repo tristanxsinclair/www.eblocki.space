@@ -359,10 +359,10 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
           </Link>
         </div>
       </div>
-      <div className="mt-4 hidden md:grid md:grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
         <CommandSignal icon={<Target />} label="Proof required" value={view.commandSummary.proofRequired} />
-        <CommandSignal icon={<ShieldAlert />} label="Highest risk" value={view.commandSummary.highestRisk} />
-        <CommandSignal icon={<Radar />} label="Future path" value={`${view.futureSummary.primaryPath.replace(/_/g, " ")} - ${view.futureSummary.confidenceLevel}`} />
+        <CommandSignal icon={<ShieldAlert />} label="Risk if ignored" value={view.commandSummary.highestRisk} />
+        <CommandSignal icon={<Gavel />} label="Latest verdict" value={view.commandLayer.latestCourtSignal} />
       </div>
     </Card>
   );
