@@ -676,21 +676,15 @@ export default function Proof() {
         ) : (
         <Card className="panel p-4 border-primary/30 max-w-full overflow-hidden">
           <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-            Today’s one move
+            What counts as proof?
           </span>
-          <h2 className="text-lg font-semibold mt-1 break-words">
-            Submit one measurable artifact from today.
-          </h2>
           <p className="text-sm text-muted-foreground mt-1 break-words">
-            One real output beats a day of intention. Examples:
+            One measurable artifact from today. No artifact, no claim. Examples:
           </p>
-          <ul className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+          <ul className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-3">
             <li>• one paragraph written</li>
-            <li>• one study answer drafted</li>
-            <li>• one sales insight captured</li>
-            <li>• one training reflection</li>
-            <li>• one shipped app change</li>
-            <li>• one closed life-admin loop</li>
+            <li>• one shipped change</li>
+            <li>• one closed loop</li>
           </ul>
         </Card>
         )}
