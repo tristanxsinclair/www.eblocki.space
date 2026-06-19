@@ -23,6 +23,7 @@ import { Seo } from "@/components/Seo";
 import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
 import { extractNextUpgrade } from "@/lib/eblocki/next-upgrade-extract";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
+import { ChevronDown } from "lucide-react";
 import {
   FIRST_PROOF_COPY,
   FIRST_PROOF_EXAMPLES,
