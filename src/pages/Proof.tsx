@@ -803,7 +803,7 @@ export default function Proof() {
                 size="sm"
                 variant="outline"
                 className="w-full sm:w-auto"
-                onClick={() => { setVerdict(null); setDetailOpen(false); }}
+                onClick={() => { setVerdict(null); setSubmittedStudyClassification(null); setDetailOpen(false); }}
               >
                 Submit another proof
               </Button>
