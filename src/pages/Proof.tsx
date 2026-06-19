@@ -198,6 +198,7 @@ export default function Proof() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [pressureFlag, setPressureFlag] = useState(false);
   const [transferFlag, setTransferFlag] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeModes = useMemo(
