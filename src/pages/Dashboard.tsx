@@ -241,102 +241,42 @@ export default function Dashboard() {
 
         {allArtifacts.length > 0 && (
         <>
-        <div className="grid lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-4 items-start min-w-0">
-          <section className="space-y-3 min-w-0">
-            <SectionHeader eyebrow="Zone 2" title="Forecast" detail={view.futureSummary.status} />
-            <MobileCollapse
-              eyebrow="Zone 2"
-              label="Open forecast map, calibration & intel"
-              trackId="forecast_tabs"
-              onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "forecast_tabs" })}
-            >
-            <Tabs value={futureTab} onValueChange={openFutureSection} className="space-y-3">
-              <TabsList className="grid w-full grid-cols-3 h-auto bg-card/60 border border-border p-1">
-                <TabsTrigger value="forecast" className="text-xs">Map</TabsTrigger>
-                <TabsTrigger value="calibration" className="text-xs">Calibration</TabsTrigger>
-                <TabsTrigger value="intelligence" className="text-xs">Intel</TabsTrigger>
-              </TabsList>
-              <TabsContent value="forecast" className="space-y-3">
-                {temporalResult ? <TemporalMap result={temporalResult} /> : <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />}
-                <Card className="panel p-4 border-border/80 bg-card/50">
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                    <MetricCell label="Power" value={`${view.futureSummary.futurePowerScore}/100`} />
-                    <MetricCell label="Path" value={view.futureSummary.primaryPath.replace(/_/g, " ")} />
-                    <MetricCell label="Risk" value={view.futureSummary.riskKind} />
-                    <MetricCell label="Confidence" value={view.futureSummary.confidenceLevel} />
-                  </div>
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    <span className="text-foreground">Temporal command:</span> {view.futureSummary.temporalCommand}
-                  </p>
-                </Card>
-              </TabsContent>
-              <TabsContent value="calibration" className="space-y-3">
-                <TemporalFeedbackPanel />
-                <button
-                  type="button"
-                  onClick={toggleDiagnostics}
-                  className="w-full rounded-sm border border-border bg-card/50 px-4 py-3 text-left transition-colors hover:border-primary/40"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Advanced</div>
-                      <div className="mt-1 text-sm text-foreground">Model health and loop diagnostics</div>
-                    </div>
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${diagnosticsOpen ? "rotate-180" : ""}`} />
-                  </div>
-                </button>
-                {diagnosticsOpen && <TemporalModelAuditPanel />}
-              </TabsContent>
-              <TabsContent value="intelligence" className="space-y-3">
-                <TemporalIntelligencePanel />
-                <InterventionCard state={(currentState as BehaviouralState) ?? state} />
-              </TabsContent>
-            </Tabs>
-            </MobileCollapse>
-          </section>
+        <EvidenceCommandPanel
+          view={view}
+          pending={pending}
+          recent={recent}
+          topPending={topPending}
+          latestArtifact={latestArtifact}
+        />
 
-          <EvidenceCommandPanel
-            view={view}
-            pending={pending}
-            recent={recent}
-            topPending={topPending}
-            latestArtifact={latestArtifact}
-          />
-        </div>
-
-        <section className="space-y-3 min-w-0">
-          <SectionHeader eyebrow="Zone 4" title="Product match" detail="trust-gated" />
-          <MobileCollapse
-            eyebrow="Zone 4"
-            label="View product match"
-            trackId="product_match"
-            onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "product_match" })}
-          >
-            <div className="space-y-3">
-              <ProductMatchPanel
-                artifacts={allArtifacts}
-                temporal={temporalResult}
-                accessLevel="free"
-                operatingProfile={{
-                  primaryDomain: activeDomains[0] ?? null,
-                  recommendationsAllowed: true,
-                  trustPreference: "neutral",
-                }}
-              />
-              <InterestSignalCard />
-            </div>
-          </MobileCollapse>
-        </section>
-
-        <section className="space-y-3 min-w-0">
-          <SectionHeader eyebrow="Zone 5" title="Check-in & identity" />
-          <MobileCollapse
-            eyebrow="Zone 5"
-            label="Quick check-in & identity signal"
-            trackId="check_in_identity"
-            onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "check_in_identity" })}
-          >
-            <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4 items-start min-w-0">
+        <DashboardForecastTabs
+          value={diagnosticsTab}
+          onValueChange={openDiagnosticsTab}
+          forecastSlot={
+            <>
+              {temporalResult ? <TemporalMap result={temporalResult} /> : <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />}
+              <Card className="panel p-4 border-border/80 bg-card/50">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                  <MetricCell label="Power" value={`${view.futureSummary.futurePowerScore}/100`} />
+                  <MetricCell label="Path" value={view.futureSummary.primaryPath.replace(/_/g, " ")} />
+                  <MetricCell label="Risk" value={view.futureSummary.riskKind} />
+                  <MetricCell label="Confidence" value={view.futureSummary.confidenceLevel} />
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  <span className="text-foreground">Temporal command:</span> {view.futureSummary.temporalCommand}
+                </p>
+              </Card>
+              <TemporalFeedbackPanel />
+              <InterventionCard state={(currentState as BehaviouralState) ?? state} />
+            </>
+          }
+          evidenceSlot={
+            <>
+              {user && <IdentityLedger userId={user.id} limit={5} />}
+              <div className="grid lg:grid-cols-2 gap-4">
+                <MomentumPanel />
+                <WeeklyRetro />
+              </div>
               <QuickCheckInCard
                 quick={quick}
                 setQuick={setQuick}
@@ -360,31 +300,28 @@ export default function Dashboard() {
                   <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
                 </div>
               </Card>
-            </div>
-          </MobileCollapse>
-        </section>
-
-        <section className="space-y-3">
-          <button
-            type="button"
-            onClick={toggleWeekly}
-            className="w-full rounded-sm border border-border bg-card/50 px-4 py-3 text-left transition-colors hover:border-primary/40"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Zone 3 // Weekly</div>
-                <div className="mt-1 text-sm text-foreground">Momentum, retro, and domain detail</div>
+            </>
+          }
+          auditSlot={
+            <>
+              <TemporalIntelligencePanel />
+              <TemporalModelAuditPanel />
+              <div className="space-y-3">
+                <ProductMatchPanel
+                  artifacts={allArtifacts}
+                  temporal={temporalResult}
+                  accessLevel="free"
+                  operatingProfile={{
+                    primaryDomain: activeDomains[0] ?? null,
+                    recommendationsAllowed: true,
+                    trustPreference: "neutral",
+                  }}
+                />
+                <InterestSignalCard />
               </div>
-              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${weeklyOpen ? "rotate-180" : ""}`} />
-            </div>
-          </button>
-          {weeklyOpen && (
-            <div className="grid lg:grid-cols-2 gap-4">
-              <MomentumPanel />
-              <WeeklyRetro />
-            </div>
-          )}
-        </section>
+            </>
+          }
+        />
         </>
         )}
       </div>
