@@ -36,6 +36,8 @@ import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
 import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 import { InterestSignalCard } from "@/components/eblocki/InterestSignalCard";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
+import { DashboardForecastTabs } from "@/components/eblocki/DashboardForecastTabs";
+import { IdentityLedger } from "@/components/eblocki/IdentityLedger";
 import { computeTemporal, type TemporalResult } from "@/lib/eblocki/temporal-engine";
 import { buildDashboardViewModel } from "@/lib/eblocki/dashboard-view-model";
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
