@@ -795,6 +795,14 @@ export default function Proof() {
               </div>
             )}
             <VerdictFeedback artifactId={verdict.artifactId} />
+            {submittedStudyClassification && (
+              <div className="mt-4">
+                <StudyVerdictHint
+                  classification={submittedStudyClassification}
+                  label="Fake study detector"
+                />
+              </div>
+            )}
             <div className="mt-4 flex flex-col sm:flex-row gap-2">
               <Link to="/dashboard" className="w-full sm:w-auto">
                 <Button size="sm" className="w-full sm:w-auto">Back to dashboard</Button>
