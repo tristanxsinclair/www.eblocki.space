@@ -23,6 +23,7 @@ import { Seo } from "@/components/Seo";
 import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
 import { extractNextUpgrade } from "@/lib/eblocki/next-upgrade-extract";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
+import { ChevronDown } from "lucide-react";
 import {
   FIRST_PROOF_COPY,
   FIRST_PROOF_EXAMPLES,
@@ -197,6 +198,7 @@ export default function Proof() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [pressureFlag, setPressureFlag] = useState(false);
   const [transferFlag, setTransferFlag] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeModes = useMemo(
@@ -626,7 +628,10 @@ export default function Proof() {
         ) : (
           <header className="min-w-0">
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Court of Evidence</span>
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Receipts, scored.</h1>
+            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Submit Proof</h1>
+            <p className="mt-1 text-sm text-muted-foreground break-words">
+              One measurable artifact. Standard before submission.
+            </p>
           </header>
         )}
 
@@ -672,44 +677,41 @@ export default function Proof() {
         ) : (
         <Card className="panel p-4 border-primary/30 max-w-full overflow-hidden">
           <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-            Today’s one move
+            What counts as proof?
           </span>
-          <h2 className="text-lg font-semibold mt-1 break-words">
-            Submit one measurable artifact from today.
-          </h2>
           <p className="text-sm text-muted-foreground mt-1 break-words">
-            One real output beats a day of intention. Examples:
+            One measurable artifact from today. No artifact, no claim. Examples:
           </p>
-          <ul className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+          <ul className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-3">
             <li>• one paragraph written</li>
-            <li>• one study answer drafted</li>
-            <li>• one sales insight captured</li>
-            <li>• one training reflection</li>
-            <li>• one shipped app change</li>
-            <li>• one closed life-admin loop</li>
+            <li>• one shipped change</li>
+            <li>• one closed loop</li>
           </ul>
         </Card>
         )}
 
         {!firstProofMode && (
-        <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
-          <div className="flex items-start gap-3">
-            <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                Definitions
-              </span>
-              <p className="text-sm text-muted-foreground mt-1 break-words">
-                A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
-                A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
-              </p>
+        <MobileCollapse eyebrow="Definitions" label="Contract vs Artifact" trackId="proof_definitions">
+          <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
+            <div className="flex items-start gap-3">
+              <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                  Definitions
+                </span>
+                <p className="text-sm text-muted-foreground mt-1 break-words">
+                  A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
+                  A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
+                </p>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </MobileCollapse>
         )}
 
         {/* Strength tally */}
         {!firstProofMode && (
+        <MobileCollapse eyebrow="Stats" label="Strength tally & filter" trackId="proof_stats">
         <Card className="panel p-4 max-w-full overflow-hidden">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="grid grid-cols-4 gap-2 flex-1">
@@ -736,6 +738,7 @@ export default function Proof() {
             </div>
           </div>
         </Card>
+        </MobileCollapse>
         )}
 
         {/* Verdict card */}
@@ -772,9 +775,18 @@ export default function Proof() {
               </div>
             )}
             <VerdictFeedback artifactId={verdict.artifactId} />
-            <div className="mt-4 flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setVerdict(null)}>Submit another</Button>
-              <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
+            <div className="mt-4 flex flex-col sm:flex-row gap-2">
+              <Link to="/dashboard" className="w-full sm:w-auto">
+                <Button size="sm" className="w-full sm:w-auto">Back to dashboard</Button>
+              </Link>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => { setVerdict(null); setDetailOpen(false); }}
+              >
+                Submit another proof
+              </Button>
             </div>
           </Card>
         )}
@@ -888,6 +900,23 @@ export default function Proof() {
               />
             </div>
 
+            <button
+              type="button"
+              onClick={() => setDetailOpen((open) => !open)}
+              aria-expanded={detailOpen}
+              className="w-full min-h-[44px] rounded-sm border border-border bg-card/40 px-3 py-2 text-left transition-colors hover:border-primary/40 flex items-center justify-between gap-3"
+            >
+              <div className="min-w-0">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional</div>
+                <div className="text-sm text-foreground">
+                  Add detail — reflection, next upgrade, XP flags, attachment
+                </div>
+              </div>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${detailOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            <div className={`${detailOpen || reflection || nextUpgrade || pressureFlag || transferFlag || attachment ? "grid" : "hidden"} gap-3`}>
             <div>
               <Label htmlFor="proof-reflection">Reflection</Label>
               <Textarea
@@ -1124,6 +1153,7 @@ export default function Proof() {
                 </div>
               )}
             </div>
+            </div>
 
             {selectedMode && (
               <div className="rounded-sm border border-border p-3 text-xs text-muted-foreground">
@@ -1137,9 +1167,9 @@ export default function Proof() {
             <Button
               onClick={submit}
               disabled={submitting || attachmentBusy || !artifactType.trim() || !content.trim() || !title.trim()}
-              className="w-full sm:w-auto"
+              className="w-full"
             >
-              {submitting ? "Filing..." : attachmentBusy ? "Processing attachment..." : "Score & File Proof Artifact"}
+              {submitting ? "Saving proof…" : attachmentBusy ? "Processing attachment…" : "Submit proof"}
             </Button>
           </div>
         </Card>
