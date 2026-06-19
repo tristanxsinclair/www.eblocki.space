@@ -891,6 +891,23 @@ export default function Proof() {
               />
             </div>
 
+            <button
+              type="button"
+              onClick={() => setDetailOpen((open) => !open)}
+              aria-expanded={detailOpen}
+              className="w-full min-h-[44px] rounded-sm border border-border bg-card/40 px-3 py-2 text-left transition-colors hover:border-primary/40 flex items-center justify-between gap-3"
+            >
+              <div className="min-w-0">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional</div>
+                <div className="text-sm text-foreground">
+                  Add detail — reflection, next upgrade, XP flags, attachment
+                </div>
+              </div>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${detailOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            <div className={`${detailOpen || reflection || nextUpgrade || pressureFlag || transferFlag || attachment ? "grid" : "hidden"} gap-3`}>
             <div>
               <Label htmlFor="proof-reflection">Reflection</Label>
               <Textarea
@@ -1126,6 +1143,7 @@ export default function Proof() {
                   </Button>
                 </div>
               )}
+            </div>
             </div>
 
             {selectedMode && (
