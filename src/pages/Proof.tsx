@@ -775,9 +775,18 @@ export default function Proof() {
               </div>
             )}
             <VerdictFeedback artifactId={verdict.artifactId} />
-            <div className="mt-4 flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setVerdict(null)}>Submit another</Button>
-              <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
+            <div className="mt-4 flex flex-col sm:flex-row gap-2">
+              <Link to="/dashboard" className="w-full sm:w-auto">
+                <Button size="sm" className="w-full sm:w-auto">Back to dashboard</Button>
+              </Link>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => { setVerdict(null); setDetailOpen(false); }}
+              >
+                Submit another proof
+              </Button>
             </div>
           </Card>
         )}
