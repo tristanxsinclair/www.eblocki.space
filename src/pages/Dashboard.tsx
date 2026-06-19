@@ -60,6 +60,7 @@ export default function Dashboard() {
   const [futureTab, setFutureTab] = useState("forecast");
   const [weeklyOpen, setWeeklyOpen] = useState(false);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const [diagnosticsTab, setDiagnosticsTab] = useState("forecast");
   const [queryFailed, setQueryFailed] = useState(false);
 
   const todayISO = new Date().toISOString().slice(0, 10);
@@ -155,6 +156,11 @@ export default function Dashboard() {
   const openFutureSection = (sectionName: string) => {
     setFutureTab(sectionName);
     logEvent("dashboard_section_opened", { sectionName });
+  };
+
+  const openDiagnosticsTab = (tabName: string) => {
+    setDiagnosticsTab(tabName);
+    logEvent("dashboard_section_opened", { sectionName: `diagnostics_${tabName}` });
   };
 
   const toggleWeekly = () => {
