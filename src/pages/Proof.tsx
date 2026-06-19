@@ -461,6 +461,13 @@ export default function Proof() {
         attachmentName: attachment?.name ?? null,
       });
 
+      // Freeze the Fake Study Detector classification for this submission so the
+      // post-submit hint reflects the artifact the user actually shipped, not
+      // whatever they type next.
+      setSubmittedStudyClassification(
+        classifyStudyActivity({ content, title, artifactType }),
+      );
+
       toast.success(`Verdict: ${score.qualityScore}/10 - ${score.evidenceStrength}`);
       if (firstProofMode) {
         setFirstProofSubmitted(true);
