@@ -37,3 +37,9 @@ Append a short "Security remediation pass — closed" footer pointing to `.lovab
 - Artifact path: `.lovable/security-scan-result.md` (chosen because `.lovable/` is already the release-gate folder containing `plan.md`).
 - Wording rule enforced everywhere: "no active tool-reported findings remain after the latest remediation pass" — never "Eblocki is secure" or "no security issues".
 - If the fresh scan surfaces a NEW finding not covered by the prior pass, stop and report it instead of marking fixed.
+
+## Security remediation pass — closed
+- Scan artifact: `.lovable/security-scan-result.md` (scanned 2026-06-19T05:42:20Z; 0 active findings, 2 ignored as accepted posture: `pg_net` in `public`, `has_role` executable by `authenticated`).
+- `@security-memory` updated with the tightened wording rule and accepted-posture documentation.
+- Tests: 174/174 passing.
+- Claim policy: only "no active tool-reported findings remain after the latest remediation pass" — never "Eblocki is secure".
