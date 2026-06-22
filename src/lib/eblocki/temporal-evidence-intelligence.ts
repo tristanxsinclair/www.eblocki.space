@@ -183,28 +183,6 @@ function safeSignals(
   return result;
 }
 
-function qualityFromStrength(strength: string | null): number | null {
-  switch (normaliseToken(strength ?? "")) {
-    case "elite":
-    case "accepted_elite":
-      return 10;
-    case "strong":
-    case "accepted_strong":
-      return 8;
-    case "moderate":
-    case "useful":
-    case "accepted":
-      return 5;
-    case "weak":
-    case "minimum":
-    case "shallow":
-    case "rejected":
-      return 2;
-    default:
-      return null;
-  }
-}
-
 function levelFromRecord(record: UnknownRecord | null): string | null {
   if (!record) return null;
   if (readBoolean(record, ["transfer_flag", "transferFlag"])) return "transfer";
@@ -268,7 +246,7 @@ function proofSignals(input: TemporalForecastInput): ProofSignal[] {
     const quality =
       rawQuality !== null && rawQuality >= 0 && rawQuality <= 10
         ? rawQuality
-        : qualityFromStrength(strength);
+        : null;
     const createdAt = readString(record, [
       "created_at",
       "createdAt",
