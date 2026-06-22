@@ -30,18 +30,24 @@ import { TemporalFeedbackPanel } from "@/components/eblocki/TemporalFeedbackPane
 import { TemporalIntelligencePanel } from "@/components/eblocki/TemporalIntelligencePanel";
 import { TemporalModelAuditPanel } from "@/components/eblocki/TemporalModelAuditPanel";
 import { TemporalMap } from "@/components/eblocki/TemporalMap";
+import { TemporalEvidenceIntelligencePanel } from "@/components/eblocki/TemporalEvidenceIntelligencePanel";
 import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
 import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 import { InterestSignalCard } from "@/components/eblocki/InterestSignalCard";
 import { DashboardForecastTabs } from "@/components/eblocki/DashboardForecastTabs";
 import { IdentityLedger } from "@/components/eblocki/IdentityLedger";
 import { computeTemporal, type TemporalResult } from "@/lib/eblocki/temporal-engine";
+import {
+  buildTemporalForecast,
+  type TemporalForecast,
+} from "@/lib/eblocki/temporal-evidence-intelligence";
 import { buildDashboardViewModel } from "@/lib/eblocki/dashboard-view-model";
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
   const [today, setToday] = useState<any>(null);
   const [pending, setPending] = useState<any[]>([]);
@@ -130,6 +136,31 @@ export default function Dashboard() {
     }
   }, [allArtifacts, verdicts, ledger, activeDomains, currentState]);
 
+  const temporalEvidenceForecast = useMemo<TemporalForecast | null>(() => {
+    if (!userId) return null;
+    const stateTrend =
+      typeof currentState === "string" && currentState ? [currentState] : [];
+
+    try {
+      return buildTemporalForecast({
+        userId,
+        horizon: "30d",
+        proofs: allArtifacts,
+        courtVerdicts: verdicts,
+        stateTrend,
+        activeDomains,
+      });
+    } catch {
+      return buildTemporalForecast({
+        userId,
+        horizon: "30d",
+        proofs: [],
+        stateTrend,
+        activeDomains,
+      });
+    }
+  }, [userId, allArtifacts, verdicts, currentState, activeDomains]);
+
   const view = useMemo(() => buildDashboardViewModel({
     today,
     pending,
@@ -215,6 +246,10 @@ export default function Dashboard() {
             </div>
           </Card>
         )}
+
+        {temporalEvidenceForecast ? (
+          <TemporalEvidenceIntelligencePanel forecast={temporalEvidenceForecast} />
+        ) : null}
 
         <ProofWeekPanel artifactDates={allArtifacts.map((a: any) => a.created_at).filter(Boolean)} />
 
