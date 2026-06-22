@@ -50,6 +50,19 @@ describe("Temporal Evidence Intelligence Phase 1", () => {
     expect(forecast.disconfirmingProof[0].proofThatWouldDisproveIt).toMatch(/measurable proof artifact/i);
   });
 
+  it("keeps average proof quality null when only non-numeric strength exists", () => {
+    const snapshot = buildTemporalEvidenceSnapshot(input({
+      proofs: [{
+        domain: "law",
+        evidence_strength: "strong",
+        proof_tier: 3,
+        created_at: recentAt,
+      }],
+    }));
+
+    expect(snapshot.averageProofQuality).toBeNull();
+  });
+
   it("detects a shallow proof loop and requires a depth upgrade", () => {
     const scenario = input({
       proofs: [
