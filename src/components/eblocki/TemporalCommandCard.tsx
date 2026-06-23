@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { computeTemporal, type TemporalResult } from "@/lib/eblocki/temporal-engine";
 import { generateFutureNarrative } from "@/lib/eblocki/future-narrative";
 import { TemporalMap } from "./TemporalMap";
+import { buildTemporalProofUrl } from "@/lib/eblocki/temporal-proof-link";
 
 export function TemporalCommandCard() {
   const { user } = useAuth();
@@ -70,6 +71,18 @@ export function TemporalCommandCard() {
 
   const narrative = useMemo(() => (result ? generateFutureNarrative(result) : null), [result]);
 
+  const forecastProofUrl = useMemo(() => {
+    if (!result) return "/proof";
+    return buildTemporalProofUrl({
+      domain: result.intervention.domain,
+      proof: result.intervention.artifactRequired || result.intervention.command,
+      reason: result.risk.primaryFailureMode,
+      timebox: result.intervention.timeboxMinutes
+        ? `${Math.max(1, Math.round(result.intervention.timeboxMinutes / 60))}h`
+        : "24h",
+    });
+  }, [result]);
+
   if (!result) return null;
 
   if (!result.hasEvidence) {
@@ -86,7 +99,7 @@ export function TemporalCommandCard() {
               {narrative?.proofThatChangesPath}
             </p>
           </div>
-          <Link to="/proof"><Button size="sm">Submit Proof</Button></Link>
+          <Link to={forecastProofUrl}><Button size="sm">Submit Proof</Button></Link>
         </div>
       </Card>
     );
@@ -135,7 +148,9 @@ export function TemporalCommandCard() {
           <Button size="sm" variant="outline" onClick={() => setExpanded((v) => !v)}>
             {expanded ? "Hide details" : "Show trajectories"}
           </Button>
-          <Link to="/proof"><Button size="sm">Execute Proof <ArrowRight className="h-3 w-3 ml-1" /></Button></Link>
+          <Link to={forecastProofUrl}>
+            <Button size="sm">Submit proof that changes this path <ArrowRight className="h-3 w-3 ml-1" /></Button>
+          </Link>
         </div>
       </div>
 

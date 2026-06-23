@@ -31,6 +31,8 @@ import {
   FIRST_PROOF_EXAMPLES,
   isFirstProofMode,
 } from "@/lib/eblocki/first-proof";
+import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
+import { Radar } from "lucide-react";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -175,6 +177,7 @@ export default function Proof() {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const firstProofMode = isFirstProofMode(params);
+  const temporalBrief = useMemo(() => parseTemporalProofParams(params), [params]);
   const [firstProofSubmitted, setFirstProofSubmitted] = useState(false);
 
   const [pending, setPending] = useState<any[]>([]);
@@ -232,6 +235,26 @@ export default function Proof() {
     const c = params.get("contract");
     if (c) setLinkedContractId(c);
   }, [params]);
+
+  // Honour ?source=temporal&domain=... — only preselect the domain when it
+  // safely matches an active user mode AND the user has not already chosen
+  // one. Never overwrite user-entered text fields.
+  const temporalDomainMatch = useMemo(() => {
+    if (!temporalBrief.isTemporal || !temporalBrief.domain) return null;
+    const target = temporalBrief.domain.trim().toLowerCase();
+    if (!target) return null;
+    return (
+      activeModes.find((m) => (m.mode_id ?? "").toLowerCase() === target) ??
+      activeModes.find((m) => (m.mode_id ?? "").toLowerCase().startsWith(target)) ??
+      null
+    );
+  }, [temporalBrief, activeModes]);
+
+  useEffect(() => {
+    if (!temporalBrief.isTemporal) return;
+    if (selectedModeId) return;
+    if (temporalDomainMatch) setSelectedModeId(temporalDomainMatch.mode_id);
+  }, [temporalBrief.isTemporal, temporalDomainMatch, selectedModeId]);
 
   const selectedMode = useMemo(
     () => activeModes.find((m) => m.mode_id === selectedModeId) ?? null,
@@ -673,6 +696,70 @@ export default function Proof() {
                     </Button>
                   </Link>
                 </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {temporalBrief.isTemporal && !firstProofMode && (
+          <Card
+            className="panel p-4 border-primary/40 bg-primary/5 max-w-full overflow-hidden min-w-0"
+            data-testid="temporal-proof-brief"
+          >
+            <div className="flex items-start gap-3 min-w-0">
+              <Radar className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                  Forecast-linked proof
+                </div>
+                <dl className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-2">
+                  <div className="min-w-0">
+                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Domain
+                    </dt>
+                    <dd className="break-words text-foreground">
+                      {temporalBrief.domain ?? "—"}
+                      {temporalBrief.domain && !temporalDomainMatch && (
+                        <span className="ml-1 text-[10px] text-muted-foreground">
+                          (guidance only — no matching active mode)
+                        </span>
+                      )}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Expected level
+                    </dt>
+                    <dd className="break-words text-foreground">
+                      {temporalBrief.level.replace(/_/g, " ")}
+                    </dd>
+                  </div>
+                  <div className="min-w-0 sm:col-span-2">
+                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Proof required
+                    </dt>
+                    <dd className="break-words text-foreground">
+                      {temporalBrief.proof ?? "—"}
+                    </dd>
+                  </div>
+                  <div className="min-w-0 sm:col-span-2">
+                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Reason
+                    </dt>
+                    <dd className="break-words text-foreground">
+                      {temporalBrief.reason ? temporalBrief.reason.replace(/_/g, " ") : "—"}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Timebox
+                    </dt>
+                    <dd className="break-words text-foreground">{temporalBrief.timebox}</dd>
+                  </div>
+                </dl>
+                <p className="text-[11px] text-muted-foreground break-words">
+                  Submit one measurable artifact below. This brief is guidance — it never overwrites what you type.
+                </p>
               </div>
             </div>
           </Card>
