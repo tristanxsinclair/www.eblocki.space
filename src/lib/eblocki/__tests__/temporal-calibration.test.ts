@@ -107,12 +107,14 @@ describe("calibration", () => {
   });
 
   it("legacy rows do not crash", () => {
-    const r = computeTemporal({ now, artifacts: [{ created_at: daysAgo(1) }] as any });
+    const legacy = (createdAt: string): ProofArtifactLike =>
+      ({ created_at: createdAt }) as unknown as ProofArtifactLike;
+    const r = computeTemporal({ now, artifacts: [legacy(daysAgo(1))] });
     const snap = buildTemporalSnapshot(r);
     expect(() =>
       calibrateForecast(snap, {
         windowHours: 24,
-        artifactsAfter: [{ created_at: daysAgo(0) } as any],
+        artifactsAfter: [legacy(daysAgo(0))],
         verdictsAfter: [], ledgerAfter: [],
       }),
     ).not.toThrow();

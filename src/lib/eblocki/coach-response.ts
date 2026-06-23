@@ -61,14 +61,18 @@ const DEFAULT_PROOF_CONTRACT: ProofContract = {
 };
 
 export function normaliseCoachResponse(raw: unknown): NormalisedCoachResponse {
-  const data = typeof raw === "object" && raw !== null ? (raw as any) : {};
-  const proofContract = typeof data.proofContract === "object" && data.proofContract !== null ? data.proofContract : {};
+  const data: Record<string, unknown> =
+    typeof raw === "object" && raw !== null ? (raw as Record<string, unknown>) : {};
+  const pcRaw = data.proofContract;
+  const proofContract: Record<string, unknown> =
+    typeof pcRaw === "object" && pcRaw !== null ? (pcRaw as Record<string, unknown>) : {};
+  const debug = data.debug;
 
   return {
     success: typeof data.success === "boolean" ? data.success : true,
     mode: String(data.mode || "GENERAL_EXECUTION"),
     hybrid: data.hybrid ? String(data.hybrid) : null,
-    state: data.state ?? null,
+    state: ((data.state as EblockiState) ?? null),
     response: String(data.response || data.assistantOutput || data.output || "Coach response generated, but no response text was returned."),
     proofContract: {
       shouldCreate: typeof proofContract.shouldCreate === "boolean" ? proofContract.shouldCreate : false,
@@ -77,14 +81,17 @@ export function normaliseCoachResponse(raw: unknown): NormalisedCoachResponse {
       title: String(proofContract.title || DEFAULT_PROOF_CONTRACT.title),
       requiredArtifact: String(proofContract.requiredArtifact || proofContract.required_artifact || DEFAULT_PROOF_CONTRACT.requiredArtifact),
       evidenceStandard: String(proofContract.evidenceStandard || proofContract.evidence_standard || DEFAULT_PROOF_CONTRACT.evidenceStandard),
-      dueDate: proofContract.dueDate || proofContract.due_date || null,
+      dueDate: ((proofContract.dueDate as string | null) || (proofContract.due_date as string | null) || null),
       seriousnessScore: Number(proofContract.seriousnessScore || proofContract.seriousness_score || DEFAULT_PROOF_CONTRACT.seriousnessScore),
       reason: String(proofContract.reason || DEFAULT_PROOF_CONTRACT.reason),
     },
     proofQuestion: String(data.proofQuestion || "What proof artifact will confirm completion?"),
-    interactionId: data.interactionId || data.interaction_id || null,
-    commitmentId: data.commitmentId || data.commitment_id || null,
-    usedFallback: !!(data.debug && data.debug.usedFallback),
+    interactionId: ((data.interactionId as string | null) || (data.interaction_id as string | null) || null),
+    commitmentId: ((data.commitmentId as string | null) || (data.commitment_id as string | null) || null),
+    usedFallback:
+      typeof debug === "object" && debug !== null
+        ? !!(debug as Record<string, unknown>).usedFallback
+        : false,
   };
 }
 
