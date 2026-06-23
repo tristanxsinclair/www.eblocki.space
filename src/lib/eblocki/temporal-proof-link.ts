@@ -46,7 +46,14 @@ export interface ParsedTemporalProofBrief {
 
 function clean(value: string | null | undefined, max: number): string | null {
   if (typeof value !== "string") return null;
-  const trimmed = value.replace(/[\u0000-\u001F\u007F]/g, "").trim();
+  // Strip ASCII control characters (0x00-0x1F and 0x7F) without using a
+  // control-char regex (lint rule no-control-regex).
+  let stripped = "";
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code > 31 && code !== 127) stripped += value[i];
+  }
+  const trimmed = stripped.trim();
   if (!trimmed) return null;
   if (trimmed.length <= max) return trimmed;
   return trimmed.slice(0, Math.max(0, max - 1)).trimEnd() + "…";
