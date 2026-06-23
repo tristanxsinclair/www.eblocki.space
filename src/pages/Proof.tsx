@@ -701,6 +701,70 @@ export default function Proof() {
           </Card>
         )}
 
+        {temporalBrief.isTemporal && !firstProofMode && (
+          <Card
+            className="panel p-4 border-primary/40 bg-primary/5 max-w-full overflow-hidden min-w-0"
+            data-testid="temporal-proof-brief"
+          >
+            <div className="flex items-start gap-3 min-w-0">
+              <Radar className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                  Forecast-linked proof
+                </div>
+                <dl className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-2">
+                  <div className="min-w-0">
+                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Domain
+                    </dt>
+                    <dd className="break-words text-foreground">
+                      {temporalBrief.domain ?? "—"}
+                      {temporalBrief.domain && !temporalDomainMatch && (
+                        <span className="ml-1 text-[10px] text-muted-foreground">
+                          (guidance only — no matching active mode)
+                        </span>
+                      )}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Expected level
+                    </dt>
+                    <dd className="break-words text-foreground">
+                      {temporalBrief.level.replace(/_/g, " ")}
+                    </dd>
+                  </div>
+                  <div className="min-w-0 sm:col-span-2">
+                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Proof required
+                    </dt>
+                    <dd className="break-words text-foreground">
+                      {temporalBrief.proof ?? "—"}
+                    </dd>
+                  </div>
+                  <div className="min-w-0 sm:col-span-2">
+                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Reason
+                    </dt>
+                    <dd className="break-words text-foreground">
+                      {temporalBrief.reason ? temporalBrief.reason.replace(/_/g, " ") : "—"}
+                    </dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                      Timebox
+                    </dt>
+                    <dd className="break-words text-foreground">{temporalBrief.timebox}</dd>
+                  </div>
+                </dl>
+                <p className="text-[11px] text-muted-foreground break-words">
+                  Submit one measurable artifact below. This brief is guidance — it never overwrites what you type.
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {firstProofMode ? (
           <Card className="panel p-4 border-primary/30 max-w-full overflow-hidden">
             <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
