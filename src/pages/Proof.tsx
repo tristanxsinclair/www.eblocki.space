@@ -31,6 +31,8 @@ import {
   FIRST_PROOF_EXAMPLES,
   isFirstProofMode,
 } from "@/lib/eblocki/first-proof";
+import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
+import { Radar } from "lucide-react";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -175,6 +177,7 @@ export default function Proof() {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const firstProofMode = isFirstProofMode(params);
+  const temporalBrief = useMemo(() => parseTemporalProofParams(params), [params]);
   const [firstProofSubmitted, setFirstProofSubmitted] = useState(false);
 
   const [pending, setPending] = useState<any[]>([]);
@@ -232,6 +235,26 @@ export default function Proof() {
     const c = params.get("contract");
     if (c) setLinkedContractId(c);
   }, [params]);
+
+  // Honour ?source=temporal&domain=... — only preselect the domain when it
+  // safely matches an active user mode AND the user has not already chosen
+  // one. Never overwrite user-entered text fields.
+  const temporalDomainMatch = useMemo(() => {
+    if (!temporalBrief.isTemporal || !temporalBrief.domain) return null;
+    const target = temporalBrief.domain.trim().toLowerCase();
+    if (!target) return null;
+    return (
+      activeModes.find((m) => (m.mode_id ?? "").toLowerCase() === target) ??
+      activeModes.find((m) => (m.mode_id ?? "").toLowerCase().startsWith(target)) ??
+      null
+    );
+  }, [temporalBrief, activeModes]);
+
+  useEffect(() => {
+    if (!temporalBrief.isTemporal) return;
+    if (selectedModeId) return;
+    if (temporalDomainMatch) setSelectedModeId(temporalDomainMatch.mode_id);
+  }, [temporalBrief.isTemporal, temporalDomainMatch, selectedModeId]);
 
   const selectedMode = useMemo(
     () => activeModes.find((m) => m.mode_id === selectedModeId) ?? null,
