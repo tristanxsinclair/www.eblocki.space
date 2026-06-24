@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Radar, ArrowRight, ShieldAlert, Sparkles, Crosshair } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { computeTemporal, type TemporalResult } from "@/lib/eblocki/temporal-engine";
+import { type TemporalResult } from "@/lib/eblocki/temporal-engine";
 import { generateFutureNarrative } from "@/lib/eblocki/future-narrative";
 import { TemporalMap } from "./TemporalMap";
 import { buildTemporalProofUrl } from "@/lib/eblocki/temporal-proof-link";
@@ -14,64 +12,12 @@ import {
   type TemporalEvidenceExplanation,
 } from "@/lib/eblocki/temporal-evidence-explanation";
 
-export function TemporalCommandCard() {
-  const { user } = useAuth();
-  const [result, setResult] = useState<TemporalResult | null>(null);
-  const [expanded, setExpanded] = useState(false);
+export interface TemporalCommandCardProps {
+  result: TemporalResult | null;
+}
 
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      const [{ data: arts }, { data: verds }, { data: led }, { data: modes }, { data: dcs }] = await Promise.all([
-        supabase
-          .from("proof_artifacts")
-          .select("id,domain,quality_score,evidence_strength,transfer_flag,pressure_flag,proof_tier,created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(200),
-        supabase
-          .from("court_verdicts")
-          .select("verdict,created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(100),
-        supabase
-          .from("identity_ledger")
-          .select("kind,domain,created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(100),
-        supabase
-          .from("user_modes")
-          .select("mode_id")
-          .eq("user_id", user.id)
-          .eq("is_active", true),
-        supabase
-          .from("daily_control_sheets")
-          .select("state")
-          .eq("user_id", user.id)
-          .order("sheet_date", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-      if (cancelled) return;
-      try {
-        const r = computeTemporal({
-          artifacts: arts ?? [],
-          verdicts: verds ?? [],
-          ledger: led ?? [],
-          activeDomains: (modes ?? []).map((m: { mode_id: string }) => m.mode_id),
-          state: dcs?.state ?? null,
-        });
-        setResult(r);
-      } catch {
-        // Engine must never break the dashboard
-        setResult(null);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [user]);
+export function TemporalCommandCard({ result }: TemporalCommandCardProps) {
+  const [expanded, setExpanded] = useState(false);
 
   const narrative = useMemo(() => (result ? generateFutureNarrative(result) : null), [result]);
   const evidenceExplanation = useMemo(

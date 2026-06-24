@@ -29,7 +29,7 @@ import { InterventionCard } from "@/components/eblocki/InterventionCard";
 import { TemporalFeedbackPanel } from "@/components/eblocki/TemporalFeedbackPanel";
 import { TemporalIntelligencePanel } from "@/components/eblocki/TemporalIntelligencePanel";
 import { TemporalModelAuditPanel } from "@/components/eblocki/TemporalModelAuditPanel";
-import { TemporalMap } from "@/components/eblocki/TemporalMap";
+import { TemporalCommandCard } from "@/components/eblocki/TemporalCommandCard";
 import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
 import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 import { InterestSignalCard } from "@/components/eblocki/InterestSignalCard";
@@ -233,18 +233,11 @@ export default function Dashboard() {
           onValueChange={openDiagnosticsTab}
           forecastSlot={
             <>
-              {temporalResult ? <TemporalMap result={temporalResult} /> : <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />}
-              <Card className="panel p-4 border-border/80 bg-card/50">
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                  <MetricCell label="Power" value={`${view.futureSummary.futurePowerScore}/100`} />
-                  <MetricCell label="Path" value={view.futureSummary.primaryPath.replace(/_/g, " ")} />
-                  <MetricCell label="Risk" value={view.futureSummary.riskKind} />
-                  <MetricCell label="Confidence" value={view.futureSummary.confidenceLevel} />
-                </div>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  <span className="text-foreground">Temporal command:</span> {view.futureSummary.temporalCommand}
-                </p>
-              </Card>
+              {temporalResult ? (
+                <TemporalCommandCard result={temporalResult} />
+              ) : (
+                <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
+              )}
               <TemporalFeedbackPanel />
               <InterventionCard state={(currentState as BehaviouralState) ?? state} />
             </>
