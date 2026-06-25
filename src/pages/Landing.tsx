@@ -36,7 +36,7 @@ export default function Landing() {
     <div className="min-h-screen bg-background text-foreground">
       <Seo
         title="Eblocki — Stop Fake Productivity. Log Proof."
-        description="Eblocki helps students turn intention into proof, detect avoidance, and get the next action that actually counts. Join the 7-day Proof Week beta."
+        description="Eblocki helps you stop fake productivity by turning effort into proof. Submit one piece of proof, get a check, get your next command."
         path="/"
       />
       <header className="border-b border-border bg-background/95 backdrop-blur">
@@ -52,7 +52,7 @@ export default function Landing() {
               How it works
             </a>
             <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">Sign in</Link>
-            <Link to="/proof-week"><Button size="sm">Join Proof Week</Button></Link>
+            <Link to="/start-today"><Button size="sm">Start Today</Button></Link>
           </nav>
         </div>
       </header>
@@ -77,8 +77,8 @@ export default function Landing() {
                 <li><span className="text-foreground font-medium">4.</span> See if your work counted.</li>
               </ol>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/proof-week"><Button size="lg">Start Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
-                <Link to="/proof"><Button size="lg" variant="outline">Submit first proof</Button></Link>
+                <Link to="/start-today"><Button size="lg">Start Today<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+                <Link to="/proof"><Button size="lg" variant="outline">Submit Proof</Button></Link>
               </div>
               <p className="mt-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">
                 Free beta · No card required · Built for university students
@@ -199,11 +199,11 @@ export default function Landing() {
           <div className="container py-14 md:py-16">
             <div className="max-w-3xl">
               <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Start</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-4xl">Find out in 7 days if your study is real.</h2>
+              <h2 className="mt-2 text-2xl font-semibold md:text-4xl">Find out today if your work is real.</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                One command a day. One proof artifact. By day 7, Eblocki shows you whether your work produced real evidence — or just made you feel productive.
+                Submit one piece of proof. Eblocki checks whether it actually shows progress, warns you if the work looks fake or weak, and gives your next command.
               </p>
-              <Link to="/proof-week" className="mt-7 inline-flex"><Button size="lg">Start Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+              <Link to="/start-today" className="mt-7 inline-flex"><Button size="lg">Start Today<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
             </div>
           </div>
         </section>
