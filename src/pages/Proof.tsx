@@ -651,7 +651,7 @@ export default function Proof() {
   return (
     <AppShell>
       <Seo
-        title="Court of Evidence | EBLOCKI"
+        title="Proof Check | EBLOCKI"
         description="Submit proof artifacts, score evidence strength, and close pending Proof Contracts."
         path="/proof"
       />
@@ -670,7 +670,7 @@ export default function Proof() {
           </header>
         ) : (
           <header className="min-w-0">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Court of Evidence</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Check</span>
             <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Submit Proof</h1>
             <p className="mt-1 text-sm text-muted-foreground break-words">
               One measurable artifact. Standard before submission.
@@ -854,7 +854,7 @@ export default function Proof() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Court of Evidence - Verdict</span>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Check - Verdict</span>
               </div>
               <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
             </div>

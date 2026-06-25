@@ -253,7 +253,7 @@ export default function Modes() {
           </span>
           <h1 className="text-2xl md:text-4xl font-semibold">Your modes are the arenas where proof matters.</h1>
           <p className="text-sm md:text-base text-muted-foreground max-w-3xl">
-            Eblocki routes coaching, evidence, and commitment through the modes you choose. Every custom mode shapes the Court of Evidence.
+            Eblocki routes coaching, evidence, and commitment through the modes you choose. Every custom mode shapes the Proof Check.
           </p>
         </header>
 

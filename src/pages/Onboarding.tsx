@@ -450,7 +450,7 @@ export default function Onboarding() {
         {step === 5 && (
           <StepBlock
             kicker="Confirm"
-            title="Your Court of Evidence is ready."
+            title="Your Proof Check is ready."
             sub="These modes route your coach prompts before generic defaults."
           >
             <div className="space-y-3">

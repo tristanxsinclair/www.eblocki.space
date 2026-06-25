@@ -31,7 +31,6 @@ import { TemporalIntelligencePanel } from "@/components/eblocki/TemporalIntellig
 import { TemporalModelAuditPanel } from "@/components/eblocki/TemporalModelAuditPanel";
 import { TemporalCommandCard } from "@/components/eblocki/TemporalCommandCard";
 import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
-import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 import { InterestSignalCard } from "@/components/eblocki/InterestSignalCard";
 import { DashboardForecastTabs } from "@/components/eblocki/DashboardForecastTabs";
 import { IdentityLedger } from "@/components/eblocki/IdentityLedger";
@@ -216,8 +215,6 @@ export default function Dashboard() {
           </Card>
         )}
 
-        <ProofWeekPanel artifactDates={allArtifacts.map((a: any) => a.created_at).filter(Boolean)} />
-
         {allArtifacts.length > 0 && (
         <>
         <EvidenceCommandPanel
@@ -372,8 +369,8 @@ function EvidenceCommandPanel({
             {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open Coach to forge one."}
           </EvidenceBlock>
           <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3`}>
-            <EvidenceBlock icon={<Gavel />} label="Latest verdict" action="Court" href="/proof">
-              {latestArtifact ? `${latestArtifact.title} - ${latestArtifact.evidence_strength ?? "unscored"}` : "Court of Evidence is empty."}
+            <EvidenceBlock icon={<Gavel />} label="Latest verdict" action="Open" href="/proof">
+              {latestArtifact ? `${latestArtifact.title} - ${latestArtifact.evidence_strength ?? "unscored"}` : "No proof yet. Submit one piece of proof to activate Eblocki."}
             </EvidenceBlock>
             <EvidenceBlock icon={<CircleDot />} label="Domain signal" action="Modes" href="/modes">
               {view.evidenceSummary.strongestDomain
