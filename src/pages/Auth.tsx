@@ -85,7 +85,7 @@ export default function Auth() {
     <div className="min-h-screen grid-bg flex items-center justify-center p-6">
       <Seo
         title={showForgot ? "Reset password | EBLOCKI" : "Sign in | EBLOCKI"}
-        description="Sign in to your EBLOCKI behavioural performance OS — coach, control sheet, and Court of Evidence."
+        description="Sign in to your EBLOCKI behavioural performance OS — coach, control sheet, and Proof Check."
         path="/auth"
       />
       <div className="w-full max-w-sm">

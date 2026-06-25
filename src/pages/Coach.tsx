@@ -242,7 +242,7 @@ export default function Coach() {
       if (insertError) throw insertError;
       if (!data?.id) throw new Error("No commitment id returned.");
       setLocalCommitmentId(data.id);
-      toast.success("Committed to the Court of Evidence.");
+      toast.success("Committed to the Proof Check.");
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, "Failed to commit."));
     } finally {
@@ -441,7 +441,7 @@ export default function Coach() {
               <Card className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3 max-w-full overflow-hidden">
                 <div className="min-w-0">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Next step</span>
-                  <p className="text-sm mt-1 break-words">Contract saved. Submit the proof artifact in the Court of Evidence.</p>
+                  <p className="text-sm mt-1 break-words">Contract saved. Submit the proof artifact in the Proof Check.</p>
                 </div>
                 <Link to="/proof"><Button size="sm">Submit Proof <ArrowRight className="h-3 w-3 ml-1" /></Button></Link>
               </Card>
