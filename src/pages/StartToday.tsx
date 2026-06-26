@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
@@ -48,6 +48,8 @@ const STEPS = [
 export default function StartToday() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const planMode = searchParams.get("plan") === "1";
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Record<string, string>>({
@@ -62,6 +64,12 @@ export default function StartToday() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ contractId: string | null } | null>(null);
+
+  const openPlanner = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set("plan", "1");
+    setSearchParams(next, { replace: true });
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -158,12 +166,38 @@ export default function StartToday() {
       />
       <div className="p-4 md:p-8 max-w-2xl mx-auto space-y-5">
         <header>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Operating System // Start Today</span>
-          <h1 className="text-2xl md:text-3xl font-semibold mt-1">One objective. One artifact. One timer.</h1>
-          <p className="text-sm text-muted-foreground mt-1">Do not plan the whole life. Define the next proof artifact.</p>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Start Today</span>
+          <h1 className="text-2xl md:text-3xl font-semibold mt-1">
+            {planMode ? "Plan today" : "Start with one proof."}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {planMode
+              ? "Define the next proof artifact. One objective. One artifact."
+              : "Submit one piece of real work and Eblocki will check whether it actually proves progress."}
+          </p>
         </header>
 
-        {!done && (
+        {!planMode && !done && (
+          <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 space-y-4">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Activation</div>
+            <p className="text-sm text-muted-foreground">
+              Skip the planning. Submit one piece of real work — an essay paragraph, study notes, or a past-paper answer — and get an honest check.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Link to="/proof?first=1" className="w-full sm:w-auto">
+                <Button size="sm" className="w-full sm:w-auto">
+                  Submit first proof
+                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
+              </Link>
+              <Button size="sm" variant="outline" onClick={openPlanner} className="w-full sm:w-auto">
+                Plan today instead
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {planMode && !done && (
           <Card className="panel p-4 md:p-5 space-y-4">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
