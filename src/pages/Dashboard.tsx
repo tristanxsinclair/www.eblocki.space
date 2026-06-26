@@ -165,14 +165,22 @@ export default function Dashboard() {
       <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-5">
         <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">
           <div className="min-w-0">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Operating System // Command Centre</span>
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1">Command surface</h1>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              {allArtifacts.length === 0 ? "Today" : "Operating System // Command Centre"}
+            </span>
+            <h1 className="text-2xl md:text-3xl font-semibold mt-1">
+              {allArtifacts.length === 0 ? "Today" : "Command surface"}
+            </h1>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Proof</Button></Link>
-            <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
-            <Link to="/start-today"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Start</Button></Link>
-            <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
+            {allArtifacts.length > 0 && (
+              <>
+                <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
+                <Link to="/start-today"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Start</Button></Link>
+                <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
+              </>
+            )}
           </div>
         </header>
 
