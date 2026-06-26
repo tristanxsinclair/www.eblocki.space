@@ -35,8 +35,8 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Seo
-        title="Eblocki — Stop Fake Productivity. Log Proof."
-        description="Eblocki helps you stop fake productivity by turning effort into proof. Submit one piece of proof, get a check, get your next command."
+        title="Eblocki — Find out if your work actually counts."
+        description="Submit one piece of your real work — an essay paragraph, study notes, or a past-paper answer — and Eblocki tells you whether it proves progress."
         path="/"
       />
       <header className="border-b border-border bg-background/95 backdrop-blur">
@@ -62,24 +62,21 @@ export default function Landing() {
           <div className="container grid gap-10 py-14 md:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.75fr)] md:items-center md:py-20 lg:py-24">
             <div className="max-w-3xl">
               <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-primary">
-                Proof-based performance app
+                Built for students
               </span>
               <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-6xl">
-                Stop fake productivity.
+                Find out if your work actually counts.
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
-                Eblocki helps students turn intention into proof, detect avoidance, and get the next action that actually counts.
+                Submit one piece of your real work — an essay paragraph, study notes, or a past-paper answer — and Eblocki tells you whether it proves progress or not.
               </p>
-              <ol className="mt-5 grid gap-1.5 text-sm text-muted-foreground md:grid-cols-4">
-                <li><span className="text-foreground font-medium">1.</span> Check in.</li>
-                <li><span className="text-foreground font-medium">2.</span> Log one proof artifact.</li>
-                <li><span className="text-foreground font-medium">3.</span> Get your command.</li>
-                <li><span className="text-foreground font-medium">4.</span> See if your work counted.</li>
-              </ol>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link to="/start-today"><Button size="lg">Start Today<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
                 <Link to="/proof"><Button size="lg" variant="outline">Submit Proof</Button></Link>
               </div>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Example proofs: a 200-word IRAC answer, a corrected past-paper question, or one lecture explained in your own words.
+              </p>
               <p className="mt-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">
                 Free beta · No card required · Built for university students
               </p>
