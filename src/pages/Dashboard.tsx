@@ -204,20 +204,17 @@ export default function Dashboard() {
               Zone 1 // Activation
             </div>
             <h2 className="mt-2 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">
-              Submit one measurable artifact to activate the command layer.
+              Submit one piece of real work.
             </h2>
             <p className="mt-2 text-sm text-muted-foreground text-wrap-safe">
-              One artifact. One standard. 25-minute timebox. Done and yes are rejected on purpose.
+              Eblocki will check whether it actually proves progress, then tell you the next action.
             </p>
             <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
               <Link to="/proof?first=1" className="w-full sm:w-auto">
                 <Button size="sm" className="w-full sm:w-auto">
-                  Create my first proof
+                  Submit first proof
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
-              </Link>
-              <Link to="/start-today" className="w-full sm:w-auto">
-                <Button size="sm" variant="outline" className="w-full sm:w-auto">Start Today</Button>
               </Link>
             </div>
           </Card>
