@@ -17,13 +17,13 @@ import { Seo } from "@/components/Seo";
  */
 
 const MODE_BANK = [
-  { id: "LAW_MAX", name: "LAW MAX", line: "IRAC depth, authority discipline." },
-  { id: "PSYCH_HD", name: "PSYCH HD", line: "CAEE depth, post-2016 evidence." },
-  { id: "SALES_CLOSE", name: "SALES CLOSE", line: "Objection scripts, attachment." },
-  { id: "EBLOCKI_BUILD", name: "EBLOCKI BUILD", line: "Ship code, refine prompts." },
-  { id: "ATHLETE_MODE", name: "ATHLETE MODE", line: "Reps logged, movement noted." },
-  { id: "FINANCE_BASICS", name: "FINANCE BASICS", line: "Tracker entries, saving rules." },
-  { id: "GENERAL_EXECUTION", name: "GENERAL EXECUTION", line: "Resisted tasks, real artifacts." },
+  { id: "LAW_MAX", name: "Law", line: "IRAC depth, authority discipline." },
+  { id: "PSYCH_HD", name: "Psychology", line: "CAEE depth, post-2016 evidence." },
+  { id: "SALES_CLOSE", name: "Sales", line: "Objection scripts, attachment." },
+  { id: "EBLOCKI_BUILD", name: "Build", line: "Ship code, refine prompts." },
+  { id: "ATHLETE_MODE", name: "Athlete", line: "Reps logged, movement noted." },
+  { id: "FINANCE_BASICS", name: "Finance", line: "Tracker entries, saving rules." },
+  { id: "GENERAL_EXECUTION", name: "General", line: "Resisted tasks, real artifacts." },
 ];
 
 const GOAL_BANK = [
@@ -172,10 +172,10 @@ export default function Welcome() {
 }
 
 function PhilosophyStep() {
-  const lines = [
-    { left: "Proof", right: "Intention" },
-    { left: "Depth", right: "Checkbox completion" },
-    { left: "Behaviour", right: "Motivation" },
+  const bullets = [
+    "Submit one piece of real work.",
+    "Get an honest check.",
+    "Do the next action.",
   ];
   return (
     <Card className="panel p-5 sm:p-7 space-y-5">
@@ -183,21 +183,20 @@ function PhilosophyStep() {
         Welcome
       </span>
       <h1 className="text-2xl sm:text-3xl font-semibold leading-tight">
-        Eblocki is not a productivity app.
+        Welcome. Here is what Eblocki does.
       </h1>
       <p className="text-sm text-muted-foreground">
-        It is a behavioural operating system. It rewards what you actually produce,
-        not what you intend to do.
+        Eblocki helps you submit one piece of real work, check whether it actually
+        proves progress, and get the next action.
       </p>
-      <div className="space-y-2 pt-2">
-        {lines.map((l) => (
-          <div key={l.left} className="flex items-center gap-3 text-sm">
-            <span className="font-mono text-primary min-w-[80px]">{l.left}</span>
-            <span className="text-muted-foreground">›</span>
-            <span className="line-through text-muted-foreground">{l.right}</span>
-          </div>
+      <ol className="space-y-2 pt-2 text-sm">
+        {bullets.map((b, i) => (
+          <li key={b} className="flex gap-3">
+            <span className="font-mono text-primary">0{i + 1}</span>
+            <span>{b}</span>
+          </li>
         ))}
-      </div>
+      </ol>
     </Card>
   );
 }
