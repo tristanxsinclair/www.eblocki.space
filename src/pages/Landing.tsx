@@ -52,7 +52,7 @@ export default function Landing() {
               How it works
             </a>
             <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">Sign in</Link>
-            <Link to="/start-today"><Button size="sm">Start Today</Button></Link>
+            <Link to="/dashboard"><Button size="sm">Start Today</Button></Link>
           </nav>
         </div>
       </header>
@@ -71,8 +71,8 @@ export default function Landing() {
                 Submit one piece of your real work — an essay paragraph, study notes, or a past-paper answer — and Eblocki tells you whether it proves progress or not.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/start-today"><Button size="lg">Start Today<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
-                <Link to="/proof"><Button size="lg" variant="outline">Submit Proof</Button></Link>
+                <Link to="/dashboard"><Button size="lg">Start Today<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+                <Link to="/dashboard"><Button size="lg" variant="outline">Submit Proof</Button></Link>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
                 Example proofs: a 200-word IRAC answer, a corrected past-paper question, or one lecture explained in your own words.
@@ -200,7 +200,7 @@ export default function Landing() {
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 Submit one piece of proof. Eblocki checks whether it actually shows progress, warns you if the work looks fake or weak, and gives your next command.
               </p>
-              <Link to="/start-today" className="mt-7 inline-flex"><Button size="lg">Start Today<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+              <Link to="/dashboard" className="mt-7 inline-flex"><Button size="lg">Start Today<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
             </div>
           </div>
         </section>
