@@ -10,12 +10,18 @@ export const FIRST_PROOF_QUERY_KEY = "first";
 export const FIRST_PROOF_QUERY_VALUE = "1";
 
 export const FIRST_PROOF_COPY = {
-  title: "Activate Eblocki with one proof artifact.",
+  title: "Submit your first proof.",
   subtitle:
-    "Eblocki does not start from motivation. It starts from evidence. Submit one measurable artifact so the system can judge your first signal.",
-  helperHeader: "What counts as proof?",
-  successTitle: "First proof submitted. Dashboard intelligence is now active.",
+    "Paste one piece of real work. Eblocki will check whether it proves progress and give you the next action.",
+  helperHeader: "First proof standard",
+  successTitle: "First proof submitted.",
   successCta: "Back to dashboard",
+} as const;
+
+export const FIRST_PROOF_DEFAULTS = {
+  modeId: "GENERAL_EXECUTION",
+  domain: "general_execution",
+  artifactType: "written answer",
 } as const;
 
 export interface FirstProofExample {
@@ -24,12 +30,19 @@ export interface FirstProofExample {
 }
 
 export const FIRST_PROOF_EXAMPLES: FirstProofExample[] = [
-  { domain: "Study", example: "one paragraph written from memory" },
-  { domain: "Work", example: "one customer insight or objection handled" },
-  { domain: "Build", example: "one shipped fix, prompt, test, or decision" },
-  { domain: "Training", example: "one drill completed with correction note" },
-  { domain: "Life", example: "one closed loop or recovery action" },
+  { domain: "Essay", example: "essay paragraph" },
+  { domain: "Study", example: "study notes in your own words" },
+  { domain: "Past paper", example: "corrected past-paper answer" },
+  { domain: "Law", example: "IRAC paragraph" },
+  { domain: "Psychology", example: "psychology concept explanation" },
 ];
+
+export const FIRST_PROOF_STANDARD = {
+  whatCounts: "A visible piece of work you actually produced, pasted or attached clearly enough to check.",
+  stronger: "It gets stronger when it includes your own words, a correction, specific detail, or a clear next improvement.",
+  whatToPaste:
+    "Paste the work itself: an essay paragraph, study notes, a corrected answer, an IRAC paragraph, or a concept explanation.",
+} as const;
 
 /**
  * Detect first-proof mode from a URLSearchParams-like object.
