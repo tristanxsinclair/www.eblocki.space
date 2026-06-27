@@ -318,7 +318,12 @@ export default function Proof() {
 
   const submit = async () => {
     if (!user) return;
-    if (!artifactType.trim()) return toast.error("Choose a proof type first.");
+    const effectiveArtifactType = artifactType.trim()
+      ? artifactType
+      : firstProofMode
+        ? FIRST_PROOF_DEFAULTS.artifactType
+        : "";
+    if (!effectiveArtifactType.trim()) return toast.error("Choose a proof type first.");
     if (!content.trim()) return toast.error("Add the artifact content first.");
     if (!title.trim()) return toast.error("Give the proof a title.");
 
@@ -329,12 +334,19 @@ export default function Proof() {
 
     setSubmitting(true);
     try {
-      const modeId = selectedMode?.mode_id ?? linkedContract?.mode ?? "GENERAL_EXECUTION";
-      const domainValue = (selectedMode?.mode_id ?? linkedContract?.domain ?? modeId).toLowerCase();
+      const modeId =
+        selectedMode?.mode_id ??
+        linkedContract?.mode ??
+        (firstProofMode ? FIRST_PROOF_DEFAULTS.modeId : "GENERAL_EXECUTION");
+      const domainValue = (
+        selectedMode?.mode_id ??
+        linkedContract?.domain ??
+        (firstProofMode ? FIRST_PROOF_DEFAULTS.domain : modeId)
+      ).toLowerCase();
       const submissionPreview = buildProofStandardPreview({
         domain: domainValue,
-        artifactType,
-        proofAction: linkedContract?.required_artifact ?? linkedContract?.title ?? artifactType,
+        artifactType: effectiveArtifactType,
+        proofAction: linkedContract?.required_artifact ?? linkedContract?.title ?? effectiveArtifactType,
         proofContract: linkedContract,
         signalText: [title, content, reflection].filter(Boolean).join("\n"),
       });
@@ -347,7 +359,7 @@ export default function Proof() {
       const score = scoreProofArtifact({
         domain: domainValue,
         title,
-        artifactType,
+        artifactType: effectiveArtifactType,
         content: scoringContent,
         reflection,
         nextUpgrade,
@@ -387,7 +399,7 @@ export default function Proof() {
           user_id: user.id,
           domain: domainValue,
           title: title.trim(),
-          artifact_type: artifactType,
+          artifact_type: effectiveArtifactType,
           content,
           quality_score: score.qualityScore,
           evidence_strength: score.evidenceStrength,
