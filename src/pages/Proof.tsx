@@ -882,10 +882,26 @@ export default function Proof() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Check - Verdict</span>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                  {firstProofMode ? "Verdict" : "Proof Check - Verdict"}
+                </span>
               </div>
               <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
             </div>
+            {firstProofMode ? (
+            <div className="mt-3 grid gap-3 text-sm">
+              <VerdictRow label="What counted" value={verdict.feedback} />
+              <VerdictRow
+                label="What was weak or missing"
+                value={
+                  verdict.evidenceStrength === "elite"
+                    ? "Nothing major — this is a strong first proof."
+                    : verdict.missingStandard
+                }
+              />
+              <VerdictRow label="One next action" value={verdict.nextUpgrade} />
+            </div>
+            ) : (
             <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
               <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
               <VerdictRow label="Why it scored that way" value={verdict.why} />
@@ -900,6 +916,7 @@ export default function Proof() {
                 value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
               />
             </div>
+            )}
             {verdict.attachmentUrl && (
               <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
                 <Paperclip className="h-3 w-3 text-primary" />
@@ -909,8 +926,8 @@ export default function Proof() {
                 </a>
               </div>
             )}
-            <VerdictFeedback artifactId={verdict.artifactId} />
-            {submittedStudyClassification && (
+            {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
+            {submittedStudyClassification && !firstProofMode && (
               <div className="mt-4">
                 <StudyVerdictHint
                   classification={submittedStudyClassification}
