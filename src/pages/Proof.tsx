@@ -955,10 +955,13 @@ export default function Proof() {
         <Card className="panel p-4 md:p-5 max-w-full overflow-hidden">
           <div className="flex items-center gap-2">
             <Gavel className="h-4 w-4 text-primary" />
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Submit a Proof Artifact</h2>
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">
+              {firstProofMode ? "Your first proof" : "Submit a Proof Artifact"}
+            </h2>
           </div>
 
           <div className="mt-4 grid gap-3">
+            {!firstProofMode && (
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="proof-mode-select">Mode</Label>
@@ -998,8 +1001,9 @@ export default function Proof() {
                 </select>
               </div>
             </div>
+            )}
 
-            {linkedContract && (
+            {!firstProofMode && linkedContract && (
               <div className="rounded-sm border border-primary/30 bg-primary/5 p-3 text-xs">
                 <div className="font-mono uppercase tracking-widest text-primary">Linked contract</div>
                 <div className="mt-1 text-foreground">{linkedContract.title}</div>
@@ -1015,6 +1019,17 @@ export default function Proof() {
               </div>
             )}
 
+            {firstProofMode ? (
+              <div>
+                <Label htmlFor="proof-title">Title</Label>
+                <Input
+                  id="proof-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Short name for this piece of work"
+                />
+              </div>
+            ) : (
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="proof-title">Title</Label>
@@ -1040,16 +1055,19 @@ export default function Proof() {
                 </select>
               </div>
             </div>
+            )}
 
-            {hasStandardSelection ? (
+            {!firstProofMode && (
+              hasStandardSelection ? (
               <ProofStandardPreviewPanel preview={proofPreview} />
-            ) : (
+              ) : (
               <div className="rounded-sm border border-border bg-background/40 p-3 text-sm text-muted-foreground">
                 No proof standard selected yet. Choose a proof type to see how the Court will judge it.
               </div>
+              )
             )}
 
-            {content.trim().length >= 12 && (
+            {!firstProofMode && content.trim().length >= 12 && (
               <StudyVerdictHint
                 classification={liveStudyClassification}
                 label="Fake study detector"
@@ -1057,13 +1075,17 @@ export default function Proof() {
             )}
 
             <div>
-              <Label htmlFor="proof-content">Content</Label>
+              <Label htmlFor="proof-content">
+                {firstProofMode ? "Paste your work" : "Content"}
+              </Label>
               <Textarea
                 id="proof-content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={8}
-                placeholder="Paste the artifact or summarise the completed output."
+                placeholder={firstProofMode
+                  ? "Paste the actual paragraph, answer, or notes you wrote."
+                  : "Paste the artifact or summarise the completed output."}
               />
             </div>
 
@@ -1076,7 +1098,9 @@ export default function Proof() {
               <div className="min-w-0">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional</div>
                 <div className="text-sm text-foreground">
-                  Add detail — reflection, next upgrade, XP flags, attachment
+                  {firstProofMode
+                    ? "Advanced details — mode, proof type, reflection, attachment"
+                    : "Add detail — reflection, next upgrade, XP flags, attachment"}
                 </div>
               </div>
               <ChevronDown
@@ -1084,6 +1108,44 @@ export default function Proof() {
               />
             </button>
             <div className={`${detailOpen || reflection || nextUpgrade || pressureFlag || transferFlag || attachment ? "grid" : "hidden"} gap-3`}>
+            {firstProofMode && (
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="proof-mode-select">Mode</Label>
+                  {activeModes.length === 0 ? (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      No personalised modes yet. Defaults will be used.
+                    </div>
+                  ) : (
+                    <select
+                      id="proof-mode-select"
+                      value={selectedModeId}
+                      onChange={(e) => setSelectedModeId(e.target.value)}
+                      className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">- default -</option>
+                      {activeModes.map((mode) => (
+                        <option key={mode.mode_id} value={mode.mode_id}>{mode.display_name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="proof-artifact-type">Proof type</Label>
+                  <select
+                    id="proof-artifact-type"
+                    value={artifactType}
+                    onChange={(e) => setArtifactType(e.target.value)}
+                    className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">{`default (${FIRST_PROOF_DEFAULTS.artifactType})`}</option>
+                    {ARTIFACT_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
             <div>
               <Label htmlFor="proof-reflection">Reflection</Label>
               <Textarea
