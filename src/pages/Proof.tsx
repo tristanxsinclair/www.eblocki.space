@@ -784,16 +784,30 @@ export default function Proof() {
             <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
               {FIRST_PROOF_COPY.helperHeader}
             </span>
-            <p className="text-sm text-muted-foreground mt-1 break-words">
-              Examples of one measurable artifact — pick the closest to today and submit it below.
+            <p className="text-sm text-foreground mt-1 break-words">
+              {FIRST_PROOF_STANDARD_PREVIEW.whatCounts}
             </p>
-            <ul className="mt-2 grid gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
-              {FIRST_PROOF_EXAMPLES.map((ex) => (
-                <li key={ex.domain} className="break-words">
-                  <span className="font-mono text-foreground">{ex.domain}:</span> {ex.example}
-                </li>
-              ))}
-            </ul>
+            <div className="mt-3">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                What makes it stronger?
+              </div>
+              <p className="text-sm text-muted-foreground mt-1 break-words">
+                {FIRST_PROOF_STANDARD_PREVIEW.whatMakesItStronger}
+              </p>
+            </div>
+            <div className="mt-3">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                What should I paste?
+              </div>
+              <p className="text-sm text-muted-foreground mt-1 break-words">
+                {FIRST_PROOF_STANDARD_PREVIEW.whatShouldIPaste}
+              </p>
+              <ul className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                {FIRST_PROOF_EXAMPLES.map((ex) => (
+                  <li key={ex.domain} className="break-words">• {ex.example}</li>
+                ))}
+              </ul>
+            </div>
           </Card>
         ) : (
         <Card className="panel p-4 border-primary/30 max-w-full overflow-hidden">
