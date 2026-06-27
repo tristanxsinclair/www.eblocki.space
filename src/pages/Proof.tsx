@@ -28,7 +28,9 @@ import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { ChevronDown } from "lucide-react";
 import {
   FIRST_PROOF_COPY,
+  FIRST_PROOF_DEFAULTS,
   FIRST_PROOF_EXAMPLES,
+  FIRST_PROOF_STANDARD_PREVIEW,
   isFirstProofMode,
 } from "@/lib/eblocki/first-proof";
 import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
