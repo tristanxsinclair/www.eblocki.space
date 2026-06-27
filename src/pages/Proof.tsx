@@ -1395,10 +1395,22 @@ export default function Proof() {
 
             <Button
               onClick={submit}
-              disabled={submitting || attachmentBusy || !artifactType.trim() || !content.trim() || !title.trim()}
+              disabled={
+                submitting ||
+                attachmentBusy ||
+                !content.trim() ||
+                !title.trim() ||
+                (!firstProofMode && !artifactType.trim())
+              }
               className="w-full"
             >
-              {submitting ? "Saving proof…" : attachmentBusy ? "Processing attachment…" : "Submit proof"}
+              {submitting
+                ? "Saving proof…"
+                : attachmentBusy
+                  ? "Processing attachment…"
+                  : firstProofMode
+                    ? "Submit my first proof"
+                    : "Submit proof"}
             </Button>
           </div>
         </Card>
