@@ -1,11 +1,15 @@
 import { describe, it, expect } from "vitest";
 import {
   FIRST_PROOF_COPY,
+  FIRST_PROOF_DEFAULTS,
   FIRST_PROOF_EXAMPLES,
+  FIRST_PROOF_FORBIDDEN_TERMS,
   FIRST_PROOF_QUERY_KEY,
   FIRST_PROOF_QUERY_VALUE,
+  FIRST_PROOF_STANDARD_PREVIEW,
   isFirstProofMode,
 } from "../first-proof";
+import { scoreProofArtifact } from "../proof-scoring";
 
 describe("isFirstProofMode", () => {
   it("returns true when ?first=1 is present", () => {
@@ -34,20 +38,71 @@ describe("isFirstProofMode", () => {
 });
 
 describe("first-proof copy", () => {
-  it("includes activation title and subtitle", () => {
-    expect(FIRST_PROOF_COPY.title).toMatch(/Activate Eblocki/i);
-    expect(FIRST_PROOF_COPY.subtitle).toMatch(/evidence/i);
+  it("uses the plain-language activation title", () => {
+    expect(FIRST_PROOF_COPY.title).toBe("Submit your first proof.");
   });
 
-  it("includes honest success message tied to actual submission", () => {
-    expect(FIRST_PROOF_COPY.successTitle).toMatch(/First proof submitted/i);
-    expect(FIRST_PROOF_COPY.successTitle).toMatch(/Dashboard intelligence is now active/i);
+  it("explains the loop in student wording", () => {
+    expect(FIRST_PROOF_COPY.subtitle).toMatch(/paste one piece of real work/i);
+    expect(FIRST_PROOF_COPY.subtitle).toMatch(/proves progress/i);
+    expect(FIRST_PROOF_COPY.subtitle).toMatch(/next action/i);
   });
 
-  it("ships at least the documented five domain examples", () => {
-    const domains = FIRST_PROOF_EXAMPLES.map((e) => e.domain);
-    expect(domains).toEqual(
-      expect.arrayContaining(["Study", "Work", "Build", "Training", "Life"]),
+  it("uses an honest, simple success state", () => {
+    expect(FIRST_PROOF_COPY.successTitle).toBe("First proof submitted.");
+    expect(FIRST_PROOF_COPY.successCta).toBe("Back to dashboard");
+  });
+
+  it("ships the documented student examples", () => {
+    const examples = FIRST_PROOF_EXAMPLES.map((e) => e.example.toLowerCase());
+    expect(examples).toEqual(
+      expect.arrayContaining([
+        "essay paragraph",
+        "study notes in your own words",
+        "corrected past-paper answer",
+        "irac paragraph",
+        "psychology concept explanation",
+      ]),
     );
+  });
+
+  it("never exposes advanced operator language above the fold", () => {
+    const surface = [
+      FIRST_PROOF_COPY.title,
+      FIRST_PROOF_COPY.subtitle,
+      FIRST_PROOF_COPY.helperHeader,
+      FIRST_PROOF_COPY.successTitle,
+      FIRST_PROOF_COPY.successCta,
+      FIRST_PROOF_STANDARD_PREVIEW.whatCounts,
+      FIRST_PROOF_STANDARD_PREVIEW.whatMakesItStronger,
+      FIRST_PROOF_STANDARD_PREVIEW.whatShouldIPaste,
+      ...FIRST_PROOF_EXAMPLES.map((e) => `${e.domain} ${e.example}`),
+    ]
+      .join(" \n ")
+      .toLowerCase();
+    for (const term of FIRST_PROOF_FORBIDDEN_TERMS) {
+      expect(surface).not.toContain(term.toLowerCase());
+    }
+  });
+});
+
+describe("first-proof defaults", () => {
+  it("flow safely through proof scoring without error", () => {
+    const result = scoreProofArtifact({
+      domain: FIRST_PROOF_DEFAULTS.domain,
+      artifactType: FIRST_PROOF_DEFAULTS.artifactType,
+      title: "First proof",
+      content:
+        "Here is one paragraph I wrote from memory about classical conditioning. " +
+        "Pavlov showed that a neutral stimulus can come to evoke a response after pairing.",
+      reflection: "I noticed I was vague on the mechanism.",
+      nextUpgrade: "Add one concrete example next time.",
+    });
+    expect(typeof result.qualityScore).toBe("number");
+    expect(result.qualityScore).toBeGreaterThanOrEqual(1);
+    expect(result.qualityScore).toBeLessThanOrEqual(10);
+    expect(["weak", "moderate", "strong", "elite"]).toContain(result.evidenceStrength);
+    expect(typeof result.feedback).toBe("string");
+    expect(typeof result.nextUpgrade).toBe("string");
   });
 });

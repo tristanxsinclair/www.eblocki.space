@@ -28,7 +28,9 @@ import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { ChevronDown } from "lucide-react";
 import {
   FIRST_PROOF_COPY,
+  FIRST_PROOF_DEFAULTS,
   FIRST_PROOF_EXAMPLES,
+  FIRST_PROOF_STANDARD_PREVIEW,
   isFirstProofMode,
 } from "@/lib/eblocki/first-proof";
 import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
@@ -316,7 +318,12 @@ export default function Proof() {
 
   const submit = async () => {
     if (!user) return;
-    if (!artifactType.trim()) return toast.error("Choose a proof type first.");
+    const effectiveArtifactType = artifactType.trim()
+      ? artifactType
+      : firstProofMode
+        ? FIRST_PROOF_DEFAULTS.artifactType
+        : "";
+    if (!effectiveArtifactType.trim()) return toast.error("Choose a proof type first.");
     if (!content.trim()) return toast.error("Add the artifact content first.");
     if (!title.trim()) return toast.error("Give the proof a title.");
 
@@ -327,12 +334,19 @@ export default function Proof() {
 
     setSubmitting(true);
     try {
-      const modeId = selectedMode?.mode_id ?? linkedContract?.mode ?? "GENERAL_EXECUTION";
-      const domainValue = (selectedMode?.mode_id ?? linkedContract?.domain ?? modeId).toLowerCase();
+      const modeId =
+        selectedMode?.mode_id ??
+        linkedContract?.mode ??
+        (firstProofMode ? FIRST_PROOF_DEFAULTS.modeId : "GENERAL_EXECUTION");
+      const domainValue = (
+        selectedMode?.mode_id ??
+        linkedContract?.domain ??
+        (firstProofMode ? FIRST_PROOF_DEFAULTS.domain : modeId)
+      ).toLowerCase();
       const submissionPreview = buildProofStandardPreview({
         domain: domainValue,
-        artifactType,
-        proofAction: linkedContract?.required_artifact ?? linkedContract?.title ?? artifactType,
+        artifactType: effectiveArtifactType,
+        proofAction: linkedContract?.required_artifact ?? linkedContract?.title ?? effectiveArtifactType,
         proofContract: linkedContract,
         signalText: [title, content, reflection].filter(Boolean).join("\n"),
       });
@@ -345,7 +359,7 @@ export default function Proof() {
       const score = scoreProofArtifact({
         domain: domainValue,
         title,
-        artifactType,
+        artifactType: effectiveArtifactType,
         content: scoringContent,
         reflection,
         nextUpgrade,
@@ -385,7 +399,7 @@ export default function Proof() {
           user_id: user.id,
           domain: domainValue,
           title: title.trim(),
-          artifact_type: artifactType,
+          artifact_type: effectiveArtifactType,
           content,
           quality_score: score.qualityScore,
           evidence_strength: score.evidenceStrength,
@@ -770,16 +784,30 @@ export default function Proof() {
             <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
               {FIRST_PROOF_COPY.helperHeader}
             </span>
-            <p className="text-sm text-muted-foreground mt-1 break-words">
-              Examples of one measurable artifact — pick the closest to today and submit it below.
+            <p className="text-sm text-foreground mt-1 break-words">
+              {FIRST_PROOF_STANDARD_PREVIEW.whatCounts}
             </p>
-            <ul className="mt-2 grid gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
-              {FIRST_PROOF_EXAMPLES.map((ex) => (
-                <li key={ex.domain} className="break-words">
-                  <span className="font-mono text-foreground">{ex.domain}:</span> {ex.example}
-                </li>
-              ))}
-            </ul>
+            <div className="mt-3">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                What makes it stronger?
+              </div>
+              <p className="text-sm text-muted-foreground mt-1 break-words">
+                {FIRST_PROOF_STANDARD_PREVIEW.whatMakesItStronger}
+              </p>
+            </div>
+            <div className="mt-3">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                What should I paste?
+              </div>
+              <p className="text-sm text-muted-foreground mt-1 break-words">
+                {FIRST_PROOF_STANDARD_PREVIEW.whatShouldIPaste}
+              </p>
+              <ul className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
+                {FIRST_PROOF_EXAMPLES.map((ex) => (
+                  <li key={ex.domain} className="break-words">• {ex.example}</li>
+                ))}
+              </ul>
+            </div>
           </Card>
         ) : (
         <Card className="panel p-4 border-primary/30 max-w-full overflow-hidden">
@@ -854,10 +882,26 @@ export default function Proof() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Check - Verdict</span>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                  {firstProofMode ? "Verdict" : "Proof Check - Verdict"}
+                </span>
               </div>
               <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
             </div>
+            {firstProofMode ? (
+            <div className="mt-3 grid gap-3 text-sm">
+              <VerdictRow label="What counted" value={verdict.feedback} />
+              <VerdictRow
+                label="What was weak or missing"
+                value={
+                  verdict.evidenceStrength === "elite"
+                    ? "Nothing major — this is a strong first proof."
+                    : verdict.missingStandard
+                }
+              />
+              <VerdictRow label="One next action" value={verdict.nextUpgrade} />
+            </div>
+            ) : (
             <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
               <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
               <VerdictRow label="Why it scored that way" value={verdict.why} />
@@ -872,6 +916,7 @@ export default function Proof() {
                 value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
               />
             </div>
+            )}
             {verdict.attachmentUrl && (
               <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
                 <Paperclip className="h-3 w-3 text-primary" />
@@ -881,8 +926,8 @@ export default function Proof() {
                 </a>
               </div>
             )}
-            <VerdictFeedback artifactId={verdict.artifactId} />
-            {submittedStudyClassification && (
+            {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
+            {submittedStudyClassification && !firstProofMode && (
               <div className="mt-4">
                 <StudyVerdictHint
                   classification={submittedStudyClassification}
@@ -910,10 +955,13 @@ export default function Proof() {
         <Card className="panel p-4 md:p-5 max-w-full overflow-hidden">
           <div className="flex items-center gap-2">
             <Gavel className="h-4 w-4 text-primary" />
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">Submit a Proof Artifact</h2>
+            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">
+              {firstProofMode ? "Your first proof" : "Submit a Proof Artifact"}
+            </h2>
           </div>
 
           <div className="mt-4 grid gap-3">
+            {!firstProofMode && (
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="proof-mode-select">Mode</Label>
@@ -953,8 +1001,9 @@ export default function Proof() {
                 </select>
               </div>
             </div>
+            )}
 
-            {linkedContract && (
+            {!firstProofMode && linkedContract && (
               <div className="rounded-sm border border-primary/30 bg-primary/5 p-3 text-xs">
                 <div className="font-mono uppercase tracking-widest text-primary">Linked contract</div>
                 <div className="mt-1 text-foreground">{linkedContract.title}</div>
@@ -970,6 +1019,17 @@ export default function Proof() {
               </div>
             )}
 
+            {firstProofMode ? (
+              <div>
+                <Label htmlFor="proof-title">Title</Label>
+                <Input
+                  id="proof-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Short name for this piece of work"
+                />
+              </div>
+            ) : (
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="proof-title">Title</Label>
@@ -995,16 +1055,19 @@ export default function Proof() {
                 </select>
               </div>
             </div>
+            )}
 
-            {hasStandardSelection ? (
+            {!firstProofMode && (
+              hasStandardSelection ? (
               <ProofStandardPreviewPanel preview={proofPreview} />
-            ) : (
+              ) : (
               <div className="rounded-sm border border-border bg-background/40 p-3 text-sm text-muted-foreground">
                 No proof standard selected yet. Choose a proof type to see how the Court will judge it.
               </div>
+              )
             )}
 
-            {content.trim().length >= 12 && (
+            {!firstProofMode && content.trim().length >= 12 && (
               <StudyVerdictHint
                 classification={liveStudyClassification}
                 label="Fake study detector"
@@ -1012,13 +1075,17 @@ export default function Proof() {
             )}
 
             <div>
-              <Label htmlFor="proof-content">Content</Label>
+              <Label htmlFor="proof-content">
+                {firstProofMode ? "Paste your work" : "Content"}
+              </Label>
               <Textarea
                 id="proof-content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={8}
-                placeholder="Paste the artifact or summarise the completed output."
+                placeholder={firstProofMode
+                  ? "Paste the actual paragraph, answer, or notes you wrote."
+                  : "Paste the artifact or summarise the completed output."}
               />
             </div>
 
@@ -1031,7 +1098,9 @@ export default function Proof() {
               <div className="min-w-0">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional</div>
                 <div className="text-sm text-foreground">
-                  Add detail — reflection, next upgrade, XP flags, attachment
+                  {firstProofMode
+                    ? "Advanced details — mode, proof type, reflection, attachment"
+                    : "Add detail — reflection, next upgrade, XP flags, attachment"}
                 </div>
               </div>
               <ChevronDown
@@ -1039,6 +1108,44 @@ export default function Proof() {
               />
             </button>
             <div className={`${detailOpen || reflection || nextUpgrade || pressureFlag || transferFlag || attachment ? "grid" : "hidden"} gap-3`}>
+            {firstProofMode && (
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="proof-mode-select">Mode</Label>
+                  {activeModes.length === 0 ? (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      No personalised modes yet. Defaults will be used.
+                    </div>
+                  ) : (
+                    <select
+                      id="proof-mode-select"
+                      value={selectedModeId}
+                      onChange={(e) => setSelectedModeId(e.target.value)}
+                      className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">- default -</option>
+                      {activeModes.map((mode) => (
+                        <option key={mode.mode_id} value={mode.mode_id}>{mode.display_name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="proof-artifact-type">Proof type</Label>
+                  <select
+                    id="proof-artifact-type"
+                    value={artifactType}
+                    onChange={(e) => setArtifactType(e.target.value)}
+                    className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">{`default (${FIRST_PROOF_DEFAULTS.artifactType})`}</option>
+                    {ARTIFACT_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
             <div>
               <Label htmlFor="proof-reflection">Reflection</Label>
               <Textarea
@@ -1288,10 +1395,22 @@ export default function Proof() {
 
             <Button
               onClick={submit}
-              disabled={submitting || attachmentBusy || !artifactType.trim() || !content.trim() || !title.trim()}
+              disabled={
+                submitting ||
+                attachmentBusy ||
+                !content.trim() ||
+                !title.trim() ||
+                (!firstProofMode && !artifactType.trim())
+              }
               className="w-full"
             >
-              {submitting ? "Saving proof…" : attachmentBusy ? "Processing attachment…" : "Submit proof"}
+              {submitting
+                ? "Saving proof…"
+                : attachmentBusy
+                  ? "Processing attachment…"
+                  : firstProofMode
+                    ? "Submit my first proof"
+                    : "Submit proof"}
             </Button>
           </div>
         </Card>

@@ -3,18 +3,22 @@
  *
  * When a zero-artifact user clicks the Dashboard activation card, they land on
  * `/proof?first=1`. The Proof page uses these helpers to switch into a focused
- * activation experience and to render consistent copy.
+ * activation experience and to render consistent, student-readable copy.
+ *
+ * Constraint: first-proof copy must NOT use advanced operator language
+ * (Court, identity escalation, temporal, calibration, evidence governance,
+ * behavioural operating system). Normal /proof keeps the full pro flow.
  */
 
 export const FIRST_PROOF_QUERY_KEY = "first";
 export const FIRST_PROOF_QUERY_VALUE = "1";
 
 export const FIRST_PROOF_COPY = {
-  title: "Activate Eblocki with one proof artifact.",
+  title: "Submit your first proof.",
   subtitle:
-    "Eblocki does not start from motivation. It starts from evidence. Submit one measurable artifact so the system can judge your first signal.",
-  helperHeader: "What counts as proof?",
-  successTitle: "First proof submitted. Dashboard intelligence is now active.",
+    "Paste one piece of real work. Eblocki will check whether it proves progress and give you the next action.",
+  helperHeader: "What counts?",
+  successTitle: "First proof submitted.",
   successCta: "Back to dashboard",
 } as const;
 
@@ -24,12 +28,48 @@ export interface FirstProofExample {
 }
 
 export const FIRST_PROOF_EXAMPLES: FirstProofExample[] = [
-  { domain: "Study", example: "one paragraph written from memory" },
-  { domain: "Work", example: "one customer insight or objection handled" },
-  { domain: "Build", example: "one shipped fix, prompt, test, or decision" },
-  { domain: "Training", example: "one drill completed with correction note" },
-  { domain: "Life", example: "one closed loop or recovery action" },
+  { domain: "Essay", example: "essay paragraph" },
+  { domain: "Notes", example: "study notes in your own words" },
+  { domain: "Past paper", example: "corrected past-paper answer" },
+  { domain: "Law", example: "IRAC paragraph" },
+  { domain: "Psychology", example: "psychology concept explanation" },
 ];
+
+/**
+ * Safe defaults applied when a first-proof submission is sent without the
+ * user opening Advanced details. These keep the existing proof-scoring
+ * pipeline happy without exposing mode/proof-type concepts above the fold.
+ */
+export const FIRST_PROOF_DEFAULTS = {
+  modeId: "GENERAL_EXECUTION",
+  domain: "general_execution",
+  artifactType: "written answer",
+} as const;
+
+/**
+ * Plain-language standard preview used in place of the full advanced
+ * ProofStandardPreviewPanel when the user is in first-proof mode.
+ */
+export const FIRST_PROOF_STANDARD_PREVIEW = {
+  whatCounts: "One piece of real work you produced — written, solved, or corrected by you.",
+  whatMakesItStronger:
+    "Your own words, a concrete example, and one line on what you learned or would fix.",
+  whatShouldIPaste:
+    "Paste the actual paragraph, answer, or notes. Not a plan, not a summary of intent.",
+} as const;
+
+/**
+ * Terms that must never appear in first-proof user-facing copy. Tests assert
+ * this to keep the surface readable for a first-time student.
+ */
+export const FIRST_PROOF_FORBIDDEN_TERMS = [
+  "Court",
+  "identity escalation",
+  "temporal",
+  "calibration",
+  "evidence governance",
+  "behavioural operating system",
+] as const;
 
 /**
  * Detect first-proof mode from a URLSearchParams-like object.
