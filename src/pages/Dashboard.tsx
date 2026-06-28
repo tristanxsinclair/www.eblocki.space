@@ -166,10 +166,10 @@ export default function Dashboard() {
         <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">
           <div className="min-w-0">
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              {allArtifacts.length === 0 ? "Today" : "Operating System // Command Centre"}
+              {allArtifacts.length === 0 ? "Today" : "Dashboard"}
             </span>
             <h1 className="text-2xl md:text-3xl font-semibold mt-1">
-              {allArtifacts.length === 0 ? "Today" : "Command surface"}
+              {allArtifacts.length === 0 ? "Today" : "Dashboard"}
             </h1>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -201,7 +201,7 @@ export default function Dashboard() {
         {allArtifacts.length === 0 && (
           <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
             <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
-              Zone 1 // Activation
+              Start here
             </div>
             <h2 className="mt-2 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">
               Submit one piece of real work.
@@ -212,7 +212,7 @@ export default function Dashboard() {
             <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
               <Link to="/proof?first=1" className="w-full sm:w-auto">
                 <Button size="sm" className="w-full sm:w-auto">
-                  Submit first proof
+                  Submit Proof
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               </Link>
@@ -309,7 +309,7 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
       <div className="flex items-start justify-between gap-4 flex-wrap min-w-0">
         <div className="min-w-0 max-w-3xl">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Zone 1 // {view.commandSummary.label}</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Today // {view.commandSummary.label}</span>
             <span className="rounded-sm border border-border bg-background/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
               {view.dashboardStatus.replace(/_/g, " ")}
             </span>
@@ -317,7 +317,7 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
           </div>
           <h2 className="mt-3 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">{view.commandSummary.title}</h2>
           <p className="mt-2 text-sm text-muted-foreground max-w-2xl text-wrap-safe">
-            <span className="text-foreground">Next best action:</span> {view.commandSummary.nextBestAction}
+            <span className="text-foreground">Next Command:</span> {view.commandSummary.nextBestAction}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-wrap">
@@ -361,7 +361,7 @@ function EvidenceCommandPanel({
   const desktopLimit = Math.min(recent.length, 4);
   return (
     <section className="space-y-3">
-      <SectionHeader eyebrow="Zone 3" title="Evidence" detail={`${view.evidenceSummary.weekArtifacts} this week`} />
+      <SectionHeader eyebrow="Evidence" title="Recent Proof" detail={`${view.evidenceSummary.weekArtifacts} this week`} />
       <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 mobile-safe-card">
         <div className="grid grid-cols-3 gap-2">
           <MetricCell label="Artifacts" value={String(view.evidenceSummary.weekArtifacts)} />
