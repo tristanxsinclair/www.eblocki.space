@@ -1062,7 +1062,7 @@ export default function Proof() {
               <ProofStandardPreviewPanel preview={proofPreview} />
               ) : (
               <div className="rounded-sm border border-border bg-background/40 p-3 text-sm text-muted-foreground">
-                No proof standard selected yet. Choose a proof type to see how the Court will judge it.
+                No proof standard selected yet. Choose a proof type to see how Eblocki will score it.
               </div>
               )
             )}
@@ -1405,12 +1405,10 @@ export default function Proof() {
               className="w-full"
             >
               {submitting
-                ? "Saving proof…"
+                ? "Submitting…"
                 : attachmentBusy
                   ? "Processing attachment…"
-                  : firstProofMode
-                    ? "Submit my first proof"
-                    : "Submit proof"}
+                  : "Submit Proof"}
             </Button>
           </div>
         </Card>

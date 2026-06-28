@@ -28,7 +28,7 @@ const HOW_IT_WORKS = [
   { icon: Target, title: "Input", desc: "Name the work, pressure, or bottleneck in plain language." },
   { icon: BrainCircuit, title: "Diagnosis", desc: "Eblocki reads the mode, state, risk, and proof standard already in the system." },
   { icon: FileSignature, title: "Proof", desc: "The command becomes a required artifact, not a private intention." },
-  { icon: Radar, title: "Forecast", desc: "The Temporal loop estimates where current behaviour may be heading, with uncertainty visible." },
+  { icon: Radar, title: "Forecast", desc: "Eblocki estimates where your current behaviour is heading, with uncertainty shown plainly." },
 ];
 
 export default function Landing() {
@@ -151,8 +151,8 @@ export default function Landing() {
               <div className="grid gap-3 p-4 sm:grid-cols-2">
                 <PreviewCell icon={<Crosshair />} label="Command" value="Submit the strongest proof artifact available today." />
                 <PreviewCell icon={<Radar />} label="Future Path" value="Current path improving, confidence moderate." />
-                <PreviewCell icon={<Gavel />} label="Evidence" value="Court checks artifact strength before identity updates." />
-                <PreviewCell icon={<Gauge />} label="Calibration" value="Forecast accuracy is reviewed after later proof arrives." />
+                  <PreviewCell icon={<Gavel />} label="Evidence" value="Each proof is scored before it counts toward identity." />
+                  <PreviewCell icon={<Gauge />} label="Calibration" value="Forecasts are reviewed against the proof that actually arrives." />
               </div>
             </Card>
           </div>
