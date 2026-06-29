@@ -16,7 +16,7 @@ It keeps the deeper intelligence layers intact, but moves them behind clearer la
 
 ## Scope
 
-Targeted surfaces only:
+Changed surfaces:
 
 - `src/pages/Landing.tsx`
 - `src/pages/Welcome.tsx`
@@ -28,6 +28,27 @@ Targeted surfaces only:
 - `src/lib/eblocki/first-proof.ts`
 - `docs/release/phase-7-4-clarity-map.md`
 - `docs/release/phase-7-4-clarity-and-usability-pass.md`
+
+Inspected but intentionally not changed in this phase:
+
+- `src/App.tsx`
+- `src/pages/Onboarding.tsx`
+- `src/pages/Coach.tsx`
+- `src/pages/Operator.tsx`
+- `src/pages/GameForge.tsx`
+- `src/pages/Settings.tsx`
+- deeper advanced components and lib files that were already compatible with the intended clarity surface
+
+## Outcome
+
+The pass aligns Landing, Welcome, Proof Week, Start Today, Dashboard, and first-proof mode around one clearer loop:
+
+- Start Proof Week or submit first proof
+- see what counts as proof
+- get a proof verdict immediately
+- return to `Today` for the next command
+
+Visible labels were simplified, but the existing proof standards, scoring, forecast layers, and advanced detail panels remain intact.
 
 ## Guardrails
 
@@ -48,4 +69,13 @@ Requested verification commands for this phase are still:
 - `npm run build`
 - `npm run lint:eblocki`
 
-In this Codex thread, direct shell execution was unavailable, so command verification must be reported honestly from that limitation unless rerun in a working local shell or CI job.
+Requested browser/mobile checks were:
+
+- `/`
+- `/proof-week`
+- `/proof`
+- `/proof?first=1`
+- `/dashboard`
+- `/coach`
+
+In this Codex thread, direct shell execution was unavailable, so command verification could not be run here. Browser/mobile verification was also not available through a usable local dev-server workflow in this thread. Re-run the requested checks in a working local shell or CI/dev environment before merge.
