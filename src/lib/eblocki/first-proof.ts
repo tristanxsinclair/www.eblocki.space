@@ -16,10 +16,10 @@ export const FIRST_PROOF_QUERY_VALUE = "1";
 export const FIRST_PROOF_COPY = {
   title: "Submit your first proof.",
   subtitle:
-    "Paste one piece of real work. Eblocki will check whether it proves progress and give you the next action.",
-  helperHeader: "What counts?",
+    "Paste one piece of real work. Eblocki will tell you what counted, what was weak, and what to do next.",
+  helperHeader: "What counts as proof?",
   successTitle: "First proof submitted.",
-  successCta: "Back to dashboard",
+  successCta: "See my next step",
 } as const;
 
 export interface FirstProofExample {
