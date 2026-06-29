@@ -12,8 +12,8 @@ import { Seo } from "@/components/Seo";
 
 /**
  * Short, premium welcome flow. Five steps, <2 minutes, ends by seeding
- * the user's selected modes + a tiny first proof mission and dropping
- * them on the dashboard with one obvious action.
+ * the user's selected modes and goals, then sending them straight to the
+ * first-proof flow.
  */
 
 const MODE_BANK = [
@@ -66,7 +66,6 @@ export default function Welcome() {
     if (!user) return;
     setSubmitting(true);
     try {
-      // Persist modes (idempotent upsert per mode)
       if (selectedModes.length > 0) {
         const rows = selectedModes.map((m) => {
           const meta = MODE_BANK.find((x) => x.id === m)!;
@@ -82,7 +81,6 @@ export default function Welcome() {
         await supabase.from("user_modes").upsert(rows, { onConflict: "user_id,mode_id" });
       }
 
-      // Persist goals + welcome flag on profile (upsert)
       await supabase
         .from("user_onboarding_profiles")
         .upsert(
@@ -97,8 +95,8 @@ export default function Welcome() {
       void logEvent(skipped ? "welcome_skipped" : "welcome_completed", {
         count: selectedModes.length,
       });
-      toast.success(skipped ? "Welcome skipped." : "You're in. Proof beats intention.");
-      navigate("/dashboard");
+      toast.success(skipped ? "Welcome skipped. Submit your first proof." : "You're in. Submit your first proof.");
+      navigate("/proof?first=1");
     } catch (e: any) {
       toast.error(e?.message || "Could not save preferences.");
     } finally {
@@ -110,7 +108,6 @@ export default function Welcome() {
     <div className="min-h-screen bg-background text-foreground">
       <Seo title="Welcome | EBLOCKI" description="A two-minute intro to proof-first behavioural execution." path="/welcome" />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-12 space-y-6">
-        {/* progress */}
         <div className="flex items-center gap-1.5">
           {STEPS.map((s, i) => (
             <div
@@ -129,7 +126,7 @@ export default function Welcome() {
             disabled={submitting}
             className="hover:text-foreground"
           >
-            Skip
+            Skip to first proof
           </button>
         </div>
 
@@ -162,7 +159,7 @@ export default function Welcome() {
             </Button>
           ) : (
             <Button size="sm" onClick={() => finish(false)} disabled={submitting}>
-              {submitting ? "Locking in…" : "Enter Eblocki"}
+              {submitting ? "Saving…" : "Go to first proof"}
             </Button>
           )}
         </div>
@@ -174,7 +171,7 @@ export default function Welcome() {
 function PhilosophyStep() {
   const bullets = [
     "Submit one piece of real work.",
-    "Get an honest check.",
+    "See what counted.",
     "Do the next action.",
   ];
   return (
@@ -183,11 +180,10 @@ function PhilosophyStep() {
         Welcome
       </span>
       <h1 className="text-2xl sm:text-3xl font-semibold leading-tight">
-        Welcome. Here is what Eblocki does.
+        Welcome. Here is the loop.
       </h1>
       <p className="text-sm text-muted-foreground">
-        Eblocki helps you submit one piece of real work, check whether it actually
-        proves progress, and get the next action.
+        Eblocki helps you submit one piece of real work, see if it counted, and get the next step.
       </p>
       <ol className="space-y-2 pt-2 text-sm">
         {bullets.map((b, i) => (
@@ -276,23 +272,23 @@ function FirstProofStep() {
         <ShieldCheck className="h-4 w-4 text-primary" />
         <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">First proof</span>
       </div>
-      <h2 className="text-xl sm:text-2xl font-semibold">How proof works.</h2>
+      <h2 className="text-xl sm:text-2xl font-semibold">What happens when you submit proof?</h2>
       <ol className="space-y-2.5 text-sm">
         <li className="flex gap-3">
           <span className="font-mono text-primary">01</span>
-          <span>Pick a mission on your dashboard.</span>
+          <span>Press Submit first proof.</span>
         </li>
         <li className="flex gap-3">
           <span className="font-mono text-primary">02</span>
-          <span>Do the actual work. Even 10 minutes counts if it produces a real artifact.</span>
+          <span>Paste the work itself — a paragraph, corrected answer, notes, or a shipped change.</span>
         </li>
         <li className="flex gap-3">
           <span className="font-mono text-primary">03</span>
-          <span>Open Proof Capture. Describe what you produced — specifically.</span>
+          <span>Eblocki tells you what counted and what was weak or missing.</span>
         </li>
         <li className="flex gap-3">
           <span className="font-mono text-primary">04</span>
-          <span>Lock in evidence. "Done" and "yes" are rejected on purpose.</span>
+          <span>Go to Today for the next command.</span>
         </li>
       </ol>
       <p className="text-[11px] text-muted-foreground italic border-l-2 border-primary/40 pl-2">
