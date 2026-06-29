@@ -4,12 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Seo } from "@/components/Seo";
 import {
   ArrowRight,
-  BrainCircuit,
   CheckCircle2,
   Crosshair,
   FileSignature,
   Gavel,
-  Gauge,
   Radar,
   ShieldCheck,
   Target,
@@ -25,18 +23,18 @@ const USE_CASES = [
 ];
 
 const HOW_IT_WORKS = [
-  { icon: Target, title: "Input", desc: "Name the work, pressure, or bottleneck in plain language." },
-  { icon: BrainCircuit, title: "Diagnosis", desc: "Eblocki reads the mode, state, risk, and proof standard already in the system." },
-  { icon: FileSignature, title: "Proof", desc: "The command becomes a required artifact, not a private intention." },
-  { icon: Radar, title: "Forecast", desc: "Eblocki estimates where your current behaviour is heading, with uncertainty shown plainly." },
+  { icon: Target, title: "Start", desc: "Press Start Proof Week or submit your first proof." },
+  { icon: FileSignature, title: "Submit", desc: "Paste one paragraph, answer, shipped change, or correction." },
+  { icon: Gavel, title: "Verdict", desc: "See what counted, what was weak, and what to improve." },
+  { icon: Radar, title: "Next step", desc: "Go to Today for the next command and return tomorrow." },
 ];
 
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Seo
-        title="Eblocki — Find out if your work actually counts."
-        description="Submit one piece of your real work — an essay paragraph, study notes, or a past-paper answer — and Eblocki tells you whether it proves progress."
+        title="Eblocki — Stop fake productivity."
+        description="Submit one piece of real work, see if it counted, and get the next step."
         path="/"
       />
       <header className="border-b border-border bg-background/95 backdrop-blur">
@@ -62,17 +60,17 @@ export default function Landing() {
           <div className="container grid gap-10 py-14 md:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.75fr)] md:items-center md:py-20 lg:py-24">
             <div className="max-w-3xl">
               <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-primary">
-                Built for students
+                For first-time students
               </span>
               <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-6xl">
-                Find out if your work actually counts.
+                Stop fake productivity.
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
-                Submit one piece of your real work — an essay paragraph, study notes, or a past-paper answer — and Eblocki tells you whether it proves progress or not.
+                Submit one piece of real work. Eblocki tells you if it counted, what happens next, and what to do tomorrow.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link to="/proof-week"><Button size="lg">Start Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
-                <Link to="/proof"><Button size="lg" variant="outline">Submit first proof</Button></Link>
+                <Link to="/proof?first=1"><Button size="lg" variant="outline">Submit first proof</Button></Link>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
                 Example proofs: a 200-word IRAC answer, a corrected past-paper question, or one lecture explained in your own words.
@@ -81,9 +79,9 @@ export default function Landing() {
                 Free beta · No card required · Built for university students
               </p>
               <div className="mt-8 grid gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground sm:grid-cols-3">
-                <ProofLaw label="No vague intention" />
-                <ProofLaw label="No proof, no claim" />
-                <ProofLaw label="No fake certainty" />
+                <ProofLaw label="One real artifact" />
+                <ProofLaw label="One honest verdict" />
+                <ProofLaw label="One next step" />
               </div>
             </div>
             <ProductPreview />
@@ -94,7 +92,7 @@ export default function Landing() {
           <div className="container grid gap-8 py-14 md:grid-cols-[0.8fr_1fr] md:py-16">
             <div>
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Problem</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">Most tools reward the wrong thing.</h2>
+              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">Most tools reward movement, not proof.</h2>
             </div>
             <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
               {[
@@ -114,10 +112,10 @@ export default function Landing() {
         <section id="how-it-works" className="border-b border-border">
           <div className="container py-14 md:py-16">
             <div className="max-w-2xl">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">How It Works</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">Input, diagnosis, proof, forecast.</h2>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">The Loop</div>
+              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">Start, submit, verdict, next step.</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                The loop is deliberately simple on the surface. Each command has to produce evidence, and each forecast stays tied to the evidence that created it.
+                The surface stays simple on purpose. The deeper standards, scoring, and forecast layers remain behind the scenes until you need them.
               </p>
             </div>
             <div className="mt-8 grid gap-3 md:grid-cols-4">
@@ -138,21 +136,21 @@ export default function Landing() {
         <section className="border-b border-border">
           <div className="container grid gap-8 py-14 md:grid-cols-[0.85fr_1fr] md:items-start md:py-16">
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Product Preview</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">One command surface. Three questions.</h2>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">After You Submit</div>
+              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">What you see after you submit.</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                What should I do now? Where is this behaviour heading? What proof would change the path?
+                One clear next action on top. More detail below it when you want the why, the proof history, or the deeper analysis.
               </p>
             </div>
             <Card className="panel overflow-hidden border-primary/25 bg-card/60">
               <div className="border-b border-border px-4 py-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                Command Centre Preview
+                What you see after you submit
               </div>
               <div className="grid gap-3 p-4 sm:grid-cols-2">
-                <PreviewCell icon={<Crosshair />} label="Command" value="Submit the strongest proof artifact available today." />
-                <PreviewCell icon={<Radar />} label="Future Path" value="Current path improving, confidence moderate." />
-                  <PreviewCell icon={<Gavel />} label="Evidence" value="Each proof is scored before it counts toward identity." />
-                  <PreviewCell icon={<Gauge />} label="Calibration" value="Forecasts are reviewed against the proof that actually arrives." />
+                <PreviewCell icon={<Crosshair />} label="Next step" value="Finish the strongest proof artifact available today." />
+                <PreviewCell icon={<FileSignature />} label="What counts" value="Visible work, not planning or vague intent." />
+                <PreviewCell icon={<Gavel />} label="Verdict" value="Shows what counted and what was weak or missing." />
+                <PreviewCell icon={<Radar />} label="What happens next" value="Your next command updates after the verdict." />
               </div>
             </Card>
           </div>
@@ -162,7 +160,7 @@ export default function Landing() {
           <div className="container py-14 md:py-16">
             <div className="max-w-2xl">
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Modes</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">Different work, same proof law.</h2>
+              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">Different work, same proof rule.</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 Eblocki adapts the standard to the domain while keeping the rule unchanged: progress has to leave evidence.
               </p>
@@ -182,12 +180,12 @@ export default function Landing() {
           <div className="container grid gap-8 py-14 md:grid-cols-[0.8fr_1fr] md:py-16">
             <div>
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Why Different</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">It does not flatter the plan.</h2>
+              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">It checks the work, not the story.</h2>
             </div>
             <div className="space-y-3">
-              <DifferenceLine title="Evidence before identity" body="The ledger updates after proof, not after a self-description." />
-              <DifferenceLine title="Forecasts with uncertainty" body="Temporal outputs show risk, path, and confidence without pretending to know the future." />
-              <DifferenceLine title="Commands require artifacts" body="The system points to the next action and the proof needed to make it count." />
+              <DifferenceLine title="Proof before confidence" body="The record updates after proof, not after a self-description or plan." />
+              <DifferenceLine title="Forecasts show uncertainty" body="Risk and path are visible without pretending the future is certain." />
+              <DifferenceLine title="Next steps require artifacts" body="The system points to the next move and the proof needed to make it count." />
             </div>
           </div>
         </section>
@@ -196,11 +194,14 @@ export default function Landing() {
           <div className="container py-14 md:py-16">
             <div className="max-w-3xl">
               <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Start</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-4xl">Find out today if your work is real.</h2>
+              <h2 className="mt-2 text-2xl font-semibold md:text-4xl">Find out this week if your work counts.</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Submit one piece of proof. Eblocki checks whether it actually shows progress, warns you if the work looks fake or weak, and gives your next command.
+                Press Start Proof Week or skip straight to your first proof. Either way, the loop begins when real work is submitted.
               </p>
-              <Link to="/dashboard" className="mt-7 inline-flex"><Button size="lg">Start Today<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link to="/proof-week" className="inline-flex"><Button size="lg">Start Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+                <Link to="/proof?first=1" className="inline-flex"><Button size="lg" variant="outline">Submit first proof</Button></Link>
+              </div>
             </div>
           </div>
         </section>
@@ -217,12 +218,12 @@ function ProductPreview() {
   return (
     <Card className="panel relative overflow-hidden border-primary/30 bg-card/70 shadow-2xl shadow-primary/5">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Today Command</div>
+        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Today</div>
         <span className="rounded-sm border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-primary">Live</span>
       </div>
       <div className="space-y-4 p-4">
         <div className="rounded-sm border border-primary/30 bg-primary/10 p-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Next Proof Action</div>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Next step</div>
           <p className="mt-2 text-lg font-semibold leading-snug">Finish the artifact that proves the claim.</p>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">Required proof: public output, scored work, shipped change, or reviewed performance.</p>
         </div>
@@ -234,12 +235,12 @@ function ProductPreview() {
         </div>
         <div className="rounded-sm border border-border bg-background/35 p-3">
           <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Evidence Ledger
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Proof record
           </div>
           <div className="mt-3 space-y-2 text-xs">
-            <LedgerRow label="Artifact submitted" status="pending" />
-            <LedgerRow label="Court score" status="awaiting proof" />
-            <LedgerRow label="Forecast calibration" status="later" />
+            <LedgerRow label="Artifact submitted" status="logged" />
+            <LedgerRow label="Verdict" status="ready" />
+            <LedgerRow label="What happens next" status="updated" />
           </div>
         </div>
       </div>
