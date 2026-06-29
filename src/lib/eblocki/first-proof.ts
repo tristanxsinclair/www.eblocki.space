@@ -17,16 +17,9 @@ export const FIRST_PROOF_COPY = {
   title: "Submit your first proof.",
   subtitle:
     "Paste one piece of real work. Eblocki will check whether it proves progress and give you the next action.",
-  helperHeader: "First proof standard",
   helperHeader: "What counts?",
   successTitle: "First proof submitted.",
   successCta: "Back to dashboard",
-} as const;
-
-export const FIRST_PROOF_DEFAULTS = {
-  modeId: "GENERAL_EXECUTION",
-  domain: "general_execution",
-  artifactType: "written answer",
 } as const;
 
 export interface FirstProofExample {
@@ -36,7 +29,6 @@ export interface FirstProofExample {
 
 export const FIRST_PROOF_EXAMPLES: FirstProofExample[] = [
   { domain: "Essay", example: "essay paragraph" },
-  { domain: "Study", example: "study notes in your own words" },
   { domain: "Notes", example: "study notes in your own words" },
   { domain: "Past paper", example: "corrected past-paper answer" },
   { domain: "Law", example: "IRAC paragraph" },
@@ -44,8 +36,10 @@ export const FIRST_PROOF_EXAMPLES: FirstProofExample[] = [
 ];
 
 export const FIRST_PROOF_STANDARD = {
-  whatCounts: "A visible piece of work you actually produced, pasted or attached clearly enough to check.",
-  stronger: "It gets stronger when it includes your own words, a correction, specific detail, or a clear next improvement.",
+  whatCounts:
+    "A visible piece of work you actually produced, pasted or attached clearly enough to check.",
+  stronger:
+    "It gets stronger when it includes your own words, a correction, specific detail, or a clear next improvement.",
   whatToPaste:
     "Paste the work itself: an essay paragraph, study notes, a corrected answer, an IRAC paragraph, or a concept explanation.",
 } as const;
