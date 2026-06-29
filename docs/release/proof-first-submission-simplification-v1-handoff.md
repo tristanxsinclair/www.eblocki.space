@@ -2,9 +2,21 @@
 
 ## Summary
 
-This handoff packages the verified local implementation of Proof First Submission Simplification v1 for application to the real GitHub repository.
+This handoff records the merged Proof First Submission Simplification v1 change from PR #4, which landed on `main` on 2026-06-29.
 
 The change keeps normal `/proof` behaviour intact while making `/proof?first=1` usable by a first-time student without learning advanced Eblocki terminology first.
+
+## Post-Merge Cleanup Note
+
+This cleanup pass de-duplicated the merged helper, test, and handoff state without changing the intended first-proof behaviour.
+
+PR #4 changed only:
+
+- `src/lib/eblocki/first-proof.ts`
+- `src/lib/eblocki/__tests__/first-proof.test.ts`
+- `docs/release/proof-first-submission-simplification-v1-handoff.md`
+
+`src/pages/Proof.tsx` already contained compatible first-proof UX wiring on current `main`, but was not part of PR #4.
 
 ## Behaviour Changed
 
@@ -32,8 +44,8 @@ The change keeps normal `/proof` behaviour intact while making `/proof?first=1` 
 ## Files Changed
 
 - `src/lib/eblocki/first-proof.ts`
-- `src/pages/Proof.tsx`
 - `src/lib/eblocki/__tests__/first-proof.test.ts`
+- `docs/release/proof-first-submission-simplification-v1-handoff.md`
 
 ## Files Intentionally Not Touched
 
@@ -49,7 +61,7 @@ The change keeps normal `/proof` behaviour intact while making `/proof?first=1` 
 
 ## Verification Results
 
-Run in the verified local implementation workspace:
+Historical note from the verified local implementation workspace before merge:
 
 - `pnpm test`: passed, 28 files / 221 tests
 - `pnpm run build`: passed
@@ -65,7 +77,7 @@ Full repo lint still fails on pre-existing repo-wide debt outside this task. Do 
 Observed after the implementation:
 
 - `pnpm run lint`: failed with existing repo-wide lint errors in unrelated files
-- `src/pages/Proof.tsx`: no lint errors after this change
+- `src/pages/Proof.tsx`: remained compatible on current `main`, but was not changed in PR #4
 - `src/pages/Proof.tsx`: still has two pre-existing hook dependency warnings
 
 Do not clean broad lint debt as part of applying this patch.
@@ -103,7 +115,7 @@ Preferred patch apply path:
 3. Verify only the intended files changed:
 
    ```bash
-   git diff -- src/lib/eblocki/first-proof.ts src/pages/Proof.tsx src/lib/eblocki/__tests__/first-proof.test.ts
+   git diff -- src/lib/eblocki/first-proof.ts src/lib/eblocki/__tests__/first-proof.test.ts docs/release/proof-first-submission-simplification-v1-handoff.md
    ```
 
 4. Run verification:
@@ -112,7 +124,7 @@ Preferred patch apply path:
    pnpm test
    pnpm run build
    pnpm exec tsc --noEmit
-   pnpm exec eslint src/lib/eblocki/first-proof.ts src/pages/Proof.tsx src/lib/eblocki/__tests__/first-proof.test.ts
+   pnpm exec eslint src/lib/eblocki/first-proof.ts src/lib/eblocki/__tests__/first-proof.test.ts
    ```
 
 5. If available, run route smoke:
