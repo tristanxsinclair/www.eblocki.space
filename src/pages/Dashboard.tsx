@@ -159,25 +159,25 @@ export default function Dashboard() {
     <AppShell>
       <Seo
         title="Dashboard | EBLOCKI"
-        description="Command-centre overview: next proof, forecast, evidence, identity, and weekly calibration."
+        description="Today surface: next proof, verdict, progress, and deeper analysis."
         path="/dashboard"
       />
       <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-5">
         <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">
           <div className="min-w-0">
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              {allArtifacts.length === 0 ? "Today" : "Dashboard"}
+              Today
             </span>
             <h1 className="text-2xl md:text-3xl font-semibold mt-1">
-              {allArtifacts.length === 0 ? "Today" : "Dashboard"}
+              Today
             </h1>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Proof</Button></Link>
+            <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit proof</Button></Link>
             {allArtifacts.length > 0 && (
               <>
                 <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
-                <Link to="/start-today"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Start</Button></Link>
+                <Link to="/start-today?plan=1"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Plan</Button></Link>
                 <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
               </>
             )}
@@ -188,10 +188,10 @@ export default function Dashboard() {
           <Card className="panel p-4 border-primary/30 bg-primary/5">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Eblocki OS - Not Configured</div>
-                <p className="text-sm mt-1 text-muted-foreground">No personalised modes found. Add modes so proof can route to the right standards.</p>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Modes not set up</div>
+                <p className="text-sm mt-1 text-muted-foreground">Add at least one mode so proof routes to the right standard.</p>
               </div>
-              <Link to="/modes"><Button size="sm">Configure Modes</Button></Link>
+              <Link to="/modes"><Button size="sm">Set up modes</Button></Link>
             </div>
           </Card>
         )}
@@ -204,16 +204,21 @@ export default function Dashboard() {
               Start here
             </div>
             <h2 className="mt-2 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">
-              Submit one piece of real work.
+              Submit your first proof.
             </h2>
             <p className="mt-2 text-sm text-muted-foreground text-wrap-safe">
-              Eblocki will check whether it actually proves progress, then tell you the next action.
+              Eblocki will tell you what counted, what was weak, and what to do next.
             </p>
             <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
               <Link to="/proof?first=1" className="w-full sm:w-auto">
                 <Button size="sm" className="w-full sm:w-auto">
-                  Submit Proof
+                  Submit first proof
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
+              </Link>
+              <Link to="/proof-week" className="w-full sm:w-auto">
+                <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                  See what counts
                 </Button>
               </Link>
             </div>
@@ -221,82 +226,82 @@ export default function Dashboard() {
         )}
 
         {allArtifacts.length > 0 && (
-        <>
-        <EvidenceCommandPanel
-          view={view}
-          pending={pending}
-          recent={recent}
-          topPending={topPending}
-          latestArtifact={latestArtifact}
-        />
+          <>
+            <EvidenceCommandPanel
+              view={view}
+              pending={pending}
+              recent={recent}
+              topPending={topPending}
+              latestArtifact={latestArtifact}
+            />
 
-        <DashboardForecastTabs
-          value={diagnosticsTab}
-          onValueChange={openDiagnosticsTab}
-          forecastSlot={
-            <>
-              {temporalResult ? (
-                <TemporalCommandCard result={temporalResult} />
-              ) : (
-                <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
-              )}
-              <TemporalFeedbackPanel />
-              <InterventionCard state={(currentState as BehaviouralState) ?? state} />
-            </>
-          }
-          evidenceSlot={
-            <>
-              {user && <IdentityLedger userId={user.id} limit={5} />}
-              <div className="grid lg:grid-cols-2 gap-4">
-                <MomentumPanel />
-                <WeeklyRetro />
-              </div>
-              <QuickCheckInCard
-                quick={quick}
-                setQuick={setQuick}
-                mode={mode}
-                state={state}
-                onDiagnose={handleCheckIn}
-              />
-              <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
-                <div className="flex items-center justify-between gap-3 min-w-0">
-                  <div className="min-w-0">
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Identity</div>
-                    <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
-                      {currentMode ? `Last coach mode: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
-                    </p>
+            <DashboardForecastTabs
+              value={diagnosticsTab}
+              onValueChange={openDiagnosticsTab}
+              forecastSlot={
+                <>
+                  {temporalResult ? (
+                    <TemporalCommandCard result={temporalResult} />
+                  ) : (
+                    <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
+                  )}
+                  <TemporalFeedbackPanel />
+                  <InterventionCard state={(currentState as BehaviouralState) ?? state} />
+                </>
+              }
+              evidenceSlot={
+                <>
+                  {user && <IdentityLedger userId={user.id} limit={5} />}
+                  <div className="grid lg:grid-cols-2 gap-4">
+                    <MomentumPanel />
+                    <WeeklyRetro />
                   </div>
-                  {currentState && <StateBadge state={currentState as BehaviouralState} />}
-                </div>
-                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  <MetricCell label="Modes" value={String(view.evidenceSummary.modesCount)} />
-                  <MetricCell label="Latest" value={view.evidenceSummary.latestProofTitle ?? "none"} />
-                  <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
-                </div>
-              </Card>
-            </>
-          }
-          auditSlot={
-            <>
-              <TemporalIntelligencePanel />
-              <TemporalModelAuditPanel />
-              <div className="space-y-3">
-                <ProductMatchPanel
-                  artifacts={allArtifacts}
-                  temporal={temporalResult}
-                  accessLevel="free"
-                  operatingProfile={{
-                    primaryDomain: activeDomains[0] ?? null,
-                    recommendationsAllowed: true,
-                    trustPreference: "neutral",
-                  }}
-                />
-                <InterestSignalCard />
-              </div>
-            </>
-          }
-        />
-        </>
+                  <QuickCheckInCard
+                    quick={quick}
+                    setQuick={setQuick}
+                    mode={mode}
+                    state={state}
+                    onDiagnose={handleCheckIn}
+                  />
+                  <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
+                    <div className="flex items-center justify-between gap-3 min-w-0">
+                      <div className="min-w-0">
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Current setup</div>
+                        <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
+                          {currentMode ? `Last coach lens: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
+                        </p>
+                      </div>
+                      {currentState && <StateBadge state={currentState as BehaviouralState} />}
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <MetricCell label="Mode count" value={String(view.evidenceSummary.modesCount)} />
+                      <MetricCell label="Latest proof" value={view.evidenceSummary.latestProofTitle ?? "none"} />
+                      <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
+                    </div>
+                  </Card>
+                </>
+              }
+              auditSlot={
+                <>
+                  <TemporalIntelligencePanel />
+                  <TemporalModelAuditPanel />
+                  <div className="space-y-3">
+                    <ProductMatchPanel
+                      artifacts={allArtifacts}
+                      temporal={temporalResult}
+                      accessLevel="free"
+                      operatingProfile={{
+                        primaryDomain: activeDomains[0] ?? null,
+                        recommendationsAllowed: true,
+                        trustPreference: "neutral",
+                      }}
+                    />
+                    <InterestSignalCard />
+                  </div>
+                </>
+              }
+            />
+          </>
         )}
       </div>
     </AppShell>
@@ -304,12 +309,13 @@ export default function Dashboard() {
 }
 
 function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardViewModel>; state: BehaviouralState | null }) {
+  const secondaryLabel = view.commandSummary.secondaryHref === "/coach" ? "Open coach" : "Plan today";
   return (
     <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
       <div className="flex items-start justify-between gap-4 flex-wrap min-w-0">
         <div className="min-w-0 max-w-3xl">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Today // {view.commandSummary.label}</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Today // Next step</span>
             <span className="rounded-sm border border-border bg-background/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
               {view.dashboardStatus.replace(/_/g, " ")}
             </span>
@@ -317,18 +323,18 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
           </div>
           <h2 className="mt-3 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">{view.commandSummary.title}</h2>
           <p className="mt-2 text-sm text-muted-foreground max-w-2xl text-wrap-safe">
-            <span className="text-foreground">Next Command:</span> {view.commandSummary.nextBestAction}
+            <span className="text-foreground">After this proof:</span> {view.commandSummary.nextBestAction}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-wrap">
           <Link to={view.commandSummary.primaryHref} className="w-full sm:w-auto">
             <Button size="sm" className="w-full sm:w-auto">
-              {view.commandSummary.primaryCta}<ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+              Submit proof<ArrowRight className="h-3.5 w-3.5 ml-1.5" />
             </Button>
           </Link>
           <Link to={view.commandSummary.secondaryHref} className="w-full sm:w-auto">
             <Button size="sm" variant="outline" className="w-full sm:w-auto">
-              {view.commandSummary.secondaryCta}
+              {secondaryLabel}
             </Button>
           </Link>
         </div>
@@ -361,7 +367,7 @@ function EvidenceCommandPanel({
   const desktopLimit = Math.min(recent.length, 4);
   return (
     <section className="space-y-3">
-      <SectionHeader eyebrow="Evidence" title="Recent Proof" detail={`${view.evidenceSummary.weekArtifacts} this week`} />
+      <SectionHeader eyebrow="Proof" title="Recent proof" detail={`${view.evidenceSummary.weekArtifacts} this week`} />
       <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 mobile-safe-card">
         <div className="grid grid-cols-3 gap-2">
           <MetricCell label="Artifacts" value={String(view.evidenceSummary.weekArtifacts)} />
@@ -370,17 +376,17 @@ function EvidenceCommandPanel({
         </div>
 
         <div className="mt-4 grid gap-3">
-          <EvidenceBlock icon={<FileText />} label="Pending proof" action="Submit" href="/proof">
-            {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open Coach to forge one."}
+          <EvidenceBlock icon={<FileText />} label="Next proof" action="Submit" href="/proof">
+            {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open coach to forge one."}
           </EvidenceBlock>
           <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3`}>
-            <EvidenceBlock icon={<Gavel />} label="Latest verdict" action="Open" href="/proof">
-              {latestArtifact ? `${latestArtifact.title} - ${latestArtifact.evidence_strength ?? "unscored"}` : "No proof yet. Submit one piece of proof to activate Eblocki."}
+            <EvidenceBlock icon={<Gavel />} label="Last verdict" action="Open" href="/proof">
+              {latestArtifact ? `${latestArtifact.title} - ${latestArtifact.evidence_strength ?? "unscored"}` : "No proof yet. Submit one artifact to start the verdict loop."}
             </EvidenceBlock>
-            <EvidenceBlock icon={<CircleDot />} label="Domain signal" action="Modes" href="/modes">
+            <EvidenceBlock icon={<CircleDot />} label="Weak spot" action="Modes" href="/modes">
               {view.evidenceSummary.strongestDomain
                 ? `Strongest: ${view.evidenceSummary.strongestDomain}. Weakest: ${view.evidenceSummary.weakestDomain ?? "none flagged"}.`
-                : "No weekly domain signal yet."}
+                : "No weekly mode signal yet."}
             </EvidenceBlock>
           </div>
           <button
@@ -388,14 +394,14 @@ function EvidenceCommandPanel({
             onClick={() => setShowSecondary((open) => !open)}
             className="md:hidden font-mono text-[10px] uppercase tracking-widest text-primary hover:underline self-start"
           >
-            {showSecondary ? "Hide verdict & domain" : "Show verdict & domain"}
+            {showSecondary ? "Hide last verdict" : "Show last verdict"}
           </button>
         </div>
 
         <div className="mt-4 grid gap-2">
           <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Recent proof</div>
           {recent.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No proof logged yet. The system has no evidence.</p>
+            <p className="text-sm text-muted-foreground">No proof logged yet. Submit one artifact to start the record.</p>
           ) : (
             <>
               {recent.slice(0, desktopLimit).map((proof, idx) => (
@@ -425,7 +431,7 @@ function EvidenceCommandPanel({
 
         {pending.length > 1 && (
           <Link to="/proof" className="mt-3 inline-flex items-center gap-1 text-xs font-mono text-primary hover:underline">
-            {pending.length} pending contracts <ArrowRight className="h-3 w-3" />
+            {pending.length} pending proof contracts <ArrowRight className="h-3 w-3" />
           </Link>
         )}
       </Card>
