@@ -28,7 +28,7 @@ const HOW_IT_WORKS = [
   { icon: Target, title: "Input", desc: "Name the work, pressure, or bottleneck in plain language." },
   { icon: BrainCircuit, title: "Diagnosis", desc: "Eblocki reads the mode, state, risk, and proof standard already in the system." },
   { icon: FileSignature, title: "Proof", desc: "The command becomes a required artifact, not a private intention." },
-  { icon: Radar, title: "Forecast", desc: "The Temporal loop estimates where current behaviour may be heading, with uncertainty visible." },
+  { icon: Radar, title: "Forecast", desc: "Eblocki estimates where your current behaviour is heading, with uncertainty shown plainly." },
 ];
 
 export default function Landing() {
@@ -52,7 +52,7 @@ export default function Landing() {
               How it works
             </a>
             <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">Sign in</Link>
-            <Link to="/dashboard"><Button size="sm">Start Today</Button></Link>
+            <Link to="/proof-week"><Button size="sm">Start Proof Week</Button></Link>
           </nav>
         </div>
       </header>
@@ -71,8 +71,8 @@ export default function Landing() {
                 Submit one piece of your real work — an essay paragraph, study notes, or a past-paper answer — and Eblocki tells you whether it proves progress or not.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/dashboard"><Button size="lg">Start Today<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
-                <Link to="/dashboard"><Button size="lg" variant="outline">Submit Proof</Button></Link>
+                <Link to="/proof-week"><Button size="lg">Start Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
+                <Link to="/proof"><Button size="lg" variant="outline">Submit first proof</Button></Link>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">
                 Example proofs: a 200-word IRAC answer, a corrected past-paper question, or one lecture explained in your own words.
@@ -151,8 +151,8 @@ export default function Landing() {
               <div className="grid gap-3 p-4 sm:grid-cols-2">
                 <PreviewCell icon={<Crosshair />} label="Command" value="Submit the strongest proof artifact available today." />
                 <PreviewCell icon={<Radar />} label="Future Path" value="Current path improving, confidence moderate." />
-                <PreviewCell icon={<Gavel />} label="Evidence" value="Court checks artifact strength before identity updates." />
-                <PreviewCell icon={<Gauge />} label="Calibration" value="Forecast accuracy is reviewed after later proof arrives." />
+                  <PreviewCell icon={<Gavel />} label="Evidence" value="Each proof is scored before it counts toward identity." />
+                  <PreviewCell icon={<Gauge />} label="Calibration" value="Forecasts are reviewed against the proof that actually arrives." />
               </div>
             </Card>
           </div>
