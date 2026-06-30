@@ -69,7 +69,7 @@ describe("coach engine", () => {
 
   it("respects auto mode and keeps router-detected domain", () => {
     const result = buildCoachResponse({
-      input: "Help me think through this issue today",
+      input: "Can you give me a hand with this today?",
       preferredMode: "auto",
     });
     expect(result.detectedDomain).toBe("general");
