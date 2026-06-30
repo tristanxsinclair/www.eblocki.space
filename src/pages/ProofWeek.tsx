@@ -55,6 +55,7 @@ export default function ProofWeek() {
   }, [user]);
 
   const status = computeProofWeek({ joinedAt, artifactDates });
+  const proofHref = status.daysWithProof === 0 ? "/proof?first=1" : "/proof";
 
   const join = async () => {
     if (!user) return;
@@ -78,10 +79,10 @@ export default function ProofWeek() {
       />
       <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-5">
         <header>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Beta // Proof Week</span>
-          <h1 className="mt-1 text-2xl md:text-3xl font-semibold">7 days. 7 commands. One honest verdict.</h1>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Week</span>
+          <h1 className="mt-1 text-2xl md:text-3xl font-semibold">Start Proof Week. Submit one proof a day.</h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-            Eblocki is a 7-day proof challenge. Each day, submit one measurable artifact. The system judges the evidence, gives the next command, and shows whether your work actually counted.
+            Each day you submit one measurable artifact. Eblocki tells you if it counted, what happens next, and whether the week was real or fake.
           </p>
         </header>
 
@@ -98,8 +99,8 @@ export default function ProofWeek() {
               Day 1 starts the moment you join. Submit one honest proof artifact and the loop begins.
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={join} disabled={joining}>{joining ? "Joining…" : "Join Proof Week"}</Button>
-              <Link to="/proof"><Button size="sm" variant="outline">Submit proof first</Button></Link>
+              <Button size="sm" onClick={join} disabled={joining}>{joining ? "Starting…" : "Start Proof Week"}</Button>
+              <Link to="/proof?first=1"><Button size="sm" variant="outline">Submit first proof</Button></Link>
             </div>
           </Card>
         ) : status.completed ? (
@@ -113,7 +114,7 @@ export default function ProofWeek() {
             </p>
             <p className="text-sm text-muted-foreground">Verdict time. Tell us if Eblocki exposed fake productivity — and if it is worth paying for.</p>
             <div className="flex flex-wrap gap-2">
-              <Link to="/dashboard"><Button size="sm">Back to dashboard</Button></Link>
+              <Link to="/dashboard"><Button size="sm">Back to Today</Button></Link>
               <Link to="/proof"><Button size="sm" variant="outline">Keep logging proof</Button></Link>
             </div>
           </Card>
@@ -155,9 +156,9 @@ export default function ProofWeek() {
               ))}
             </div>
             <div className="flex flex-wrap gap-2 pt-1">
-              <Link to="/proof"><Button size="sm"><Target className="h-3 w-3 mr-1.5" />Submit today's proof</Button></Link>
-              <Link to="/coach"><Button size="sm" variant="outline">Get the command</Button></Link>
-              <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
+              <Link to={proofHref}><Button size="sm"><Target className="h-3 w-3 mr-1.5" />Submit today's proof</Button></Link>
+              <Link to="/coach"><Button size="sm" variant="outline">Open coach</Button></Link>
+              <Link to="/dashboard"><Button size="sm" variant="ghost">Back to Today</Button></Link>
             </div>
           </Card>
         )}
