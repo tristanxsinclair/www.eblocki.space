@@ -39,8 +39,8 @@ export default function Landing() {
         description="Submit one piece of your real work — an essay paragraph, study notes, or a past-paper answer — and Eblocki tells you whether it proves progress."
         path="/"
       />
-      <header className="border-b border-border bg-background/95 backdrop-blur">
-        <div className="container flex items-center justify-between py-4">
+      <header className="border-b border-border bg-background/95 backdrop-blur safe-top safe-x">
+        <div className="container flex items-center justify-between gap-3 py-4 flex-wrap">
           <Link to="/" className="flex items-center gap-2 native-tap">
             <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-primary text-primary-foreground">
               <Crosshair className="h-4 w-4" />
