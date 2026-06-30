@@ -552,7 +552,7 @@ export function GameForgeShell() {
         </Card>
       )}
 
-      {session && session.mistakes.length > 0 && (
+      {session && session.mistakes.some((m) => !m.resolved) && (
         <Card className="panel p-4 md:p-5 border-border/80 bg-card/50">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
@@ -562,7 +562,7 @@ export function GameForgeShell() {
             <Brain className="h-4 w-4 text-primary" />
           </div>
           <div className="mt-4 grid gap-2">
-            {session.mistakes.map((mistake) => (
+            {session.mistakes.filter((m) => !m.resolved).map((mistake) => (
               <div key={mistake.questionId} className="rounded-sm border border-border bg-background/30 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
