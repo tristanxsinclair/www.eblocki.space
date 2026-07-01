@@ -6,7 +6,7 @@ describe("verdictIdentityImpact", () => {
     const r = verdictIdentityImpact("weak");
     expect(r.tone).toBe("warn");
     expect(r.headline.toLowerCase()).toContain("protects the streak");
-    expect(r.headline.toLowerCase()).not.toContain("compound");
+    expect(r.headline.toLowerCase()).toContain("does not compound");
   });
 
   it("moderate proof is accepted but not elite", () => {
