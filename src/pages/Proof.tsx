@@ -45,6 +45,7 @@ import {
   isFirstProofMode,
 } from "@/lib/eblocki/first-proof";
 import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
+import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 
 const ARTIFACT_TYPES = [
   "product system review",
