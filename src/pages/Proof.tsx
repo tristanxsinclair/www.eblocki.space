@@ -45,6 +45,7 @@ import {
   isFirstProofMode,
 } from "@/lib/eblocki/first-proof";
 import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
+import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -906,6 +907,26 @@ export default function Proof() {
               </div>
               <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
             </div>
+            {(() => {
+              const impact = verdictIdentityImpact(verdict.evidenceStrength);
+              const toneClass =
+                impact.tone === "warn"
+                  ? "border-amber-500/40 bg-amber-500/5 text-amber-200"
+                  : impact.tone === "good"
+                    ? "border-primary/40 bg-primary/5 text-primary"
+                    : impact.tone === "elite"
+                      ? "border-primary/60 bg-primary/10 text-primary"
+                      : "border-border bg-muted/30 text-foreground";
+              return (
+                <div
+                  className={`mt-3 rounded-sm border p-3 text-sm ${toneClass}`}
+                  data-testid="verdict-identity-impact"
+                >
+                  <div className="font-medium">{impact.headline}</div>
+                  <div className="mt-1 text-xs opacity-90">{impact.subtext}</div>
+                </div>
+              );
+            })()}
             {firstProofMode ? (
               <>
                 <div className="mt-3 grid gap-3 text-sm">
@@ -926,11 +947,12 @@ export default function Proof() {
               </>
             ) : (
               <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
-                <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
-                <VerdictRow label="Why it scored that way" value={verdict.why} />
+                <VerdictRow label="What counted" value={verdict.feedback} />
                 <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
                 <VerdictRow label="Missing standard" value={verdict.missingStandard} />
-                <VerdictRow label="Next upgrade" value={verdict.nextUpgrade} />
+                <VerdictRow label="Next command" value={verdict.nextUpgrade} />
+                <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
+                <VerdictRow label="Why it scored that way" value={verdict.why} />
                 <VerdictRow label="Elite version" value={verdict.eliteVersion} />
                 <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
                 <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
