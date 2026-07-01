@@ -6,39 +6,86 @@ import {
   ArrowRight,
   CheckCircle2,
   Crosshair,
-  FileSignature,
+  Flame,
   Gavel,
-  Radar,
   ShieldCheck,
+  Sparkles,
   Target,
 } from "lucide-react";
 
-const USE_CASES = [
-  { title: "Student", desc: "Turn study blocks into marked evidence, revision proofs, and weaker-topic corrections." },
-  { title: "Athlete", desc: "Connect training intent to measurable transfer, pressure reps, and match review artifacts." },
-  { title: "Salesperson", desc: "Convert calls, follow-ups, and objections into proof of pipeline behaviour." },
-  { title: "Founder", desc: "Keep building tied to shipped artifacts, customer evidence, and decision quality." },
-  { title: "Creator", desc: "Measure output by published proof, iteration quality, and audience learning." },
-  { title: "General", desc: "Use daily proof to replace vague improvement with visible behavioural evidence." },
+const STEPS = [
+  {
+    icon: Target,
+    label: "Step 1",
+    title: "Submit proof",
+    body:
+      "Each day, submit one piece of evidence from study, work, gym, football, business, sales, or another serious goal.",
+  },
+  {
+    icon: Gavel,
+    label: "Step 2",
+    title: "Get a verdict",
+    body:
+      "Your proof is rated as weak, useful, strong, or elite. No fake productivity. No vague hype.",
+  },
+  {
+    icon: ArrowRight,
+    label: "Step 3",
+    title: "Correct the next move",
+    body: "You get a simple next action so tomorrow is sharper than today.",
+  },
 ];
 
-const HOW_IT_WORKS = [
-  { icon: Target, title: "Start", desc: "Press Start Proof Week or submit your first proof." },
-  { icon: FileSignature, title: "Submit", desc: "Paste one paragraph, answer, shipped change, or correction." },
-  { icon: Gavel, title: "Verdict", desc: "See what counted, what was weak, and what to improve." },
-  { icon: Radar, title: "Next step", desc: "Go to Today for the next command and return tomorrow." },
+const SCALE = [
+  {
+    title: "Weak Proof",
+    body: "You said something, but the action is unclear or too soft to count.",
+    accent: "text-evidence-weak",
+  },
+  {
+    title: "Useful Proof",
+    body: "Action happened, but it needs a clearer result or stronger next step.",
+    accent: "text-evidence-moderate",
+  },
+  {
+    title: "Strong Proof",
+    body: "Clear effort, clear outcome, and a next move that can compound.",
+    accent: "text-evidence-strong",
+  },
+  {
+    title: "Elite Proof",
+    body: "Repeatable evidence that shows real progress, not just activity.",
+    accent: "text-evidence-elite",
+  },
+];
+
+const FOR_YOU = [
+  "You study but still feel inconsistent.",
+  "You make plans but do not always execute.",
+  "You want proof instead of motivation.",
+  "You want your effort judged honestly.",
+  "You are building a better version of yourself but need evidence.",
+];
+
+const WHAT_YOU_GET = [
+  "7 days of daily proof submission.",
+  "Simple proof verdicts.",
+  "Correction commands.",
+  "A final Proof Week report.",
+  "One feedback loop that shows where effort is leaking.",
 ];
 
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Seo
-        title="Eblocki — Stop fake productivity."
-        description="Submit one piece of real work, see if it counted, and get the next step."
+        title="Eblocki Proof Week Beta"
+        description="Build proof for 7 days. Submit one real action each day, get a verdict, and see what your effort actually proves."
         path="/"
       />
+
       <header className="border-b border-border bg-background/95 backdrop-blur safe-top safe-x">
-        <div className="container flex items-center justify-between gap-3 py-4 flex-wrap">
+        <div className="container flex flex-wrap items-center justify-between gap-3 py-4">
           <Link to="/" className="flex items-center gap-2 native-tap">
             <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-primary text-primary-foreground">
               <Crosshair className="h-4 w-4" />
@@ -46,130 +93,99 @@ export default function Landing() {
             <span className="font-mono text-sm tracking-[0.25em]">EBLOCKI</span>
           </Link>
           <nav className="flex items-center gap-3">
-            <a href="#how-it-works" className="hidden text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground sm:inline-flex">
+            <a
+              href="#how-it-works"
+              className="hidden text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground sm:inline-flex"
+            >
               How it works
             </a>
-            <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">Sign in</Link>
-            <Link to="/proof-week"><Button size="sm">Start Proof Week</Button></Link>
+            <a
+              href="#join"
+              className="hidden text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground sm:inline-flex"
+            >
+              Join beta
+            </a>
+            <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
+              Sign in
+            </Link>
           </nav>
         </div>
       </header>
 
       <main>
         <section className="grid-bg border-b border-border">
-          <div className="container grid gap-10 py-14 md:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.75fr)] md:items-center md:py-20 lg:py-24">
+          <div className="container grid gap-10 py-14 md:grid-cols-[minmax(0,1fr)_minmax(320px,0.82fr)] md:items-center md:py-20 lg:py-24">
             <div className="max-w-3xl">
-              <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-primary">
-                For first-time students
-              </span>
+              <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-primary">
+                Eblocki Proof Week Beta
+              </p>
               <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-6xl">
-                Stop fake productivity.
+                Stop calling plans progress.
+                <br />
+                Build proof for 7 days.
               </h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
-                Submit one piece of real work. Eblocki tells you if it counted, what happens next, and what to do tomorrow.
+              <p className="mt-6 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+                Eblocki is a proof-based execution system for students and young operators who want evidence, not motivation. Submit one real action each day. Get a verdict. See what your effort actually proves.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/proof-week"><Button size="lg">Start Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
-                <Link to="/proof?first=1"><Button size="lg" variant="outline">Submit first proof</Button></Link>
+                <a href="#join" className="inline-flex">
+                  <Button size="lg">
+                    Join the 7-Day Beta
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </a>
+                <a href="#how-it-works" className="inline-flex">
+                  <Button size="lg" variant="outline">See How It Works</Button>
+                </a>
               </div>
-              <p className="mt-3 text-sm text-muted-foreground">
-                Example proofs: a 200-word IRAC answer, a corrected past-paper question, or one lecture explained in your own words.
-              </p>
-              <p className="mt-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                Free beta · No card required · Built for university students
+              <p className="mt-4 text-sm text-muted-foreground">
+                Free beta. Limited to 5-10 testers. Honest feedback required.
               </p>
               <div className="mt-8 grid gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground sm:grid-cols-3">
-                <ProofLaw label="One real artifact" />
+                <ProofLaw label="One real action" />
                 <ProofLaw label="One honest verdict" />
-                <ProofLaw label="One next step" />
+                <ProofLaw label="One sharper next move" />
               </div>
             </div>
-            <ProductPreview />
-          </div>
-        </section>
-
-        <section className="border-b border-border">
-          <div className="container grid gap-8 py-14 md:grid-cols-[0.8fr_1fr] md:py-16">
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Problem</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">Most tools reward movement, not proof.</h2>
-            </div>
-            <div className="grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-              {[
-                "Planning without an artifact.",
-                "Streaks without depth.",
-                "Identity claims without evidence.",
-                "Confidence without calibration.",
-              ].map((item) => (
-                <div key={item} className="rounded-sm border border-border bg-card/40 p-4">
-                  {item}
-                </div>
-              ))}
-            </div>
+            <HeroPreview />
           </div>
         </section>
 
         <section id="how-it-works" className="border-b border-border">
           <div className="container py-14 md:py-16">
             <div className="max-w-2xl">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">The Loop</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">Start, submit, verdict, next step.</h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                The surface stays simple on purpose. The deeper standards, scoring, and forecast layers remain behind the scenes until you need them.
-              </p>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">How it works</div>
+              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">A simple loop built around evidence.</h2>
             </div>
-            <div className="mt-8 grid gap-3 md:grid-cols-4">
-              {HOW_IT_WORKS.map(({ icon: Icon, title, desc }, index) => (
-                <Card key={title} className="panel p-4">
+            <div className="mt-8 grid gap-3 md:grid-cols-3">
+              {STEPS.map(({ icon: Icon, label, title, body }) => (
+                <Card key={title} className="panel p-5">
                   <div className="flex items-center justify-between gap-2">
-                    <Icon className="h-5 w-5 text-primary" />
-                    <span className="font-mono text-[10px] text-muted-foreground">0{index + 1}</span>
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
+                    <Icon className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="mt-4 text-sm font-medium">{title}</div>
-                  <p className="mt-2 text-xs leading-5 text-muted-foreground">{desc}</p>
+                  <h3 className="mt-4 text-xl font-semibold">{title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{body}</p>
                 </Card>
               ))}
             </div>
-          </div>
-        </section>
-
-        <section className="border-b border-border">
-          <div className="container grid gap-8 py-14 md:grid-cols-[0.85fr_1fr] md:items-start md:py-16">
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">After You Submit</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">What you see after you submit.</h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                One clear next action on top. More detail below it when you want the why, the proof history, or the deeper analysis.
-              </p>
-            </div>
-            <Card className="panel overflow-hidden border-primary/25 bg-card/60">
-              <div className="border-b border-border px-4 py-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                What you see after you submit
-              </div>
-              <div className="grid gap-3 p-4 sm:grid-cols-2">
-                <PreviewCell icon={<Crosshair />} label="Next step" value="Finish the strongest proof artifact available today." />
-                <PreviewCell icon={<FileSignature />} label="What counts" value="Visible work, not planning or vague intent." />
-                <PreviewCell icon={<Gavel />} label="Verdict" value="Shows what counted and what was weak or missing." />
-                <PreviewCell icon={<Radar />} label="What happens next" value="Your next command updates after the verdict." />
-              </div>
-            </Card>
           </div>
         </section>
 
         <section className="border-b border-border">
           <div className="container py-14 md:py-16">
             <div className="max-w-2xl">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Modes</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">Different work, same proof rule.</h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Eblocki adapts the standard to the domain while keeping the rule unchanged: progress has to leave evidence.
-              </p>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">The Proof Scale</div>
+              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">See what your effort actually proves.</h2>
             </div>
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {USE_CASES.map((item) => (
-                <Card key={item.title} className="panel p-4">
-                  <div className="text-sm font-medium">{item.title}</div>
-                  <p className="mt-2 text-xs leading-5 text-muted-foreground">{item.desc}</p>
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              {SCALE.map((item) => (
+                <Card key={item.title} className="panel p-5">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className={`h-4 w-4 ${item.accent}`} />
+                    <h3 className="font-semibold">{item.title}</h3>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.body}</p>
                 </Card>
               ))}
             </div>
@@ -177,71 +193,105 @@ export default function Landing() {
         </section>
 
         <section className="border-b border-border">
-          <div className="container grid gap-8 py-14 md:grid-cols-[0.8fr_1fr] md:py-16">
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Why Different</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">It checks the work, not the story.</h2>
-            </div>
-            <div className="space-y-3">
-              <DifferenceLine title="Proof before confidence" body="The record updates after proof, not after a self-description or plan." />
-              <DifferenceLine title="Forecasts show uncertainty" body="Risk and path are visible without pretending the future is certain." />
-              <DifferenceLine title="Next steps require artifacts" body="The system points to the next move and the proof needed to make it count." />
-            </div>
+          <div className="container grid gap-6 py-14 md:grid-cols-2 md:py-16">
+            <Card className="panel p-6 sm:p-8">
+              <h2 className="text-2xl font-semibold">This is for you if</h2>
+              <ul className="mt-5 space-y-3 text-sm leading-6 text-muted-foreground">
+                {FOR_YOU.map((item) => (
+                  <li key={item} className="flex gap-3">
+                    <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+
+            <Card className="panel p-6 sm:p-8">
+              <h2 className="text-2xl font-semibold">What you get</h2>
+              <ul className="mt-5 space-y-3 text-sm leading-6 text-muted-foreground">
+                {WHAT_YOU_GET.map((item) => (
+                  <li key={item} className="flex gap-3">
+                    <Sparkles className="mt-1 h-4 w-4 shrink-0 text-primary" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
           </div>
         </section>
 
-        <section className="border-b border-border">
-          <div className="container py-14 md:py-16">
-            <div className="max-w-3xl">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Start</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-4xl">Find out this week if your work counts.</h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Press Start Proof Week or skip straight to your first proof. Either way, the loop begins when real work is submitted.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link to="/proof-week" className="inline-flex"><Button size="lg">Start Proof Week<ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
-                <Link to="/proof?first=1" className="inline-flex"><Button size="lg" variant="outline">Submit first proof</Button></Link>
+        <section id="join" className="container py-14 md:py-16">
+          <Card className="panel overflow-hidden border-primary/30 bg-primary/10">
+            <div className="grid gap-6 p-6 sm:p-8 md:grid-cols-[minmax(0,1fr)_320px] md:items-center">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Join the beta</div>
+                <h2 className="mt-2 text-3xl font-semibold">Build proof with us for one week.</h2>
+                <p className="mt-4 max-w-2xl text-sm leading-6 text-foreground/85">
+                  The beta is free. You submit one proof update per day for 7 days. In return, you give honest feedback at the end.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <a href="https://www.instagram.com/eblocki" target="_blank" rel="noreferrer" className="inline-flex">
+                    <Button size="lg" className="panel-glow">
+                      Message Eblocki
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </a>
+                  <a href="#how-it-works" className="inline-flex">
+                    <Button size="lg" variant="outline">Read the loop first</Button>
+                  </a>
+                </div>
+              </div>
+
+              <div className="rounded-md border border-border bg-background/80 p-5">
+                <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  <Flame className="h-3.5 w-3.5 text-primary" />
+                  Message to join
+                </div>
+                <p className="mt-4 text-2xl font-semibold">&quot;Proof Week&quot;</p>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  Send this to Eblocki on Instagram or reply to the person who sent you the beta link.
+                </p>
               </div>
             </div>
-          </div>
+          </Card>
         </section>
       </main>
 
-      <footer className="container py-8 text-xs font-mono text-muted-foreground">
-        Confidence is the receipt, not the starting point.
+      <footer className="container border-t border-border py-8 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+        Proof beats motivation.
       </footer>
     </div>
   );
 }
 
-function ProductPreview() {
+function HeroPreview() {
   return (
     <Card className="panel relative overflow-hidden border-primary/30 bg-card/70 shadow-2xl shadow-primary/5">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Today</div>
-        <span className="rounded-sm border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-primary">Live</span>
+        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Week</div>
+        <span className="rounded-sm border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-primary">
+          Beta
+        </span>
       </div>
       <div className="space-y-4 p-4">
         <div className="rounded-sm border border-primary/30 bg-primary/10 p-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Next step</div>
-          <p className="mt-2 text-lg font-semibold leading-snug">Finish the artifact that proves the claim.</p>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">Required proof: public output, scored work, shipped change, or reviewed performance.</p>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Today&apos;s proof</div>
+          <p className="mt-2 text-lg font-semibold leading-snug">Past-paper answer corrected and rewritten under time pressure.</p>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            Submitted as evidence instead of a promise to work later.
+          </p>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <PreviewMetric label="Path" value="corrected" />
-          <PreviewMetric label="Risk" value="drift" />
-          <PreviewMetric label="Proof" value="required" />
-          <PreviewMetric label="Confidence" value="moderate" />
+          <PreviewMetric label="Verdict" value="strong" />
+          <PreviewMetric label="Leak" value="clarity" />
+          <PreviewMetric label="Next step" value="repeat" />
+          <PreviewMetric label="Day" value="03/07" />
         </div>
         <div className="rounded-sm border border-border bg-background/35 p-3">
-          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Proof record
-          </div>
-          <div className="mt-3 space-y-2 text-xs">
-            <LedgerRow label="Artifact submitted" status="logged" />
-            <LedgerRow label="Verdict" status="ready" />
-            <LedgerRow label="What happens next" status="updated" />
-          </div>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">System rule</div>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            No fake productivity. No vague hype. Show the work and let the evidence speak.
+          </p>
         </div>
       </div>
     </Card>
@@ -262,36 +312,6 @@ function PreviewMetric({ label, value }: { label: string; value: string }) {
     <div className="rounded-sm border border-border bg-background/35 p-3">
       <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
       <div className="mt-1 truncate text-sm">{value}</div>
-    </div>
-  );
-}
-
-function LedgerRow({ label, status }: { label: string; status: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-sm border border-border/70 px-2 py-1.5">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-mono text-[9px] uppercase tracking-widest text-primary">{status}</span>
-    </div>
-  );
-}
-
-function PreviewCell({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="rounded-sm border border-border bg-background/35 p-3">
-      <div className="flex items-center gap-2 text-primary [&_svg]:h-3.5 [&_svg]:w-3.5">
-        {icon}
-        <span className="font-mono text-[9px] uppercase tracking-widest">{label}</span>
-      </div>
-      <p className="mt-2 text-sm leading-5 text-muted-foreground">{value}</p>
-    </div>
-  );
-}
-
-function DifferenceLine({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-sm border border-border bg-card/40 p-4">
-      <div className="text-sm font-medium">{title}</div>
-      <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
     </div>
   );
 }
