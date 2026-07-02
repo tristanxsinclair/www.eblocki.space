@@ -310,8 +310,21 @@ export default function Dashboard() {
   );
 }
 
-function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardViewModel>; state: BehaviouralState | null }) {
+function CommandHero({
+  view,
+  state,
+  latestEvidenceStrength,
+}: {
+  view: ReturnType<typeof buildDashboardViewModel>;
+  state: BehaviouralState | null;
+  latestEvidenceStrength?: string | null;
+}) {
   const secondaryLabel = view.commandSummary.secondaryHref === "/coach" ? "Open coach" : "Plan today";
+  const isValidStrength = (v: string | null | undefined): v is EvidenceStrength =>
+    v === "weak" || v === "moderate" || v === "strong" || v === "elite";
+  const identityImpact = isValidStrength(latestEvidenceStrength)
+    ? verdictIdentityImpact(latestEvidenceStrength)
+    : null;
   return (
     <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
       <div className="flex items-start justify-between gap-4 flex-wrap min-w-0">
@@ -344,7 +357,12 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
         <CommandSignal icon={<Target />} label="Proof required" value={view.commandSummary.proofRequired} />
         <CommandSignal icon={<ShieldAlert />} label="Risk if ignored" value={view.commandSummary.highestRisk} />
-        <CommandSignal icon={<Gavel />} label="Latest verdict" value={view.commandLayer.latestCourtSignal} />
+        <CommandSignal
+          icon={<Gavel />}
+          label="Latest verdict"
+          value={view.commandLayer.latestCourtSignal}
+          hint={identityImpact?.headline}
+        />
       </div>
     </Card>
   );
