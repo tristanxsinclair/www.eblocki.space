@@ -198,7 +198,7 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} />}
+        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} latestEvidenceStrength={latestArtifact?.evidence_strength} />}
 
         {allArtifacts.length === 0 && (
           <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
