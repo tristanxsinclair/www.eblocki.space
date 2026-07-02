@@ -50,3 +50,11 @@ export function verdictIdentityImpact(
       };
   }
 }
+export function isEvidenceStrength(value: unknown): value is "weak" | "useful" | "strong" | "elite" {
+  return (
+    value === "weak" ||
+    value === "useful" ||
+    value === "strong" ||
+    value === "elite"
+  );
+}
