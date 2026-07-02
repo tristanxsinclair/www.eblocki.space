@@ -7,6 +7,15 @@ export interface VerdictIdentityImpact {
   tone: "warn" | "neutral" | "good" | "elite";
 }
 
+export function isEvidenceStrength(value: unknown): value is EvidenceStrength {
+  return (
+    value === "weak" ||
+    value === "moderate" ||
+    value === "strong" ||
+    value === "elite"
+  );
+}
+
 /**
  * Maps a proof verdict's evidence strength to a plain-language identity-impact
  * headline. Doctrine: weak proof protects the streak, strong proof compounds
@@ -49,12 +58,4 @@ export function verdictIdentityImpact(
         tone: "elite",
       };
   }
-}
-export function isEvidenceStrength(value: unknown): value is "weak" | "useful" | "strong" | "elite" {
-  return (
-    value === "weak" ||
-    value === "useful" ||
-    value === "strong" ||
-    value === "elite"
-  );
 }

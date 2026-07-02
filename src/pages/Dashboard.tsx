@@ -4,6 +4,7 @@ import {
   isEvidenceStrength,
   verdictIdentityImpact,
 } from "@/lib/eblocki/verdict-identity-impact";
+import { 1sEvidenceStrength,  verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -51,22 +52,32 @@ import {
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
 
+const EVIDENCE_STRENGTHS: EvidenceStrength[] = ["weak", "moderate", "strong", "elite"];
+
+type UserModeRow = Pick<Tables<"user_modes">, "mode_id">;
+type DashboardArtifactRow = DashboardProofRow & ProofArtifactLike;
+
+function isEvidenceStrength(value: string | null | undefined): value is EvidenceStrength {
+  return EVIDENCE_STRENGTHS.includes(value as EvidenceStrength);
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
-  const [today, setToday] = useState<any>(null);
-  const [pending, setPending] = useState<any[]>([]);
-  const [recent, setRecent] = useState<any[]>([]);
-  const [recentCoach, setRecentCoach] = useState<any[]>([]);
-  const [allArtifacts, setAllArtifacts] = useState<any[]>([]);
-  const [verdicts, setVerdicts] = useState<any[]>([]);
-  const [ledger, setLedger] = useState<any[]>([]);
+  const [today, setToday] = useState<DashboardDailySheetRow | null>(null);
+  const [pending, setPending] = useState<DashboardCommitmentRow[]>([]);
+  const [recent, setRecent] = useState<DashboardProofRow[]>([]);
+  const [recentCoach, setRecentCoach] = useState<DashboardCoachRow[]>([]);
+  const [allArtifacts, setAllArtifacts] = useState<DashboardArtifactRow[]>([]);
+  const [verdicts, setVerdicts] = useState<VerdictLike[]>([]);
+  const [ledger, setLedger] = useState<LedgerLike[]>([]);
   const [activeDomains, setActiveDomains] = useState<string[]>([]);
   const [quick, setQuick] = useState("");
   const [mode, setMode] = useState<Mode | null>(null);
   const [state, setStateBadge] = useState<BehaviouralState | null>(null);
   const [diagnosticsTab, setDiagnosticsTab] = useState("forecast");
   const [queryFailed, setQueryFailed] = useState(false);
+  const [dashboardLoaded, setDashboardLoaded] = useState(false);
 
   const todayISO = new Date().toISOString().slice(0, 10);
 
@@ -431,10 +442,10 @@ function EvidenceCommandPanel({
   latestArtifact,
 }: {
   view: ReturnType<typeof buildDashboardViewModel>;
-  pending: any[];
-  recent: any[];
-  topPending: any;
-  latestArtifact: any;
+  pending: DashboardCommitmentRow[];
+  recent: DashboardProofRow[];
+  topPending: DashboardCommitmentRow | undefined;
+  latestArtifact: DashboardProofRow | undefined;
 }) {
   const [showAllRecent, setShowAllRecent] = useState(false);
   const [showSecondary, setShowSecondary] = useState(false);
