@@ -310,7 +310,7 @@ export default function Dashboard() {
   );
 }
 
-function CommandHero({
+export function CommandHero({
   view,
   state,
   latestEvidenceStrength,
