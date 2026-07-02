@@ -48,6 +48,12 @@ import {
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
 
+const EVIDENCE_STRENGTHS: EvidenceStrength[] = ["weak", "moderate", "strong", "elite"];
+
+function isEvidenceStrength(value: string | null | undefined): value is EvidenceStrength {
+  return EVIDENCE_STRENGTHS.includes(value as EvidenceStrength);
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
