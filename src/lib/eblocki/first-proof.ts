@@ -17,7 +17,7 @@ export const FIRST_PROOF_COPY = {
   title: "Submit your first proof.",
   subtitle:
     "Paste one piece of real work. Eblocki will tell you what counted, what was weak, and what to do next.",
-  helperHeader: "What counts?",
+  helperHeader: "What counts as proof?",
   successTitle: "First proof submitted.",
   successCta: "See my next step",
 } as const;
