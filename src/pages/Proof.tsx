@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
@@ -82,6 +83,16 @@ interface Verdict {
   attachmentName?: string | null;
 }
 
+type ProofCommitmentRow = Tables<"proof_commitments">;
+type ProofArtifactRow = Tables<"proof_artifacts">;
+
+interface OcrExtractResponse {
+  error?: string;
+  text?: string;
+  textPreview?: string;
+  truncated?: boolean;
+}
+
 const ACCEPTED_TYPES = "application/pdf,image/png,image/jpeg,image/webp,image/gif,text/plain,text/markdown,text/csv";
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_MIME_LIST = ACCEPTED_TYPES.split(",");
@@ -152,7 +163,7 @@ function VerdictFeedback({ artifactId }: { artifactId: string }) {
         toast.error("Could not save feedback. Your verdict is still recorded.");
       } else {
         setSubmitted(true);
-        logEvent("recommendation_outcome_logged", { outcome: `verdict_feedback_${value}` });
+        void logEvent("recommendation_outcome_logged", { outcome: `verdict_feedback_${value}` });
       }
     } finally {
       setSubmitting(false);
@@ -193,9 +204,9 @@ export default function Proof() {
   const temporalBrief = useMemo(() => parseTemporalProofParams(params), [params]);
   const [firstProofSubmitted, setFirstProofSubmitted] = useState(false);
 
-  const [pending, setPending] = useState<any[]>([]);
-  const [completed, setCompleted] = useState<any[]>([]);
-  const [missed, setMissed] = useState<any[]>([]);
+  const [pending, setPending] = useState<ProofCommitmentRow[]>([]);
+  const [completed, setCompleted] = useState<ProofArtifactRow[]>([]);
+  const [missed, setMissed] = useState<ProofCommitmentRow[]>([]);
   const [userModes, setUserModes] = useState<UserMode[]>([]);
 
   const [selectedModeId, setSelectedModeId] = useState<string>("");
@@ -224,6 +235,18 @@ export default function Proof() {
     [userModes]
   );
 
+  useEffect(() => {
+    if (!firstProofMode) return;
+    void logEvent("activation_first_proof_entered", {
+      route: "/proof",
+      source: "activation",
+    });
+    void logEvent("proof_capture_opened", {
+      route: "/proof",
+      source: "first_proof",
+    });
+  }, [firstProofMode]);
+
   const reload = async () => {
     if (!user) return;
     const [{ data: pc }, { data: pa }, { data: modes }] = await Promise.all([
@@ -234,12 +257,21 @@ export default function Proof() {
     setPending((pc ?? []).filter((p) => p.status === "pending"));
     setMissed((pc ?? []).filter((p) => p.status === "missed"));
     setCompleted(pa ?? []);
-    setUserModes((modes ?? []) as any);
+    setUserModes(modes ?? []);
   };
 
   useEffect(() => {
     reload();
   }, [user]);
+
+  useEffect(() => {
+    if (!verdict) return;
+    void logEvent(firstProofMode ? "activation_verdict_shown" : "proof_verdict_viewed", {
+      route: "/proof",
+      source: firstProofMode ? "first_proof" : "proof",
+      verdictStrength: verdict.evidenceStrength,
+    });
+  }, [verdict, firstProofMode]);
 
   // Honour ?mode=... and ?contract=... deep links
   useEffect(() => {
@@ -454,7 +486,7 @@ export default function Proof() {
             .update({ temporal_snapshot: snapshot })
             .eq("id", artifact!.id);
           if (!snapshotError) {
-            logEvent("temporal_snapshot_created", {
+            void logEvent("temporal_snapshot_created", {
               modelVersion: snapshot.modelVersion,
               confidenceLevel: snapshot.confidenceLevel,
               riskKind: snapshot.mainRisk,
@@ -519,12 +551,17 @@ export default function Proof() {
       toast.success(`Verdict: ${score.qualityScore}/10 - ${score.evidenceStrength}`);
       if (firstProofMode) {
         setFirstProofSubmitted(true);
-        logEvent("proof_capture_completed", { first_proof: true });
+        void logEvent("proof_capture_completed", { route: "/proof", source: "first_proof" });
+        void logEvent("activation_first_proof_submitted", {
+          route: "/proof",
+          verdictStrength: score.evidenceStrength,
+        });
       }
       resetForm();
       reload();
-    } catch (e: any) {
-      toast.error(e.message || "Failed to submit proof.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to submit proof.";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -602,14 +639,14 @@ export default function Proof() {
           message: isPdf ? "OCR extracting from PDF..." : "OCR extracting from image...",
         }));
 
-        const { data, error } = await supabase.functions.invoke("ocr-extract", {
+        const { data, error } = await supabase.functions.invoke<OcrExtractResponse>("ocr-extract", {
           body: { dataUrl, mimeType: file.type, fileName: file.name },
         });
         if (error) throw new Error(error.message || "OCR call failed.");
-        if ((data as any)?.error) throw new Error((data as any).error);
+        if (data?.error) throw new Error(data.error);
 
-        const extracted: string = (data as any)?.textPreview ?? (data as any)?.text ?? "";
-        const truncated: boolean = !!(data as any)?.truncated;
+        const extracted = data?.textPreview ?? data?.text ?? "";
+        const truncated = Boolean(data?.truncated);
         setAttachmentText(extracted);
         setOriginalExtractedText(extracted);
         setExtractedEdited(false);
@@ -636,8 +673,8 @@ export default function Proof() {
         message: "Attached. No text extraction available for this format.",
         error: null, extractedSource: "none", ocrTruncated: false,
       });
-    } catch (e: any) {
-      const msg = e?.message || "Failed to process attachment.";
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Failed to process attachment.";
       setAttachState({
         file, status: "failed", progress: 100, message: msg, error: msg,
         extractedSource: "none", ocrTruncated: false,
@@ -716,7 +753,18 @@ export default function Proof() {
                 </p>
                 <div className="mt-3">
                   <Link to="/dashboard">
-                    <Button size="sm" className="w-full sm:w-auto">
+                    <Button
+                      size="sm"
+                      className="w-full sm:w-auto"
+                      onClick={() => {
+                        void logEvent("activation_verdict_cta_clicked", {
+                          route: "/proof",
+                          source: "first_proof",
+                          ctaName: "see_my_next_step",
+                          destination: "/dashboard",
+                        });
+                      }}
+                    >
                       {FIRST_PROOF_COPY.successCta}
                     </Button>
                   </Link>
@@ -982,7 +1030,18 @@ export default function Proof() {
             )}
             <div className="mt-4 flex flex-col sm:flex-row gap-2">
               <Link to="/dashboard" className="w-full sm:w-auto">
-                <Button size="sm" className="w-full sm:w-auto">
+                <Button
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    void logEvent(firstProofMode ? "activation_verdict_cta_clicked" : "proof_verdict_cta_clicked", {
+                      route: "/proof",
+                      source: firstProofMode ? "first_proof" : "proof",
+                      ctaName: "back_to_today",
+                      destination: "/dashboard",
+                    });
+                  }}
+                >
                   {firstProofMode ? "See my next step" : "Back to Today"}
                 </Button>
               </Link>
@@ -1558,7 +1617,7 @@ function VerdictRow({ label, value }: { label: string; value: string }) {
 
 const COMPLETED_MOBILE_LIMIT = 3;
 
-function CompletedArtifactsList({ items }: { items: any[] }) {
+function CompletedArtifactsList({ items }: { items: ProofArtifactRow[] }) {
   const [showAll, setShowAll] = useState(false);
   const desktopVisible = items.length;
   return (
@@ -1584,7 +1643,7 @@ function CompletedArtifactsList({ items }: { items: any[] }) {
   );
 }
 
-function CompletedArtifactCard({ artifact }: { artifact: any }) {
+function CompletedArtifactCard({ artifact }: { artifact: ProofArtifactRow }) {
   const [open, setOpen] = useState(false);
   const fullFeedback: string = artifact.feedback ?? "";
   const summary = summariseArtifactContent(fullFeedback);

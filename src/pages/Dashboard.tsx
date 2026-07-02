@@ -3,6 +3,7 @@ import type { EvidenceStrength } from "@/lib/eblocki/proof-scoring";
 import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
@@ -47,24 +48,16 @@ import {
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
 
-type DashboardArtifactRow = DashboardProofRow & ProofArtifactLike;
-type DashboardVerdictRow = VerdictLike;
-type DashboardLedgerRow = LedgerLike;
-
-function isEvidenceStrength(value: string | null | undefined): value is EvidenceStrength {
-  return value === "weak" || value === "moderate" || value === "strong" || value === "elite";
-}
-
 export default function Dashboard() {
   const { user } = useAuth();
   const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
-  const [today, setToday] = useState<DashboardDailySheetRow | null>(null);
-  const [pending, setPending] = useState<DashboardCommitmentRow[]>([]);
-  const [recent, setRecent] = useState<DashboardProofRow[]>([]);
-  const [recentCoach, setRecentCoach] = useState<DashboardCoachRow[]>([]);
-  const [allArtifacts, setAllArtifacts] = useState<DashboardProofRow[]>([]);
-  const [verdicts, setVerdicts] = useState<DashboardVerdictRow[]>([]);
-  const [ledger, setLedger] = useState<DashboardLedgerRow[]>([]);
+  const [today, setToday] = useState<any>(null);
+  const [pending, setPending] = useState<any[]>([]);
+  const [recent, setRecent] = useState<any[]>([]);
+  const [recentCoach, setRecentCoach] = useState<any[]>([]);
+  const [allArtifacts, setAllArtifacts] = useState<any[]>([]);
+  const [verdicts, setVerdicts] = useState<any[]>([]);
+  const [ledger, setLedger] = useState<any[]>([]);
   const [activeDomains, setActiveDomains] = useState<string[]>([]);
   const [quick, setQuick] = useState("");
   const [mode, setMode] = useState<Mode | null>(null);
@@ -94,6 +87,7 @@ export default function Dashboard() {
     let cancelled = false;
     (async () => {
       setQueryFailed(false);
+      setDashboardLoaded(false);
       try {
         const [dcsRes, pcRes, paRes, ciRes, allRes, modesRes, verdictRes, ledgerRes] = await Promise.all([
           supabase.from("daily_control_sheets").select("*").eq("user_id", user.id).eq("sheet_date", todayISO).maybeSingle(),
@@ -115,16 +109,38 @@ export default function Dashboard() {
         setRecent(paRes.data ?? []);
         setRecentCoach(ciRes.data ?? []);
         setAllArtifacts(allRes.data ?? []);
-        setActiveDomains((modesRes.data ?? []).map((row) => row.mode_id));
+        setActiveDomains(((modesRes.data ?? []) as UserModeRow[]).map((row) => row.mode_id));
         setVerdicts(verdictRes.data ?? []);
         setLedger(ledgerRes.data ?? []);
         setQueryFailed(Boolean(dcsRes.error || pcRes.error || paRes.error || ciRes.error || allRes.error || modesRes.error || verdictRes.error || ledgerRes.error));
+        setDashboardLoaded(true);
       } catch {
-        if (!cancelled) setQueryFailed(true);
+        if (!cancelled) {
+          setQueryFailed(true);
+          setDashboardLoaded(true);
+        }
       }
     })();
     return () => { cancelled = true; };
   }, [user, todayISO]);
+
+  useEffect(() => {
+    if (!user || welcomeCheck !== "ok" || allArtifacts.length !== 0) return;
+    void logEvent("activation_dashboard_zero_state_seen", {
+      route: "/dashboard",
+      source: "today",
+    });
+  }, [user, welcomeCheck, allArtifacts.length]);
+
+  useEffect(() => {
+    if (!user || allArtifacts.length === 0) return;
+    const latestCreatedAt = allArtifacts[0]?.created_at?.slice(0, 10);
+    if (!latestCreatedAt || latestCreatedAt === todayISO) return;
+    void logEvent("activation_day_2_return_seen", {
+      route: "/dashboard",
+      source: "today",
+    });
+  }, [user, allArtifacts, todayISO]);
 
   const currentMode = recentCoach[0]?.mode ?? null;
   const currentState = ((today?.state as BehaviouralState | null) ?? (recentCoach[0]?.state_detected as BehaviouralState | null) ?? null);
@@ -170,7 +186,7 @@ export default function Dashboard() {
     logEvent("dashboard_section_opened", { sectionName: `diagnostics_${tabName}` });
   };
 
-  if (welcomeCheck === "needs") {
+  if (dashboardLoaded && welcomeCheck === "needs" && allArtifacts.length === 0) {
     return <Navigate to="/welcome" replace />;
   }
 
@@ -230,13 +246,34 @@ export default function Dashboard() {
             </p>
             <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
               <Link to="/proof?first=1" className="w-full sm:w-auto">
-                <Button size="sm" className="w-full sm:w-auto">
+                <Button
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    void logEvent("activation_landing_primary_cta_clicked", {
+                      route: "/dashboard",
+                      destination: "/proof?first=1",
+                      ctaName: "dashboard_submit_first_proof",
+                    });
+                  }}
+                >
                   Submit first proof
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               </Link>
               <Link to="/proof-week" className="w-full sm:w-auto">
-                <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    void logEvent("activation_landing_primary_cta_clicked", {
+                      route: "/dashboard",
+                      destination: "/proof-week",
+                      ctaName: "dashboard_see_what_counts",
+                    });
+                  }}
+                >
                   See what counts
                 </Button>
               </Link>
@@ -391,10 +428,10 @@ function EvidenceCommandPanel({
   latestArtifact,
 }: {
   view: ReturnType<typeof buildDashboardViewModel>;
-  pending: DashboardCommitmentRow[];
-  recent: DashboardProofRow[];
-  topPending?: DashboardCommitmentRow;
-  latestArtifact?: DashboardProofRow;
+  pending: any[];
+  recent: any[];
+  topPending: any;
+  latestArtifact: any;
 }) {
   const [showAllRecent, setShowAllRecent] = useState(false);
   const [showSecondary, setShowSecondary] = useState(false);
