@@ -902,7 +902,7 @@ export default function Proof() {
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
                 <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                  Proof Verdict
+                  Proof Receipt
                 </span>
               </div>
               <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />

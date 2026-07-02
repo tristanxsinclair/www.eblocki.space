@@ -428,6 +428,18 @@ export function GameForgeShell() {
               <Target className="h-4 w-4" /> Start Pack
             </Button>
           </div>
+          
+          <div className="mt-3 rounded-sm border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
+            <div className="font-mono uppercase tracking-widest text-amber-600">Synthetic Practice Drill</div>
+            <p className="mt-2 text-muted-foreground">
+              {pack.mode === "law" 
+                ? "Use only for skill practice. Generated Acts, cases, and scenarios are fictional — do not treat as legal authority."
+                : pack.mode === "psychology"
+                  ? "Use for application practice only. Generated examples are synthetic unless a verified source is provided."
+                  : "Use for skill repetition only. Generated scenarios are practice material, not verified sources."}
+            </p>
+          </div>
+          
           <div className="mt-4 grid gap-2 sm:grid-cols-4">
             <Metric label="Domain" value={pack.mode} />
             <Metric label="Difficulty" value={`${pack.difficultyRating}/10`} />

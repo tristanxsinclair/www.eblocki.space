@@ -19,33 +19,33 @@ export function verdictIdentityImpact(
     case "weak":
       return {
         strength,
-        headline: "Weak proof — protects the streak, does not compound identity.",
+        headline: "Minimum evidence — protects the streak, does not compound identity.",
         subtext:
-          "Logged so you stay honest. Return tomorrow with a stronger artifact to move the identity line.",
+          "Logged for honesty. Return tomorrow with stronger evidence to advance your standard.",
         tone: "warn",
       };
     case "moderate":
       return {
         strength,
-        headline: "Useful proof accepted.",
+        headline: "Useful evidence accepted.",
         subtext:
-          "Real evidence, not elite yet. One upgrade to the required standard turns this into compounding proof.",
+          "Real progress, not yet at the strong standard. One clear upgrade closes the gap.",
         tone: "neutral",
       };
     case "strong":
       return {
         strength,
-        headline: "Strong proof — compounds identity.",
+        headline: "Strong evidence accepted — compounds identity.",
         subtext:
-          "This artifact matches the standard. Repeat this quality to lock the new identity in.",
+          "This artifact meets the standard. Repeat this quality to lock in the upgrade.",
         tone: "good",
       };
     case "elite":
       return {
         strength,
-        headline: "Elite proof — raises the future standard.",
+        headline: "Elite evidence accepted — raises the future standard.",
         subtext:
-          "Your baseline just moved up. Tomorrow's proof is measured against this level.",
+          "Your baseline just moved. Tomorrow, all submissions are measured against this level.",
         tone: "elite",
       };
   }
