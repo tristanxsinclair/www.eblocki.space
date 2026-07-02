@@ -36,21 +36,35 @@ import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
 import { InterestSignalCard } from "@/components/eblocki/InterestSignalCard";
 import { DashboardForecastTabs } from "@/components/eblocki/DashboardForecastTabs";
 import { IdentityLedger } from "@/components/eblocki/IdentityLedger";
-import { computeTemporal, type TemporalResult } from "@/lib/eblocki/temporal-engine";
-import { buildDashboardViewModel } from "@/lib/eblocki/dashboard-view-model";
+import { computeTemporal, type LedgerLike, type ProofArtifactLike, type TemporalResult, type VerdictLike } from "@/lib/eblocki/temporal-engine";
+import {
+  buildDashboardViewModel,
+  type DashboardCoachRow,
+  type DashboardCommitmentRow,
+  type DashboardDailySheetRow,
+  type DashboardProofRow,
+} from "@/lib/eblocki/dashboard-view-model";
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
+
+type DashboardArtifactRow = DashboardProofRow & ProofArtifactLike;
+type DashboardVerdictRow = VerdictLike;
+type DashboardLedgerRow = LedgerLike;
+
+function isEvidenceStrength(value: string | null | undefined): value is EvidenceStrength {
+  return value === "weak" || value === "moderate" || value === "strong" || value === "elite";
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
-  const [today, setToday] = useState<any>(null);
-  const [pending, setPending] = useState<any[]>([]);
-  const [recent, setRecent] = useState<any[]>([]);
-  const [recentCoach, setRecentCoach] = useState<any[]>([]);
-  const [allArtifacts, setAllArtifacts] = useState<any[]>([]);
-  const [verdicts, setVerdicts] = useState<any[]>([]);
-  const [ledger, setLedger] = useState<any[]>([]);
+  const [today, setToday] = useState<DashboardDailySheetRow | null>(null);
+  const [pending, setPending] = useState<DashboardCommitmentRow[]>([]);
+  const [recent, setRecent] = useState<DashboardProofRow[]>([]);
+  const [recentCoach, setRecentCoach] = useState<DashboardCoachRow[]>([]);
+  const [allArtifacts, setAllArtifacts] = useState<DashboardProofRow[]>([]);
+  const [verdicts, setVerdicts] = useState<DashboardVerdictRow[]>([]);
+  const [ledger, setLedger] = useState<DashboardLedgerRow[]>([]);
   const [activeDomains, setActiveDomains] = useState<string[]>([]);
   const [quick, setQuick] = useState("");
   const [mode, setMode] = useState<Mode | null>(null);
@@ -113,14 +127,17 @@ export default function Dashboard() {
   }, [user, todayISO]);
 
   const currentMode = recentCoach[0]?.mode ?? null;
-  const currentState = (today?.state as BehaviouralState) ?? recentCoach[0]?.state_detected ?? null;
+  const currentState = ((today?.state as BehaviouralState | null) ?? (recentCoach[0]?.state_detected as BehaviouralState | null) ?? null);
   const topPending = pending[0];
   const latestArtifact = recent[0];
+  const temporalArtifacts = allArtifacts.filter(
+    (artifact): artifact is DashboardArtifactRow => typeof artifact.created_at === "string",
+  );
 
   const temporalResult = useMemo<TemporalResult | null>(() => {
     try {
       return computeTemporal({
-        artifacts: allArtifacts,
+        artifacts: temporalArtifacts,
         verdicts,
         ledger,
         activeDomains,
@@ -129,7 +146,7 @@ export default function Dashboard() {
     } catch {
       return null;
     }
-  }, [allArtifacts, verdicts, ledger, activeDomains, currentState]);
+  }, [temporalArtifacts, verdicts, ledger, activeDomains, currentState]);
 
   const view = useMemo(() => buildDashboardViewModel({
     today,
@@ -320,9 +337,7 @@ export function CommandHero({
   latestEvidenceStrength?: string | null;
 }) {
   const secondaryLabel = view.commandSummary.secondaryHref === "/coach" ? "Open coach" : "Plan today";
-  const isValidStrength = (v: string | null | undefined): v is EvidenceStrength =>
-    v === "weak" || v === "moderate" || v === "strong" || v === "elite";
-  const identityImpact = isValidStrength(latestEvidenceStrength)
+  const identityImpact = isEvidenceStrength(latestEvidenceStrength)
     ? verdictIdentityImpact(latestEvidenceStrength)
     : null;
   return (
@@ -376,10 +391,10 @@ function EvidenceCommandPanel({
   latestArtifact,
 }: {
   view: ReturnType<typeof buildDashboardViewModel>;
-  pending: any[];
-  recent: any[];
-  topPending: any;
-  latestArtifact: any;
+  pending: DashboardCommitmentRow[];
+  recent: DashboardProofRow[];
+  topPending?: DashboardCommitmentRow;
+  latestArtifact?: DashboardProofRow;
 }) {
   const [showAllRecent, setShowAllRecent] = useState(false);
   const [showSecondary, setShowSecondary] = useState(false);
@@ -433,7 +448,7 @@ function EvidenceCommandPanel({
                     <div className="truncate text-sm">{proof.title}</div>
                     <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{proof.domain}</div>
                   </div>
-                  {proof.evidence_strength && <EvidenceStrengthBadge strength={proof.evidence_strength} score={proof.quality_score} />}
+                  {isEvidenceStrength(proof.evidence_strength) && <EvidenceStrengthBadge strength={proof.evidence_strength} score={proof.quality_score ?? undefined} />}
                 </div>
               ))}
               {recent.length > mobileLimit && (
