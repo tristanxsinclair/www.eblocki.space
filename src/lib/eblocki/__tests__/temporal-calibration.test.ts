@@ -185,3 +185,20 @@ describe("coach context", () => {
 // preserve verdicts type usage to satisfy unused import lint
 const _v: VerdictLike[] = [];
 void _v;
+it("does not count unresolved forecasts as accuracy", () => {
+  const score = computeTemporalIntelligenceScore({
+    result,
+    calibrations: [
+      {
+        ...unresolvedCalibration,
+        accuracyScore: 40,
+        resolved: false,
+        accuracyEligible: false,
+        auditOutcome: "unresolved",
+      },
+    ],
+  });
+
+  expect(score.components.forecastAccuracy).toBe(0);
+  expect(score.components.calibrationDepth).toBe(0);
+});
