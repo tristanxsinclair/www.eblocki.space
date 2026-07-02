@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { EvidenceStrength } from "@/lib/eblocki/proof-scoring";
+import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -196,7 +198,7 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} />}
+        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} latestEvidenceStrength={latestArtifact?.evidence_strength} />}
 
         {allArtifacts.length === 0 && (
           <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
@@ -308,8 +310,21 @@ export default function Dashboard() {
   );
 }
 
-function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardViewModel>; state: BehaviouralState | null }) {
+function CommandHero({
+  view,
+  state,
+  latestEvidenceStrength,
+}: {
+  view: ReturnType<typeof buildDashboardViewModel>;
+  state: BehaviouralState | null;
+  latestEvidenceStrength?: string | null;
+}) {
   const secondaryLabel = view.commandSummary.secondaryHref === "/coach" ? "Open coach" : "Plan today";
+  const isValidStrength = (v: string | null | undefined): v is EvidenceStrength =>
+    v === "weak" || v === "moderate" || v === "strong" || v === "elite";
+  const identityImpact = isValidStrength(latestEvidenceStrength)
+    ? verdictIdentityImpact(latestEvidenceStrength)
+    : null;
   return (
     <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
       <div className="flex items-start justify-between gap-4 flex-wrap min-w-0">
@@ -342,7 +357,12 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
         <CommandSignal icon={<Target />} label="Proof required" value={view.commandSummary.proofRequired} />
         <CommandSignal icon={<ShieldAlert />} label="Risk if ignored" value={view.commandSummary.highestRisk} />
-        <CommandSignal icon={<Gavel />} label="Latest verdict" value={view.commandLayer.latestCourtSignal} />
+        <CommandSignal
+          icon={<Gavel />}
+          label="Latest verdict"
+          value={view.commandLayer.latestCourtSignal}
+          hint={identityImpact?.headline}
+        />
       </div>
     </Card>
   );
@@ -495,7 +515,7 @@ function SectionHeader({ eyebrow, title, detail }: { eyebrow: string; title: str
   );
 }
 
-function CommandSignal({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+function CommandSignal({ icon, label, value, hint }: { icon: ReactNode; label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-sm border border-primary/20 bg-background/30 p-3 min-w-0">
       <div className="flex items-center gap-1.5 text-primary [&_svg]:h-3.5 [&_svg]:w-3.5">
@@ -503,6 +523,14 @@ function CommandSignal({ icon, label, value }: { icon: ReactNode; label: string;
         <span className="font-mono text-[9px] uppercase tracking-widest">{label}</span>
       </div>
       <div className="mt-1 text-sm leading-snug line-clamp-2">{value}</div>
+      {hint && (
+        <div
+          className="mt-1 text-xs leading-snug text-muted-foreground line-clamp-1 break-words"
+          data-testid="dashboard-verdict-identity-impact"
+        >
+          {hint}
+        </div>
+      )}
     </div>
   );
 }
