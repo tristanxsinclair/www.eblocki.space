@@ -515,7 +515,7 @@ function SectionHeader({ eyebrow, title, detail }: { eyebrow: string; title: str
   );
 }
 
-function CommandSignal({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+function CommandSignal({ icon, label, value, hint }: { icon: ReactNode; label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-sm border border-primary/20 bg-background/30 p-3 min-w-0">
       <div className="flex items-center gap-1.5 text-primary [&_svg]:h-3.5 [&_svg]:w-3.5">
@@ -523,6 +523,14 @@ function CommandSignal({ icon, label, value }: { icon: ReactNode; label: string;
         <span className="font-mono text-[9px] uppercase tracking-widest">{label}</span>
       </div>
       <div className="mt-1 text-sm leading-snug line-clamp-2">{value}</div>
+      {hint && (
+        <div
+          className="mt-1 text-xs leading-snug text-muted-foreground line-clamp-1 break-words"
+          data-testid="dashboard-verdict-identity-impact"
+        >
+          {hint}
+        </div>
+      )}
     </div>
   );
 }
