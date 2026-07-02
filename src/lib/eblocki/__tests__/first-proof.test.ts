@@ -77,11 +77,11 @@ describe("first-proof copy", () => {
       title: "Submit your first proof.",
       helperHeader: "What counts?",
       successTitle: "First proof submitted.",
-      successCta: "Back to dashboard",
+      successCta: "See my next step",
     });
     expect(FIRST_PROOF_COPY.subtitle).toMatch(/paste one piece of real work/i);
-    expect(FIRST_PROOF_COPY.subtitle).toMatch(/proves progress/i);
-    expect(FIRST_PROOF_COPY.subtitle).toMatch(/next action/i);
+    expect(FIRST_PROOF_COPY.subtitle).toMatch(/what counted/i);
+    expect(FIRST_PROOF_COPY.subtitle).toMatch(/what to do next/i);
   });
 
   it("keeps the example list stable", () => {

@@ -1,13 +1,12 @@
 const routes = [
   "/",
+  "/auth",
+  "/welcome",
   "/dashboard",
-  "/start-today",
   "/proof",
-  "/coach",
-  "/gameforge",
-  "/operator",
-  "/install",
-  "/why",
+  "/proof?first=1",
+  "/proof-week",
+  "/start-today",
 ];
 
 const baseUrl = process.env.ROUTE_SMOKE_BASE_URL ?? "http://127.0.0.1:4173";
