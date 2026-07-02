@@ -1,5 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { verdictIdentityImpact } from "../verdict-identity-impact";
+import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
+import type { EvidenceStrength } from "./proof-scoring";
+
+export function isEvidenceStrength(value: unknown): value is EvidenceStrength {
+  return (
+    value === "weak" ||
+    value === "useful" ||
+    value === "strong" ||
+    value === "elite"
+  );
+}
 
 describe("verdictIdentityImpact", () => {
   it("weak proof protects the streak but does not compound identity", () => {
