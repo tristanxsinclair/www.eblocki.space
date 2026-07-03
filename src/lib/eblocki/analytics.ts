@@ -19,6 +19,8 @@ export type EngineEvent =
   | "activation_first_proof_submitted"
   | "activation_verdict_shown"
   | "activation_verdict_cta_clicked"
+  | "proof_verdict_viewed"
+  | "proof_verdict_cta_clicked"
   | "activation_proof_week_join_clicked"
   | "activation_day_2_return_seen"
   | "objective_created"
