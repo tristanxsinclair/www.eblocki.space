@@ -9,6 +9,7 @@ import type { TemporalResult } from "./temporal-engine";
 import type { TemporalCalibrationResult } from "./temporal-calibration";
 import type { InterventionMemoryResult } from "./intervention-memory";
 
+
 export type TemporalIntelligenceLevel =
   | "dormant"
   | "forming"
@@ -47,19 +48,31 @@ export function computeTemporalIntelligenceScore(args: {
 }): TemporalIntelligenceScore {
   const { result, calibrations = [], memory } = args;
 
+  const resolvedCalibrations = calibrations.filter(
+    (calibration) => calibration.accuracyEligible !== false,
+  );
+
   const dataVolume = clamp(result.momentum.last30 * 5);
-  const forecastAccuracy = calibrations.length
+  const forecastAccuracy = resolvedCalibrations.length
     ? clamp(
-        calibrations.reduce((s, c) => s + c.accuracyScore, 0) / calibrations.length,
+        resolvedCalibrations.reduce(
+          (sum, calibration) => sum + calibration.accuracyScore,
+          0,
+        ) / resolvedCalibrations.length,
       )
     : 0;
   const proofConsistency = clamp(result.momentum.consistency * 100);
   const signalClarity = clamp((result.confidence.signalClaritySignal ?? 0) * 6);
   const interventionResponse = memory ? clamp(memory.interventionReliabilityScore) : 0;
   const domainCoverage = result.domains.length
-    ? clamp(100 - (result.domains.filter((d) => d.neglected).length / result.domains.length) * 100)
+    ? clamp(
+        100 -
+          (result.domains.filter((domain) => domain.neglected).length /
+            result.domains.length) *
+            100,
+      )
     : 0;
-  const calibrationDepth = clamp(calibrations.length * 12);
+  const calibrationDepth = clamp(resolvedCalibrations.length * 12);
 
   const score = Math.round(
     dataVolume * 0.2 +

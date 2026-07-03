@@ -8,7 +8,21 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
 export type EngineEvent =
+  | "activation_landing_primary_cta_clicked"
+  | "activation_auth_completed"
+  | "activation_dashboard_zero_state_seen"
+  | "activation_first_proof_entered"
+  | "activation_first_proof_submitted"
+  | "activation_verdict_shown"
+  | "activation_verdict_cta_clicked"
+  | "proof_verdict_viewed"
+  | "proof_verdict_cta_clicked"
+  | "activation_proof_week_join_clicked"
+  | "activation_day_2_return_seen"
   | "objective_created"
   | "objective_completed"
   | "objective_skipped"
@@ -53,7 +67,7 @@ const ALLOWED_KEYS = new Set([
   "kind", "mode", "state", "score", "streak", "resistance", "depth",
   "result", "reason", "dedup_key", "escalation_level", "count", "fixture",
   "quality", "proof_len", "has_upgrade", "has_hard",
-  "step", "route",
+  "step", "route", "ctaName", "source", "destination", "verdictStrength", "challengeState",
   "modelVersion", "confidenceLevel", "loopStatus", "riskKind", "recommendedPath",
   "accuracyBucket", "intelligenceLevel", "sectionName",
   "domain", "intensity", "style", "scoreBucket", "responseMode", "proofActionType",
@@ -71,11 +85,35 @@ function sanitise(props: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
-export async function logEvent(event: EngineEvent, props: Record<string, unknown> = {}) {
+export async function logEvent(
+  event: EngineEvent,
+  props: Record<string, unknown> = {},
+  userIdOverride?: string | null,
+  accessTokenOverride?: string | null,
+) {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (userIdOverride && accessTokenOverride) {
+      await fetch(`${SUPABASE_URL}/rest/v1/analytics_events`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${accessTokenOverride}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify([{
+          user_id: userIdOverride,
+          event,
+          properties: sanitise(props),
+          platform: "web",
+        }]),
+      });
+      return;
+    }
+
+    const userId = userIdOverride ?? (await supabase.auth.getUser()).data.user?.id ?? null;
     await supabase.from("analytics_events").insert({
-      user_id: user?.id ?? null,
+      user_id: userId,
       event,
       // Cast to satisfy generated Json typing; content is already sanitised.
       properties: sanitise(props) as unknown as Record<string, never>,

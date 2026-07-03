@@ -90,6 +90,18 @@ function clip(value: string, max: number): string {
   return text.length > max ? `${text.slice(0, max - 3)}...` : text;
 }
 
+const MODE_DOMAIN_FORCE: Partial<Record<CoachResponseMode, CoachDomain>> = {
+  law_reasoning: "law",
+  law_source_bank: "law_academic",
+  academic_operating_system: "law_academic",
+  psychology_reasoning: "psychology",
+  sales_coach: "sales",
+  sport_coach: "sport",
+  study_coach: "study",
+  product_builder: "product",
+  life_strategy: "life",
+};
+
 function applyPreferredMode(route: CoachRouteResult, preferred?: CoachResponseMode | "auto"): CoachRouteResult {
   if (!preferred || preferred === "auto") return route;
 
@@ -102,7 +114,12 @@ function applyPreferredMode(route: CoachRouteResult, preferred?: CoachResponseMo
   ];
 
   if (protectedIntents.includes(route.intent)) return route;
-  return { ...route, mode: preferred };
+  const forcedDomain = MODE_DOMAIN_FORCE[preferred];
+  return {
+    ...route,
+    mode: preferred,
+    domain: forcedDomain ?? route.domain,
+  };
 }
 
 export function detectCoachDomain(input: string): CoachDetectedDomain {
