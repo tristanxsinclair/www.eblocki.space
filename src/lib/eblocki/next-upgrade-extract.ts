@@ -32,7 +32,7 @@ function extractLine(text: string): string {
   // Match a "Next upgrade:" / "Next required proof:" lead, then capture the
   // rest of that line plus following indented or continuation lines until
   // the next labelled heading (e.g. "Acceptance test:", "Plan:") or blank line.
-  const re = /(?:^|\n)\s*(?:next\s+upgrade|next\s+required\s+proof)\s*[:\-]\s*([^\n]+(?:\n(?!\s*(?:[a-z][a-z0-9 _-]{2,30}\s*:|$))[^\n]+)*)/i;
+  const re = /(?:^|\n)\s*(?:next\s+upgrade|next\s+required\s+proof)\s*[:-]\s*([^\n]+(?:\n(?!\s*(?:[a-z][a-z0-9 _-]{2,30}\s*:|$))[^\n]+)*)/i;
   const m = text.match(re);
   if (!m) return "";
   return m[1].replace(/\s+/g, " ").trim();

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { ProofContractCard } from "@/components/eblocki/ProofContractCard";
-import { normaliseCoachResponse, type NormalisedCoachResponse } from "@/lib/eblocki/coach-response";
+import { normaliseCoachResponse, parseCoachMarkdownSections, type NormalisedCoachResponse } from "@/lib/eblocki/coach-response";
 import type { ProofContract } from "@/lib/eblocki/proof-contract";
 import type { Mode } from "@/lib/eblocki/modes";
 import { toast } from "sonner";
@@ -157,6 +157,14 @@ export default function Coach() {
     return engineResult?.answer ?? "";
   }, [remoteResult, engineResult]);
 
+  const responseSections = useMemo(() => {
+    if (!remoteResult?.response) return [];
+    const parsed = parseCoachMarkdownSections(remoteResult.response);
+    // Only render as sections when the response actually has multiple
+    // headings — otherwise fall back to the single Answer card below.
+    return parsed.length >= 2 ? parsed : [];
+  }, [remoteResult]);
+
   const send = async () => {
     const text = input.trim();
     if (!text) {
@@ -242,7 +250,7 @@ export default function Coach() {
       if (insertError) throw insertError;
       if (!data?.id) throw new Error("No commitment id returned.");
       setLocalCommitmentId(data.id);
-      toast.success("Committed to the Court of Evidence.");
+      toast.success("Committed to the Proof Check.");
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, "Failed to commit."));
     } finally {
@@ -383,7 +391,15 @@ export default function Coach() {
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)] items-start">
               <div className="space-y-3">
                 <ResponseSection title="Diagnosis" icon={<Radar />}>{engineResult.diagnosis}</ResponseSection>
-                <ResponseSection title="Answer" icon={<MessageSquare />}>{responseAnswer}</ResponseSection>
+                {responseSections.length > 0 ? (
+                  responseSections.map((section) => (
+                    <ResponseSection key={section.heading} title={section.heading} icon={<MessageSquare />}>
+                      {section.body}
+                    </ResponseSection>
+                  ))
+                ) : (
+                  <ResponseSection title="Answer" icon={<MessageSquare />}>{responseAnswer}</ResponseSection>
+                )}
                 <ResponseSection title="Plan" icon={<Target />}>
                   <ol className="space-y-2">
                     {engineResult.plan.map((step, index) => <li key={step} className="break-words">{index + 1}. {step}</li>)}
@@ -441,7 +457,7 @@ export default function Coach() {
               <Card className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3 max-w-full overflow-hidden">
                 <div className="min-w-0">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Next step</span>
-                  <p className="text-sm mt-1 break-words">Contract saved. Submit the proof artifact in the Court of Evidence.</p>
+                  <p className="text-sm mt-1 break-words">Contract saved. Submit the proof artifact in the Proof Check.</p>
                 </div>
                 <Link to="/proof"><Button size="sm">Submit Proof <ArrowRight className="h-3 w-3 ml-1" /></Button></Link>
               </Card>

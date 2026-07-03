@@ -120,7 +120,7 @@ export default function Operator() {
         {/* Ledger */}
         <section>
           <div className="flex items-baseline justify-between mb-3">
-            <h2 className="font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">Identity Ledger</h2>
+            <h2 className="font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">Progress Record</h2>
             <span className="font-mono text-[10px] text-muted-foreground">Permanent record</span>
           </div>
           <IdentityLedger userId={user.id} />

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Crosshair } from "lucide-react";
+import { logEvent } from "@/lib/eblocki/analytics";
 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) return error.message;
@@ -22,6 +23,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 export default function Auth() {
   const { user, loading } = useAuth();
   const nav = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,10 +33,15 @@ export default function Auth() {
   const [forgotBusy, setForgotBusy] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotError, setForgotError] = useState<string | null>(null);
+  const redirectTo = useMemo(() => {
+    const from = (location.state as { from?: unknown } | null)?.from;
+    if (typeof from !== "string" || !from.startsWith("/")) return "/dashboard";
+    return from;
+  }, [location.state]);
 
   useEffect(() => {
-    if (!loading && user) nav("/dashboard", { replace: true });
-  }, [user, loading, nav]);
+    if (!loading && user) nav(redirectTo, { replace: true });
+  }, [user, loading, nav, redirectTo]);
 
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,14 +51,21 @@ export default function Auth() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin + "/dashboard" },
+          options: { emailRedirectTo: window.location.origin + redirectTo },
         });
         if (error) throw error;
+        await logEvent("activation_auth_completed", { route: redirectTo, source: "signup" });
         toast.success("Account created. Check your email if confirmation is required, or sign in.");
         setMode("signin");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        await logEvent(
+          "activation_auth_completed",
+          { route: redirectTo, source: "signin" },
+          data.user?.id ?? data.session?.user?.id ?? null,
+          data.session?.access_token ?? null,
+        );
       }
     } catch (err) {
       toast.error(getErrorMessage(err, "Auth failed"));
@@ -85,7 +99,7 @@ export default function Auth() {
     <div className="min-h-screen grid-bg flex items-center justify-center p-6">
       <Seo
         title={showForgot ? "Reset password | EBLOCKI" : "Sign in | EBLOCKI"}
-        description="Sign in to your EBLOCKI behavioural performance OS — coach, control sheet, and Court of Evidence."
+        description="Sign in to your EBLOCKI behavioural performance OS — coach, control sheet, and Proof Check."
         path="/auth"
       />
       <div className="w-full max-w-sm">
@@ -156,9 +170,9 @@ export default function Auth() {
           ) : (
             <>
               <h1 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                {mode === "signin" ? "Sign in" : "Create operator account"}
+                {mode === "signin" ? "Sign in" : "Create your account"}
               </h1>
-              <p className="mt-1 text-sm">Convert ambition into measurable proof.</p>
+              <p className="mt-1 text-sm">Sign in to submit real work, get an honest verdict, and see your next step.</p>
               <form onSubmit={handle} className="mt-5 space-y-3">
                 <div>
                   <Label htmlFor="email">Email</Label>
@@ -188,7 +202,7 @@ export default function Auth() {
                 </button>
               )}
               <p className="mt-4 text-[10px] text-muted-foreground font-mono">
-                Google sign-in available via Cloud auth settings.
+                You will return to the page you were trying to open after sign-in.
               </p>
             </>
           )}
