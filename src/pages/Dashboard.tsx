@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { EvidenceStrength } from "@/lib/eblocki/proof-scoring";
-import {
-  isEvidenceStrength,
-  verdictIdentityImpact,
-} from "@/lib/eblocki/verdict-identity-impact";
+import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
