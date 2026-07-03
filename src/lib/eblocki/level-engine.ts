@@ -190,9 +190,9 @@ export function computeXP(i: XPInput): XPBreakdown {
 
 export const VERDICT_LABEL: Record<CourtVerdict, string> = {
   rejected: "Rejected",
-  accepted_minimum: "Accepted — Minimum",
-  accepted_useful: "Accepted — Useful",
-  accepted_strong: "Accepted — Strong",
+  accepted_minimum: "Minimum Evidence",
+  accepted_useful: "Useful Evidence",
+  accepted_strong: "Strong Evidence",
   elite: "Elite Evidence",
 };
 
