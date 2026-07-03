@@ -9,6 +9,9 @@ import { Seo } from "@/components/Seo";
 import { Calendar, CheckCircle2, Flame, Gavel, Target } from "lucide-react";
 import { computeProofWeek, PROOF_WEEK_DAYS } from "@/lib/eblocki/proof-week";
 import { logEvent } from "@/lib/eblocki/analytics";
+import type { Tables } from "@/integrations/supabase/types";
+
+type CreatedAtRow = Pick<Tables<"proof_artifacts">, "created_at">;
 
 /**
  * Proof Week — public-facing beta path.
@@ -45,7 +48,9 @@ export default function ProofWeek() {
           .limit(50),
       ]);
       if (cancelled) return;
-      const dates = (arts ?? []).map((r: any) => r.created_at).filter(Boolean);
+      const dates = ((arts ?? []) as CreatedAtRow[])
+        .map((row) => row.created_at)
+        .filter((value): value is string => Boolean(value));
       setArtifactDates(dates);
       if (signal?.created_at) setJoinedAt(signal.created_at);
       else if (dates.length > 0) setJoinedAt(dates[dates.length - 1]);
@@ -55,17 +60,22 @@ export default function ProofWeek() {
   }, [user]);
 
   const status = computeProofWeek({ joinedAt, artifactDates });
+  const proofHref = status.daysWithProof === 0 ? "/proof?first=1" : "/proof";
 
   const join = async () => {
     if (!user) return;
     setJoining(true);
+    void logEvent("activation_proof_week_join_clicked", {
+      route: "/proof-week",
+      source: "proof_week_page",
+      challengeState: "clicked",
+    });
     const { data } = await supabase
       .from("interest_signals")
       .insert({ user_id: user.id, signal_type: "proof_week_join", source: "proof_week_page" })
       .select("created_at")
       .maybeSingle();
     if (data?.created_at) setJoinedAt(data.created_at);
-    logEvent("recommendation_outcome_logged", { outcome: "proof_week_joined" });
     setJoining(false);
   };
 
@@ -73,15 +83,15 @@ export default function ProofWeek() {
     <AppShell>
       <Seo
         title="Proof Week | EBLOCKI"
-        description="A 7-day proof challenge. One command a day. One artifact. See if Eblocki exposes fake productivity in your week."
+        description="A 7-day student proof challenge. Submit one real piece of work each day, get an honest verdict, and leave with a clearer next step."
         path="/proof-week"
       />
       <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-5">
         <header>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Beta // Proof Week</span>
-          <h1 className="mt-1 text-2xl md:text-3xl font-semibold">7 days. 7 commands. One honest verdict.</h1>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Week</span>
+          <h1 className="mt-1 text-2xl md:text-3xl font-semibold">Submit one real piece of work each day for 7 days.</h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-            Eblocki is a 7-day proof challenge. Each day, submit one measurable artifact. The system judges the evidence, gives the next command, and shows whether your work actually counted.
+            Proof Week is a simple student beta: submit real work, get an honest verdict, and keep moving with one clear next step.
           </p>
         </header>
 
@@ -95,12 +105,15 @@ export default function ProofWeek() {
             </div>
             <h2 className="text-lg font-semibold">Find out in 7 days if your work is real.</h2>
             <p className="text-sm text-muted-foreground">
-              Day 1 starts the moment you join. Submit one honest proof artifact and the loop begins.
+              Day 1 starts the moment you join. Submit one honest artifact and Eblocki will tell you what counted and what to do next.
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={join} disabled={joining}>{joining ? "Joining…" : "Join Proof Week"}</Button>
-              <Link to="/proof"><Button size="sm" variant="outline">Submit proof first</Button></Link>
+              <Button size="sm" onClick={join} disabled={joining}>{joining ? "Starting…" : "Start Proof Week"}</Button>
+              <Link to="/proof?first=1"><Button size="sm" variant="outline">Submit first proof</Button></Link>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Beta expectation: one proof a day, about 10 to 25 minutes, plus honest feedback at the end.
+            </p>
           </Card>
         ) : status.completed ? (
           <Card className="panel p-5 border-primary/40 space-y-3">
@@ -113,7 +126,7 @@ export default function ProofWeek() {
             </p>
             <p className="text-sm text-muted-foreground">Verdict time. Tell us if Eblocki exposed fake productivity — and if it is worth paying for.</p>
             <div className="flex flex-wrap gap-2">
-              <Link to="/dashboard"><Button size="sm">Back to dashboard</Button></Link>
+              <Link to="/dashboard"><Button size="sm">Back to Today</Button></Link>
               <Link to="/proof"><Button size="sm" variant="outline">Keep logging proof</Button></Link>
             </div>
           </Card>
@@ -155,9 +168,9 @@ export default function ProofWeek() {
               ))}
             </div>
             <div className="flex flex-wrap gap-2 pt-1">
-              <Link to="/proof"><Button size="sm"><Target className="h-3 w-3 mr-1.5" />Submit today's proof</Button></Link>
-              <Link to="/coach"><Button size="sm" variant="outline">Get the command</Button></Link>
-              <Link to="/dashboard"><Button size="sm" variant="ghost">Back to command centre</Button></Link>
+              <Link to={proofHref}><Button size="sm"><Target className="h-3 w-3 mr-1.5" />Submit today's proof</Button></Link>
+              <Link to="/coach"><Button size="sm" variant="outline">Need help first?</Button></Link>
+              <Link to="/dashboard"><Button size="sm" variant="ghost">Back to Today</Button></Link>
             </div>
           </Card>
         )}

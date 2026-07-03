@@ -16,7 +16,7 @@ export function ProofContractCard({
   committed?: boolean;
 }) {
   const buttonDisabled = committing || committed;
-  const buttonText = committed ? "✓ Proof Contract Saved" : committing ? "Committing…" : "Commit to Court of Evidence";
+  const buttonText = committed ? "✓ Proof Contract Saved" : committing ? "Committing…" : "Commit to Proof Check";
 
   return (
     <Card className="panel p-4 border-primary/30">

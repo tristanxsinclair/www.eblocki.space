@@ -212,7 +212,7 @@ export default function ModeDetail() {
         <Card className="panel p-4 border-primary/30">
           <div className="flex items-center gap-2">
             <Scale className="h-4 w-4 text-primary" />
-            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Court of Evidence</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Check</span>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
             Every identity claim in this mode needs evidence. This page shows what has actually been produced, not what was intended.

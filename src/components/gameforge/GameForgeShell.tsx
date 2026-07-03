@@ -428,6 +428,18 @@ export function GameForgeShell() {
               <Target className="h-4 w-4" /> Start Pack
             </Button>
           </div>
+          
+          <div className="mt-3 rounded-sm border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
+            <div className="font-mono uppercase tracking-widest text-amber-600">Synthetic Practice Drill</div>
+            <p className="mt-2 text-muted-foreground">
+              {pack.mode === "law" 
+                ? "Use only for skill practice. Generated Acts, cases, and scenarios are fictional — do not treat as legal authority."
+                : pack.mode === "psychology"
+                  ? "Use for application practice only. Generated examples are synthetic unless a verified source is provided."
+                  : "Use for skill repetition only. Generated scenarios are practice material, not verified sources."}
+            </p>
+          </div>
+          
           <div className="mt-4 grid gap-2 sm:grid-cols-4">
             <Metric label="Domain" value={pack.mode} />
             <Metric label="Difficulty" value={`${pack.difficultyRating}/10`} />
@@ -552,7 +564,7 @@ export function GameForgeShell() {
         </Card>
       )}
 
-      {session && session.mistakes.length > 0 && (
+      {session && session.mistakes.some((m) => !m.resolved) && (
         <Card className="panel p-4 md:p-5 border-border/80 bg-card/50">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
@@ -562,7 +574,7 @@ export function GameForgeShell() {
             <Brain className="h-4 w-4 text-primary" />
           </div>
           <div className="mt-4 grid gap-2">
-            {session.mistakes.map((mistake) => (
+            {session.mistakes.filter((m) => !m.resolved).map((mistake) => (
               <div key={mistake.questionId} className="rounded-sm border border-border bg-background/30 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>

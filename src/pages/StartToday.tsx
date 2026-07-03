@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
@@ -48,6 +48,8 @@ const STEPS = [
 export default function StartToday() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const planMode = searchParams.get("plan") === "1";
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Record<string, string>>({
@@ -63,6 +65,12 @@ export default function StartToday() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ contractId: string | null } | null>(null);
 
+  const openPlanner = () => {
+    const next = new URLSearchParams(searchParams);
+    next.set("plan", "1");
+    setSearchParams(next, { replace: true });
+  };
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -75,7 +83,6 @@ export default function StartToday() {
         setModes((data as UserMode[]) ?? []);
         setLoadingModes(false);
       });
-    // Prefill from existing sheet
     supabase
       .from("daily_control_sheets")
       .select("prime_objective,avoidance_signal,next_best_action")
@@ -106,7 +113,6 @@ export default function StartToday() {
     setSubmitting(true);
     setError(null);
     try {
-      // Upsert daily control sheet
       const { error: sheetErr } = await supabase
         .from("daily_control_sheets")
         .upsert(
@@ -121,7 +127,6 @@ export default function StartToday() {
         );
       if (sheetErr) throw sheetErr;
 
-      // Create proof contract
       const mode = form.focus_mode || "EBLOCKI";
       const domain = mode.toLowerCase();
       const { data: pc, error: pcErr } = await supabase
@@ -158,12 +163,38 @@ export default function StartToday() {
       />
       <div className="p-4 md:p-8 max-w-2xl mx-auto space-y-5">
         <header>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Operating System // Start Today</span>
-          <h1 className="text-2xl md:text-3xl font-semibold mt-1">One objective. One artifact. One timer.</h1>
-          <p className="text-sm text-muted-foreground mt-1">Do not plan the whole life. Define the next proof artifact.</p>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Start Today</span>
+          <h1 className="text-2xl md:text-3xl font-semibold mt-1">
+            {planMode ? "Plan today" : "Start with one proof."}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {planMode
+              ? "Define the next proof artifact. One objective. One artifact."
+              : "Submit one piece of real work and Eblocki will tell you if it counted and what to do next."}
+          </p>
         </header>
 
-        {!done && (
+        {!planMode && !done && (
+          <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 space-y-4">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Fastest path</div>
+            <p className="text-sm text-muted-foreground">
+              Skip the planner for now. Submit one piece of real work first, then use the verdict and next step to decide what to plan.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Link to="/proof?first=1" className="w-full sm:w-auto">
+                <Button size="sm" className="w-full sm:w-auto">
+                  Submit first proof
+                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
+              </Link>
+              <Button size="sm" variant="outline" onClick={openPlanner} className="w-full sm:w-auto">
+                Use planner instead
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {planMode && !done && (
           <Card className="panel p-4 md:p-5 space-y-4">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
@@ -281,8 +312,8 @@ export default function StartToday() {
               <Row label="Required Proof Artifact" value={form.required_artifact} />
             </div>
             <div className="grid sm:grid-cols-3 gap-2">
-              <Link to="/coach"><Button variant="outline" size="sm" className="w-full"><MessageSquare className="h-3 w-3 mr-1.5" />Open Coach</Button></Link>
-              <Link to="/proof"><Button size="sm" className="w-full"><Gavel className="h-3 w-3 mr-1.5" />Submit Proof</Button></Link>
+              <Link to="/coach"><Button variant="outline" size="sm" className="w-full"><MessageSquare className="h-3 w-3 mr-1.5" />Open coach</Button></Link>
+              <Link to="/proof"><Button size="sm" className="w-full"><Gavel className="h-3 w-3 mr-1.5" />Submit proof</Button></Link>
               <Link to="/sheet"><Button variant="outline" size="sm" className="w-full"><Crosshair className="h-3 w-3 mr-1.5" />Today's Sheet</Button></Link>
             </div>
             <Button
@@ -297,7 +328,7 @@ export default function StartToday() {
               onClick={() => navigate("/dashboard")}
               className="w-full text-xs font-mono text-muted-foreground hover:text-foreground"
             >
-              ← Back to command centre
+              ← Back to Today
             </button>
           </Card>
         )}
