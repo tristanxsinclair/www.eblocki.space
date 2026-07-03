@@ -3,7 +3,7 @@ import { type Mode, MODE_LABELS } from "@/lib/eblocki/modes";
 import { type BehaviouralState, STATE_LABELS } from "@/lib/eblocki/states";
 import type { EvidenceStrength } from "@/lib/eblocki/proof-scoring";
 
-const MODE_COLOR: Record<Mode, string> = {
+const MODE_COLOR: Record<string, string> = {
   LAW_MAX: "border-evidence-strong/40 text-evidence-strong",
   PSYCH_HD: "border-accent/40 text-accent",
   SALES_CLOSE: "border-warning/40 text-warning",
@@ -14,15 +14,18 @@ const MODE_COLOR: Record<Mode, string> = {
   GENERAL_EXECUTION: "border-muted-foreground/30 text-muted-foreground",
 };
 
-export function ModeBadge({ mode, hybrid }: { mode: Mode; hybrid?: Mode }) {
+export function ModeBadge({ mode, hybrid }: { mode: string; hybrid?: string }) {
+  const primaryLabel = MODE_LABELS[mode as keyof typeof MODE_LABELS] ?? mode;
+  const primaryClass = MODE_COLOR[mode] ?? "border-muted-foreground/30 text-muted-foreground";
+  const hybridLabel = hybrid ? MODE_LABELS[hybrid as keyof typeof MODE_LABELS] ?? hybrid : null;
+  const hybridClass = hybrid ? MODE_COLOR[hybrid] ?? "border-muted-foreground/30 text-muted-foreground" : "";
+
   return (
     <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest">
-      <span className={cn("rounded-sm border px-1.5 py-0.5", MODE_COLOR[mode])}>
-        {MODE_LABELS[mode]}
-      </span>
+      <span className={cn("rounded-sm border px-1.5 py-0.5", primaryClass)}>{primaryLabel}</span>
       {hybrid && (
-        <span className={cn("rounded-sm border px-1.5 py-0.5 opacity-80", MODE_COLOR[hybrid])}>
-          + {MODE_LABELS[hybrid]}
+        <span className={cn("rounded-sm border px-1.5 py-0.5 opacity-80", hybridClass)}>
+          + {hybridLabel}
         </span>
       )}
     </span>

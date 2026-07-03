@@ -8,6 +8,34 @@ export type Mode =
   | "CAREER_MONEY"
   | "GENERAL_EXECUTION";
 
+export interface UserMode {
+  id?: string;
+  user_id?: string;
+  mode_id: string;
+  display_name: string;
+  description: string;
+  keywords: string[];
+  proof_examples: string[];
+  weak_evidence_examples: string[];
+  strong_evidence_examples: string[];
+  elite_evidence_examples: string[];
+  preferred_response_framework: string;
+  scoring_criteria: Record<string, string[] | string>;
+  research_needs: string[];
+  tone_adjustments: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ModeDetectionResult {
+  primary: Mode | string;
+  hybrid?: Mode | string;
+  customMode?: UserMode | null;
+  isCustomMode: boolean;
+}
+
 const KEYWORDS: Record<Exclude<Mode, "GENERAL_EXECUTION">, string[]> = {
   LAW_MAX: [
     "law","laws1005","laws1006","legal","case","statute","statutory","irac",
@@ -50,6 +78,18 @@ export interface ModeDetection {
   scores: Record<Mode, number>;
 }
 
+export function scoreKeywordMatch(text: string, keywords: string[] = []): number {
+  const lower = text.toLowerCase();
+  return keywords.reduce((score, keyword) => {
+    const clean = String(keyword || "").trim().toLowerCase();
+    if (!clean) return score;
+    if (lower.includes(clean)) {
+      return score + (clean.length > 8 ? 3 : clean.length > 4 ? 2 : 1);
+    }
+    return score;
+  }, 0);
+}
+
 export function detectMode(text: string): ModeDetection {
   const t = text.toLowerCase();
   const scores = {
@@ -63,7 +103,7 @@ export function detectMode(text: string): ModeDetection {
     }
   });
 
-  const sorted = (Object.entries(scores) as [Mode, number][])
+const sorted = (Object.entries(scores) as [Mode, number][])
     .sort((a, b) => b[1] - a[1]);
 
   const [top, secondary] = sorted;
@@ -75,6 +115,41 @@ export function detectMode(text: string): ModeDetection {
     result.hybrid = secondary[0];
   }
   return result;
+}
+
+export function detectPersonalisedMode(text: string, userModes: UserMode[]): ModeDetectionResult | null {
+  const activeModes = userModes.filter((mode) => mode.is_active !== false);
+  if (activeModes.length === 0) return null;
+
+  const scored = activeModes
+    .map((mode) => {
+      const keywordScore = scoreKeywordMatch(text, mode.keywords ?? []);
+      const nameScore = scoreKeywordMatch(text, [mode.mode_id, mode.display_name, mode.description ?? ""]);
+      const proofScore = scoreKeywordMatch(text, mode.proof_examples ?? []);
+      const researchScore = scoreKeywordMatch(text, mode.research_needs ?? []);
+      return {
+        mode,
+        score: keywordScore + nameScore + proofScore + researchScore,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const best = scored[0];
+  if (!best || best.score <= 0) return null;
+
+  return {
+    primary: best.mode.mode_id,
+    hybrid: undefined,
+    customMode: best.mode,
+    isCustomMode: true,
+  };
+}
+
+export function detectModeWithUserModes(text: string, userModes: UserMode[]) {
+  const personalised = detectPersonalisedMode(text, userModes);
+  if (personalised) return personalised;
+  const fallback = detectMode(text);
+  return { primary: fallback.primary, hybrid: fallback.hybrid, customMode: null, isCustomMode: false };
 }
 
 export const MODE_LABELS: Record<Mode, string> = {

@@ -16,7 +16,7 @@ export function ProofContractCard({
   committed?: boolean;
 }) {
   const buttonDisabled = committing || committed;
-  const buttonText = committed ? "✓ Proof Contract Saved" : committing ? "Committing…" : "Commit to Court of Evidence";
+  const buttonText = committed ? "✓ Proof Contract Saved" : committing ? "Committing…" : "Commit to Proof Check";
 
   return (
     <Card className="panel p-4 border-primary/30">
@@ -43,6 +43,12 @@ export function ProofContractCard({
           <dt className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Seriousness</dt>
           <dd className="text-foreground font-mono">{contract.seriousnessScore}/10 — {contract.reason}</dd>
         </div>
+        {contract.dueDate && (
+          <div>
+            <dt className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">Due</dt>
+            <dd className="text-foreground font-mono">{contract.dueDate}</dd>
+          </div>
+        )}
       </dl>
       {onCommit && (
         <Button
