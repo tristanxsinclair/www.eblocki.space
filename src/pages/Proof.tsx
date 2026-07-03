@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
 import { ProofStandardPreviewPanel } from "@/components/eblocki/ProofStandardPreviewPanel";
-import { scoreProofArtifact } from "@/lib/eblocki/proof-scoring";
+import { scoreProofArtifact, type EvidenceStrength } from "@/lib/eblocki/proof-scoring";
 import { classifyStudyActivity } from "@/lib/eblocki/fake-study-detector";
 import { StudyVerdictHint } from "@/components/eblocki/StudyVerdictHint";
 import { buildProofStandardPreview, type ProofStandardPreview } from "@/lib/eblocki/proof-standard-preview";
@@ -257,7 +257,7 @@ export default function Proof() {
     setPending((pc ?? []).filter((p) => p.status === "pending"));
     setMissed((pc ?? []).filter((p) => p.status === "missed"));
     setCompleted(pa ?? []);
-    setUserModes(modes ?? []);
+    setUserModes((modes ?? []) as unknown as UserMode[]);
   };
 
   useEffect(() => {
@@ -1655,7 +1655,7 @@ function CompletedArtifactCard({ artifact }: { artifact: ProofArtifactRow }) {
           {artifact.domain} - {artifact.artifact_type ?? "artifact"} - {artifact.created_at?.slice(0, 10)}
         </div>
         {artifact.evidence_strength && (
-          <EvidenceStrengthBadge strength={artifact.evidence_strength} score={artifact.quality_score} />
+          <EvidenceStrengthBadge strength={artifact.evidence_strength as EvidenceStrength} score={artifact.quality_score} />
         )}
       </div>
       <div className="text-sm font-medium mt-1 break-words">{artifact.title}</div>

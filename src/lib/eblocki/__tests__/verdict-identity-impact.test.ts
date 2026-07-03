@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
-import type { EvidenceStrength } from "./proof-scoring";
+import type { EvidenceStrength } from "@/lib/eblocki/proof-scoring";
 
 export function isEvidenceStrength(value: unknown): value is EvidenceStrength {
   return (
