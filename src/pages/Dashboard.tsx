@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { EvidenceStrength } from "@/lib/eblocki/proof-scoring";
+import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
@@ -34,27 +37,43 @@ import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
 import { InterestSignalCard } from "@/components/eblocki/InterestSignalCard";
 import { DashboardForecastTabs } from "@/components/eblocki/DashboardForecastTabs";
 import { IdentityLedger } from "@/components/eblocki/IdentityLedger";
-import { computeTemporal, type TemporalResult } from "@/lib/eblocki/temporal-engine";
-import { buildDashboardViewModel } from "@/lib/eblocki/dashboard-view-model";
+import { computeTemporal, type LedgerLike, type ProofArtifactLike, type TemporalResult, type VerdictLike } from "@/lib/eblocki/temporal-engine";
+import {
+  buildDashboardViewModel,
+  type DashboardCoachRow,
+  type DashboardCommitmentRow,
+  type DashboardDailySheetRow,
+  type DashboardProofRow,
+} from "@/lib/eblocki/dashboard-view-model";
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
+
+const EVIDENCE_STRENGTHS: EvidenceStrength[] = ["weak", "moderate", "strong", "elite"];
+
+type UserModeRow = Pick<Tables<"user_modes">, "mode_id">;
+type DashboardArtifactRow = DashboardProofRow & ProofArtifactLike;
+
+function isEvidenceStrength(value: string | null | undefined): value is EvidenceStrength {
+  return EVIDENCE_STRENGTHS.includes(value as EvidenceStrength);
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
-  const [today, setToday] = useState<any>(null);
-  const [pending, setPending] = useState<any[]>([]);
-  const [recent, setRecent] = useState<any[]>([]);
-  const [recentCoach, setRecentCoach] = useState<any[]>([]);
-  const [allArtifacts, setAllArtifacts] = useState<any[]>([]);
-  const [verdicts, setVerdicts] = useState<any[]>([]);
-  const [ledger, setLedger] = useState<any[]>([]);
+  const [today, setToday] = useState<DashboardDailySheetRow | null>(null);
+  const [pending, setPending] = useState<DashboardCommitmentRow[]>([]);
+  const [recent, setRecent] = useState<DashboardProofRow[]>([]);
+  const [recentCoach, setRecentCoach] = useState<DashboardCoachRow[]>([]);
+  const [allArtifacts, setAllArtifacts] = useState<DashboardArtifactRow[]>([]);
+  const [verdicts, setVerdicts] = useState<VerdictLike[]>([]);
+  const [ledger, setLedger] = useState<LedgerLike[]>([]);
   const [activeDomains, setActiveDomains] = useState<string[]>([]);
   const [quick, setQuick] = useState("");
   const [mode, setMode] = useState<Mode | null>(null);
   const [state, setStateBadge] = useState<BehaviouralState | null>(null);
   const [diagnosticsTab, setDiagnosticsTab] = useState("forecast");
   const [queryFailed, setQueryFailed] = useState(false);
+  const [dashboardLoaded, setDashboardLoaded] = useState(false);
 
   const todayISO = new Date().toISOString().slice(0, 10);
 
@@ -78,6 +97,7 @@ export default function Dashboard() {
     let cancelled = false;
     (async () => {
       setQueryFailed(false);
+      setDashboardLoaded(false);
       try {
         const [dcsRes, pcRes, paRes, ciRes, allRes, modesRes, verdictRes, ledgerRes] = await Promise.all([
           supabase.from("daily_control_sheets").select("*").eq("user_id", user.id).eq("sheet_date", todayISO).maybeSingle(),
@@ -99,26 +119,51 @@ export default function Dashboard() {
         setRecent(paRes.data ?? []);
         setRecentCoach(ciRes.data ?? []);
         setAllArtifacts(allRes.data ?? []);
-        setActiveDomains((modesRes.data ?? []).map((row) => row.mode_id));
+        setActiveDomains(((modesRes.data ?? []) as UserModeRow[]).map((row) => row.mode_id));
         setVerdicts(verdictRes.data ?? []);
         setLedger(ledgerRes.data ?? []);
         setQueryFailed(Boolean(dcsRes.error || pcRes.error || paRes.error || ciRes.error || allRes.error || modesRes.error || verdictRes.error || ledgerRes.error));
+        setDashboardLoaded(true);
       } catch {
-        if (!cancelled) setQueryFailed(true);
+        if (!cancelled) {
+          setQueryFailed(true);
+          setDashboardLoaded(true);
+        }
       }
     })();
     return () => { cancelled = true; };
   }, [user, todayISO]);
 
+  useEffect(() => {
+    if (!user || welcomeCheck !== "ok" || allArtifacts.length !== 0) return;
+    void logEvent("activation_dashboard_zero_state_seen", {
+      route: "/dashboard",
+      source: "today",
+    });
+  }, [user, welcomeCheck, allArtifacts.length]);
+
+  useEffect(() => {
+    if (!user || allArtifacts.length === 0) return;
+    const latestCreatedAt = allArtifacts[0]?.created_at?.slice(0, 10);
+    if (!latestCreatedAt || latestCreatedAt === todayISO) return;
+    void logEvent("activation_day_2_return_seen", {
+      route: "/dashboard",
+      source: "today",
+    });
+  }, [user, allArtifacts, todayISO]);
+
   const currentMode = recentCoach[0]?.mode ?? null;
-  const currentState = (today?.state as BehaviouralState) ?? recentCoach[0]?.state_detected ?? null;
+  const currentState = ((today?.state as BehaviouralState | null) ?? (recentCoach[0]?.state_detected as BehaviouralState | null) ?? null);
   const topPending = pending[0];
   const latestArtifact = recent[0];
+  const temporalArtifacts = allArtifacts.filter(
+    (artifact): artifact is DashboardArtifactRow => typeof artifact.created_at === "string",
+  );
 
   const temporalResult = useMemo<TemporalResult | null>(() => {
     try {
       return computeTemporal({
-        artifacts: allArtifacts,
+        artifacts: temporalArtifacts,
         verdicts,
         ledger,
         activeDomains,
@@ -127,7 +172,7 @@ export default function Dashboard() {
     } catch {
       return null;
     }
-  }, [allArtifacts, verdicts, ledger, activeDomains, currentState]);
+  }, [temporalArtifacts, verdicts, ledger, activeDomains, currentState]);
 
   const view = useMemo(() => buildDashboardViewModel({
     today,
@@ -151,7 +196,7 @@ export default function Dashboard() {
     logEvent("dashboard_section_opened", { sectionName: `diagnostics_${tabName}` });
   };
 
-  if (welcomeCheck === "needs") {
+  if (dashboardLoaded && welcomeCheck === "needs" && allArtifacts.length === 0) {
     return <Navigate to="/welcome" replace />;
   }
 
@@ -196,7 +241,7 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} />}
+        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} latestEvidenceStrength={latestArtifact?.evidence_strength} />}
 
         {allArtifacts.length === 0 && (
           <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
@@ -211,13 +256,34 @@ export default function Dashboard() {
             </p>
             <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
               <Link to="/proof?first=1" className="w-full sm:w-auto">
-                <Button size="sm" className="w-full sm:w-auto">
+                <Button
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    void logEvent("activation_landing_primary_cta_clicked", {
+                      route: "/dashboard",
+                      destination: "/proof?first=1",
+                      ctaName: "dashboard_submit_first_proof",
+                    });
+                  }}
+                >
                   Submit first proof
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               </Link>
               <Link to="/proof-week" className="w-full sm:w-auto">
-                <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    void logEvent("activation_landing_primary_cta_clicked", {
+                      route: "/dashboard",
+                      destination: "/proof-week",
+                      ctaName: "dashboard_see_what_counts",
+                    });
+                  }}
+                >
                   See what counts
                 </Button>
               </Link>
@@ -308,8 +374,19 @@ export default function Dashboard() {
   );
 }
 
-function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardViewModel>; state: BehaviouralState | null }) {
+export function CommandHero({
+  view,
+  state,
+  latestEvidenceStrength,
+}: {
+  view: ReturnType<typeof buildDashboardViewModel>;
+  state: BehaviouralState | null;
+  latestEvidenceStrength?: string | null;
+}) {
   const secondaryLabel = view.commandSummary.secondaryHref === "/coach" ? "Open coach" : "Plan today";
+  const identityImpact = isEvidenceStrength(latestEvidenceStrength)
+    ? verdictIdentityImpact(latestEvidenceStrength)
+    : null;
   return (
     <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
       <div className="flex items-start justify-between gap-4 flex-wrap min-w-0">
@@ -342,7 +419,12 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
         <CommandSignal icon={<Target />} label="Proof required" value={view.commandSummary.proofRequired} />
         <CommandSignal icon={<ShieldAlert />} label="Risk if ignored" value={view.commandSummary.highestRisk} />
-        <CommandSignal icon={<Gavel />} label="Latest verdict" value={view.commandLayer.latestCourtSignal} />
+        <CommandSignal
+          icon={<Gavel />}
+          label="Latest verdict"
+          value={view.commandLayer.latestCourtSignal}
+          hint={identityImpact?.headline}
+        />
       </div>
     </Card>
   );
@@ -356,10 +438,10 @@ function EvidenceCommandPanel({
   latestArtifact,
 }: {
   view: ReturnType<typeof buildDashboardViewModel>;
-  pending: any[];
-  recent: any[];
-  topPending: any;
-  latestArtifact: any;
+  pending: DashboardCommitmentRow[];
+  recent: DashboardProofRow[];
+  topPending: DashboardCommitmentRow | undefined;
+  latestArtifact: DashboardProofRow | undefined;
 }) {
   const [showAllRecent, setShowAllRecent] = useState(false);
   const [showSecondary, setShowSecondary] = useState(false);
@@ -413,7 +495,7 @@ function EvidenceCommandPanel({
                     <div className="truncate text-sm">{proof.title}</div>
                     <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{proof.domain}</div>
                   </div>
-                  {proof.evidence_strength && <EvidenceStrengthBadge strength={proof.evidence_strength} score={proof.quality_score} />}
+                  {isEvidenceStrength(proof.evidence_strength) && <EvidenceStrengthBadge strength={proof.evidence_strength} score={proof.quality_score ?? undefined} />}
                 </div>
               ))}
               {recent.length > mobileLimit && (
@@ -495,7 +577,7 @@ function SectionHeader({ eyebrow, title, detail }: { eyebrow: string; title: str
   );
 }
 
-function CommandSignal({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+function CommandSignal({ icon, label, value, hint }: { icon: ReactNode; label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-sm border border-primary/20 bg-background/30 p-3 min-w-0">
       <div className="flex items-center gap-1.5 text-primary [&_svg]:h-3.5 [&_svg]:w-3.5">
@@ -503,6 +585,14 @@ function CommandSignal({ icon, label, value }: { icon: ReactNode; label: string;
         <span className="font-mono text-[9px] uppercase tracking-widest">{label}</span>
       </div>
       <div className="mt-1 text-sm leading-snug line-clamp-2">{value}</div>
+      {hint && (
+        <div
+          className="mt-1 text-xs leading-snug text-muted-foreground line-clamp-1 break-words"
+          data-testid="dashboard-verdict-identity-impact"
+        >
+          {hint}
+        </div>
+      )}
     </div>
   );
 }

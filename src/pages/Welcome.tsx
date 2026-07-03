@@ -97,8 +97,9 @@ export default function Welcome() {
       });
       toast.success(skipped ? "Welcome skipped. Submit your first proof." : "You're in. Submit your first proof.");
       navigate("/proof?first=1");
-    } catch (e: any) {
-      toast.error(e?.message || "Could not save preferences.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Could not save preferences.";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -206,7 +207,7 @@ function ModesStep({ selected, toggle }: { selected: string[]; toggle: (v: strin
       </div>
       <h2 className="text-xl sm:text-2xl font-semibold">Pick the arenas that matter.</h2>
       <p className="text-sm text-muted-foreground">
-        Modes route your missions, coaching, and proof standards. Pick at least one — you can change later.
+        Pick at least one area you want Eblocki to judge well. You can change this later.
       </p>
       <div className="grid sm:grid-cols-2 gap-2 pt-2">
         {MODE_BANK.map((m) => {
@@ -240,7 +241,7 @@ function GoalsStep({ selected, toggle }: { selected: string[]; toggle: (v: strin
       <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">Behavioural goals</span>
       <h2 className="text-xl sm:text-2xl font-semibold">What are you trying to fix?</h2>
       <p className="text-sm text-muted-foreground">
-        These shape your daily mission seeding and notification tone. Pick at least one.
+        These help Eblocki shape your first-week guidance. Pick at least one.
       </p>
       <div className="grid gap-2 pt-2">
         {GOAL_BANK.map((g) => {
@@ -288,7 +289,7 @@ function FirstProofStep() {
         </li>
         <li className="flex gap-3">
           <span className="font-mono text-primary">04</span>
-          <span>Go to Today for the next command.</span>
+          <span>Go back to Today for your next command.</span>
         </li>
       </ol>
       <p className="text-[11px] text-muted-foreground italic border-l-2 border-primary/40 pl-2">

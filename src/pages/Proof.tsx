@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
 import { ProofStandardPreviewPanel } from "@/components/eblocki/ProofStandardPreviewPanel";
-import { scoreProofArtifact } from "@/lib/eblocki/proof-scoring";
+import { scoreProofArtifact, type EvidenceStrength } from "@/lib/eblocki/proof-scoring";
 import { classifyStudyActivity } from "@/lib/eblocki/fake-study-detector";
 import { StudyVerdictHint } from "@/components/eblocki/StudyVerdictHint";
 import { buildProofStandardPreview, type ProofStandardPreview } from "@/lib/eblocki/proof-standard-preview";
@@ -45,6 +46,7 @@ import {
   isFirstProofMode,
 } from "@/lib/eblocki/first-proof";
 import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
+import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -79,6 +81,16 @@ interface Verdict {
   identityEscalationReason: string;
   attachmentUrl?: string | null;
   attachmentName?: string | null;
+}
+
+type ProofCommitmentRow = Tables<"proof_commitments">;
+type ProofArtifactRow = Tables<"proof_artifacts">;
+
+interface OcrExtractResponse {
+  error?: string;
+  text?: string;
+  textPreview?: string;
+  truncated?: boolean;
 }
 
 const ACCEPTED_TYPES = "application/pdf,image/png,image/jpeg,image/webp,image/gif,text/plain,text/markdown,text/csv";
@@ -151,7 +163,7 @@ function VerdictFeedback({ artifactId }: { artifactId: string }) {
         toast.error("Could not save feedback. Your verdict is still recorded.");
       } else {
         setSubmitted(true);
-        logEvent("recommendation_outcome_logged", { outcome: `verdict_feedback_${value}` });
+        void logEvent("recommendation_outcome_logged", { outcome: `verdict_feedback_${value}` });
       }
     } finally {
       setSubmitting(false);
@@ -192,9 +204,9 @@ export default function Proof() {
   const temporalBrief = useMemo(() => parseTemporalProofParams(params), [params]);
   const [firstProofSubmitted, setFirstProofSubmitted] = useState(false);
 
-  const [pending, setPending] = useState<any[]>([]);
-  const [completed, setCompleted] = useState<any[]>([]);
-  const [missed, setMissed] = useState<any[]>([]);
+  const [pending, setPending] = useState<ProofCommitmentRow[]>([]);
+  const [completed, setCompleted] = useState<ProofArtifactRow[]>([]);
+  const [missed, setMissed] = useState<ProofCommitmentRow[]>([]);
   const [userModes, setUserModes] = useState<UserMode[]>([]);
 
   const [selectedModeId, setSelectedModeId] = useState<string>("");
@@ -223,6 +235,18 @@ export default function Proof() {
     [userModes]
   );
 
+  useEffect(() => {
+    if (!firstProofMode) return;
+    void logEvent("activation_first_proof_entered", {
+      route: "/proof",
+      source: "activation",
+    });
+    void logEvent("proof_capture_opened", {
+      route: "/proof",
+      source: "first_proof",
+    });
+  }, [firstProofMode]);
+
   const reload = async () => {
     if (!user) return;
     const [{ data: pc }, { data: pa }, { data: modes }] = await Promise.all([
@@ -233,12 +257,21 @@ export default function Proof() {
     setPending((pc ?? []).filter((p) => p.status === "pending"));
     setMissed((pc ?? []).filter((p) => p.status === "missed"));
     setCompleted(pa ?? []);
-    setUserModes((modes ?? []) as any);
+    setUserModes((modes ?? []) as unknown as UserMode[]);
   };
 
   useEffect(() => {
     reload();
   }, [user]);
+
+  useEffect(() => {
+    if (!verdict) return;
+    void logEvent(firstProofMode ? "activation_verdict_shown" : "proof_verdict_viewed", {
+      route: "/proof",
+      source: firstProofMode ? "first_proof" : "proof",
+      verdictStrength: verdict.evidenceStrength,
+    });
+  }, [verdict, firstProofMode]);
 
   // Honour ?mode=... and ?contract=... deep links
   useEffect(() => {
@@ -453,7 +486,7 @@ export default function Proof() {
             .update({ temporal_snapshot: snapshot })
             .eq("id", artifact!.id);
           if (!snapshotError) {
-            logEvent("temporal_snapshot_created", {
+            void logEvent("temporal_snapshot_created", {
               modelVersion: snapshot.modelVersion,
               confidenceLevel: snapshot.confidenceLevel,
               riskKind: snapshot.mainRisk,
@@ -518,12 +551,17 @@ export default function Proof() {
       toast.success(`Verdict: ${score.qualityScore}/10 - ${score.evidenceStrength}`);
       if (firstProofMode) {
         setFirstProofSubmitted(true);
-        logEvent("proof_capture_completed", { first_proof: true });
+        void logEvent("proof_capture_completed", { route: "/proof", source: "first_proof" });
+        void logEvent("activation_first_proof_submitted", {
+          route: "/proof",
+          verdictStrength: score.evidenceStrength,
+        });
       }
       resetForm();
       reload();
-    } catch (e: any) {
-      toast.error(e.message || "Failed to submit proof.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to submit proof.";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -601,14 +639,14 @@ export default function Proof() {
           message: isPdf ? "OCR extracting from PDF..." : "OCR extracting from image...",
         }));
 
-        const { data, error } = await supabase.functions.invoke("ocr-extract", {
+        const { data, error } = await supabase.functions.invoke<OcrExtractResponse>("ocr-extract", {
           body: { dataUrl, mimeType: file.type, fileName: file.name },
         });
         if (error) throw new Error(error.message || "OCR call failed.");
-        if ((data as any)?.error) throw new Error((data as any).error);
+        if (data?.error) throw new Error(data.error);
 
-        const extracted: string = (data as any)?.textPreview ?? (data as any)?.text ?? "";
-        const truncated: boolean = !!(data as any)?.truncated;
+        const extracted = data?.textPreview ?? data?.text ?? "";
+        const truncated = Boolean(data?.truncated);
         setAttachmentText(extracted);
         setOriginalExtractedText(extracted);
         setExtractedEdited(false);
@@ -635,8 +673,8 @@ export default function Proof() {
         message: "Attached. No text extraction available for this format.",
         error: null, extractedSource: "none", ocrTruncated: false,
       });
-    } catch (e: any) {
-      const msg = e?.message || "Failed to process attachment.";
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Failed to process attachment.";
       setAttachState({
         file, status: "failed", progress: 100, message: msg, error: msg,
         extractedSource: "none", ocrTruncated: false,
@@ -715,7 +753,18 @@ export default function Proof() {
                 </p>
                 <div className="mt-3">
                   <Link to="/dashboard">
-                    <Button size="sm" className="w-full sm:w-auto">
+                    <Button
+                      size="sm"
+                      className="w-full sm:w-auto"
+                      onClick={() => {
+                        void logEvent("activation_verdict_cta_clicked", {
+                          route: "/proof",
+                          source: "first_proof",
+                          ctaName: "see_my_next_step",
+                          destination: "/dashboard",
+                        });
+                      }}
+                    >
                       {FIRST_PROOF_COPY.successCta}
                     </Button>
                   </Link>
@@ -901,11 +950,31 @@ export default function Proof() {
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
                 <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                  Proof Verdict
+                  Proof Receipt
                 </span>
               </div>
               <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
             </div>
+            {(() => {
+              const impact = verdictIdentityImpact(verdict.evidenceStrength);
+              const toneClass =
+                impact.tone === "warn"
+                  ? "border-amber-500/40 bg-amber-500/5 text-amber-200"
+                  : impact.tone === "good"
+                    ? "border-primary/40 bg-primary/5 text-primary"
+                    : impact.tone === "elite"
+                      ? "border-primary/60 bg-primary/10 text-primary"
+                      : "border-border bg-muted/30 text-foreground";
+              return (
+                <div
+                  className={`mt-3 rounded-sm border p-3 text-sm ${toneClass}`}
+                  data-testid="verdict-identity-impact"
+                >
+                  <div className="font-medium">{impact.headline}</div>
+                  <div className="mt-1 text-xs opacity-90">{impact.subtext}</div>
+                </div>
+              );
+            })()}
             {firstProofMode ? (
               <>
                 <div className="mt-3 grid gap-3 text-sm">
@@ -926,11 +995,12 @@ export default function Proof() {
               </>
             ) : (
               <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
-                <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
-                <VerdictRow label="Why it scored that way" value={verdict.why} />
+                <VerdictRow label="What counted" value={verdict.feedback} />
                 <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
                 <VerdictRow label="Missing standard" value={verdict.missingStandard} />
-                <VerdictRow label="Next upgrade" value={verdict.nextUpgrade} />
+                <VerdictRow label="Next command" value={verdict.nextUpgrade} />
+                <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
+                <VerdictRow label="Why it scored that way" value={verdict.why} />
                 <VerdictRow label="Elite version" value={verdict.eliteVersion} />
                 <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
                 <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
@@ -960,7 +1030,18 @@ export default function Proof() {
             )}
             <div className="mt-4 flex flex-col sm:flex-row gap-2">
               <Link to="/dashboard" className="w-full sm:w-auto">
-                <Button size="sm" className="w-full sm:w-auto">
+                <Button
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    void logEvent(firstProofMode ? "activation_verdict_cta_clicked" : "proof_verdict_cta_clicked", {
+                      route: "/proof",
+                      source: firstProofMode ? "first_proof" : "proof",
+                      ctaName: "back_to_today",
+                      destination: "/dashboard",
+                    });
+                  }}
+                >
                   {firstProofMode ? "See my next step" : "Back to Today"}
                 </Button>
               </Link>
@@ -1536,7 +1617,7 @@ function VerdictRow({ label, value }: { label: string; value: string }) {
 
 const COMPLETED_MOBILE_LIMIT = 3;
 
-function CompletedArtifactsList({ items }: { items: any[] }) {
+function CompletedArtifactsList({ items }: { items: ProofArtifactRow[] }) {
   const [showAll, setShowAll] = useState(false);
   const desktopVisible = items.length;
   return (
@@ -1562,7 +1643,7 @@ function CompletedArtifactsList({ items }: { items: any[] }) {
   );
 }
 
-function CompletedArtifactCard({ artifact }: { artifact: any }) {
+function CompletedArtifactCard({ artifact }: { artifact: ProofArtifactRow }) {
   const [open, setOpen] = useState(false);
   const fullFeedback: string = artifact.feedback ?? "";
   const summary = summariseArtifactContent(fullFeedback);
@@ -1574,7 +1655,7 @@ function CompletedArtifactCard({ artifact }: { artifact: any }) {
           {artifact.domain} - {artifact.artifact_type ?? "artifact"} - {artifact.created_at?.slice(0, 10)}
         </div>
         {artifact.evidence_strength && (
-          <EvidenceStrengthBadge strength={artifact.evidence_strength} score={artifact.quality_score} />
+          <EvidenceStrengthBadge strength={artifact.evidence_strength as EvidenceStrength} score={artifact.quality_score} />
         )}
       </div>
       <div className="text-sm font-medium mt-1 break-words">{artifact.title}</div>

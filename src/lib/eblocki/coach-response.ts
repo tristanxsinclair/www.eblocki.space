@@ -99,6 +99,41 @@ export function isSeriousActionPrompt(message: string): boolean {
   return /\b(write|draft|study|prepare|build|practise|practice|revise|reflect|train|sell|complete|submit|create|produce|fix|review)\b/i.test(message);
 }
 
+export interface CoachMarkdownSection {
+  heading: string;
+  body: string;
+}
+
+/**
+ * Convert a markdown-ish coach response (with ##/###/** markers) into
+ * structured sections so the UI can render cards instead of raw text.
+ * Always returns at least one section.
+ */
+export function parseCoachMarkdownSections(raw: string): CoachMarkdownSection[] {
+  const text = (raw ?? "").replace(/\r\n/g, "\n").trim();
+  if (!text) return [];
+  const lines = text.split("\n");
+  const sections: Array<{ heading: string; body: string[] }> = [];
+  let current: { heading: string; body: string[] } | null = null;
+
+  for (const rawLine of lines) {
+    const line = rawLine.replace(/\*\*/g, "");
+    const headingMatch = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$/);
+    if (headingMatch) {
+      if (current) sections.push(current);
+      current = { heading: headingMatch[1].trim(), body: [] };
+      continue;
+    }
+    if (!current) current = { heading: "Response", body: [] };
+    current.body.push(line);
+  }
+  if (current) sections.push(current);
+
+  return sections
+    .map((s) => ({ heading: s.heading, body: s.body.join("\n").trim() }))
+    .filter((s) => s.body.length > 0);
+}
+
 function routeModeToEblockiMode(routeMode: string): EblockiMode {
   if (routeMode.includes("law") || routeMode.includes("academic")) return "LAW_MAX";
   if (routeMode.includes("product")) return "EBLOCKI";
