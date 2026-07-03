@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { EvidenceStrength } from "@/lib/eblocki/proof-scoring";
+import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
@@ -34,27 +37,43 @@ import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
 import { InterestSignalCard } from "@/components/eblocki/InterestSignalCard";
 import { DashboardForecastTabs } from "@/components/eblocki/DashboardForecastTabs";
 import { IdentityLedger } from "@/components/eblocki/IdentityLedger";
-import { computeTemporal, type TemporalResult } from "@/lib/eblocki/temporal-engine";
-import { buildDashboardViewModel } from "@/lib/eblocki/dashboard-view-model";
+import { computeTemporal, type LedgerLike, type ProofArtifactLike, type TemporalResult, type VerdictLike } from "@/lib/eblocki/temporal-engine";
+import {
+  buildDashboardViewModel,
+  type DashboardCoachRow,
+  type DashboardCommitmentRow,
+  type DashboardDailySheetRow,
+  type DashboardProofRow,
+} from "@/lib/eblocki/dashboard-view-model";
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
+
+const EVIDENCE_STRENGTHS: EvidenceStrength[] = ["weak", "moderate", "strong", "elite"];
+
+type UserModeRow = Pick<Tables<"user_modes">, "mode_id">;
+type DashboardArtifactRow = DashboardProofRow & ProofArtifactLike;
+
+function isEvidenceStrength(value: string | null | undefined): value is EvidenceStrength {
+  return EVIDENCE_STRENGTHS.includes(value as EvidenceStrength);
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
-  const [today, setToday] = useState<any>(null);
-  const [pending, setPending] = useState<any[]>([]);
-  const [recent, setRecent] = useState<any[]>([]);
-  const [recentCoach, setRecentCoach] = useState<any[]>([]);
-  const [allArtifacts, setAllArtifacts] = useState<any[]>([]);
-  const [verdicts, setVerdicts] = useState<any[]>([]);
-  const [ledger, setLedger] = useState<any[]>([]);
+  const [today, setToday] = useState<DashboardDailySheetRow | null>(null);
+  const [pending, setPending] = useState<DashboardCommitmentRow[]>([]);
+  const [recent, setRecent] = useState<DashboardProofRow[]>([]);
+  const [recentCoach, setRecentCoach] = useState<DashboardCoachRow[]>([]);
+  const [allArtifacts, setAllArtifacts] = useState<DashboardArtifactRow[]>([]);
+  const [verdicts, setVerdicts] = useState<VerdictLike[]>([]);
+  const [ledger, setLedger] = useState<LedgerLike[]>([]);
   const [activeDomains, setActiveDomains] = useState<string[]>([]);
   const [quick, setQuick] = useState("");
   const [mode, setMode] = useState<Mode | null>(null);
   const [state, setStateBadge] = useState<BehaviouralState | null>(null);
   const [diagnosticsTab, setDiagnosticsTab] = useState("forecast");
   const [queryFailed, setQueryFailed] = useState(false);
+  const [dashboardLoaded, setDashboardLoaded] = useState(false);
 
   const todayISO = new Date().toISOString().slice(0, 10);
 
@@ -78,6 +97,7 @@ export default function Dashboard() {
     let cancelled = false;
     (async () => {
       setQueryFailed(false);
+      setDashboardLoaded(false);
       try {
         const [dcsRes, pcRes, paRes, ciRes, allRes, modesRes, verdictRes, ledgerRes] = await Promise.all([
           supabase.from("daily_control_sheets").select("*").eq("user_id", user.id).eq("sheet_date", todayISO).maybeSingle(),
@@ -99,26 +119,51 @@ export default function Dashboard() {
         setRecent(paRes.data ?? []);
         setRecentCoach(ciRes.data ?? []);
         setAllArtifacts(allRes.data ?? []);
-        setActiveDomains((modesRes.data ?? []).map((row) => row.mode_id));
+        setActiveDomains(((modesRes.data ?? []) as UserModeRow[]).map((row) => row.mode_id));
         setVerdicts(verdictRes.data ?? []);
         setLedger(ledgerRes.data ?? []);
         setQueryFailed(Boolean(dcsRes.error || pcRes.error || paRes.error || ciRes.error || allRes.error || modesRes.error || verdictRes.error || ledgerRes.error));
+        setDashboardLoaded(true);
       } catch {
-        if (!cancelled) setQueryFailed(true);
+        if (!cancelled) {
+          setQueryFailed(true);
+          setDashboardLoaded(true);
+        }
       }
     })();
     return () => { cancelled = true; };
   }, [user, todayISO]);
 
+  useEffect(() => {
+    if (!user || welcomeCheck !== "ok" || allArtifacts.length !== 0) return;
+    void logEvent("activation_dashboard_zero_state_seen", {
+      route: "/dashboard",
+      source: "today",
+    });
+  }, [user, welcomeCheck, allArtifacts.length]);
+
+  useEffect(() => {
+    if (!user || allArtifacts.length === 0) return;
+    const latestCreatedAt = allArtifacts[0]?.created_at?.slice(0, 10);
+    if (!latestCreatedAt || latestCreatedAt === todayISO) return;
+    void logEvent("activation_day_2_return_seen", {
+      route: "/dashboard",
+      source: "today",
+    });
+  }, [user, allArtifacts, todayISO]);
+
   const currentMode = recentCoach[0]?.mode ?? null;
-  const currentState = (today?.state as BehaviouralState) ?? recentCoach[0]?.state_detected ?? null;
+  const currentState = ((today?.state as BehaviouralState | null) ?? (recentCoach[0]?.state_detected as BehaviouralState | null) ?? null);
   const topPending = pending[0];
   const latestArtifact = recent[0];
+  const temporalArtifacts = allArtifacts.filter(
+    (artifact): artifact is DashboardArtifactRow => typeof artifact.created_at === "string",
+  );
 
   const temporalResult = useMemo<TemporalResult | null>(() => {
     try {
       return computeTemporal({
-        artifacts: allArtifacts,
+        artifacts: temporalArtifacts,
         verdicts,
         ledger,
         activeDomains,
@@ -127,7 +172,7 @@ export default function Dashboard() {
     } catch {
       return null;
     }
-  }, [allArtifacts, verdicts, ledger, activeDomains, currentState]);
+  }, [temporalArtifacts, verdicts, ledger, activeDomains, currentState]);
 
   const view = useMemo(() => buildDashboardViewModel({
     today,
@@ -151,7 +196,7 @@ export default function Dashboard() {
     logEvent("dashboard_section_opened", { sectionName: `diagnostics_${tabName}` });
   };
 
-  if (welcomeCheck === "needs") {
+  if (dashboardLoaded && welcomeCheck === "needs" && allArtifacts.length === 0) {
     return <Navigate to="/welcome" replace />;
   }
 
@@ -159,25 +204,25 @@ export default function Dashboard() {
     <AppShell>
       <Seo
         title="Dashboard | EBLOCKI"
-        description="Command-centre overview: next proof, forecast, evidence, identity, and weekly calibration."
+        description="Today surface: next proof, verdict, progress, and deeper analysis."
         path="/dashboard"
       />
       <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-5">
         <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">
           <div className="min-w-0">
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              {allArtifacts.length === 0 ? "Today" : "Dashboard"}
+              Today
             </span>
             <h1 className="text-2xl md:text-3xl font-semibold mt-1">
-              {allArtifacts.length === 0 ? "Today" : "Dashboard"}
+              Today
             </h1>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Proof</Button></Link>
+            <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit proof</Button></Link>
             {allArtifacts.length > 0 && (
               <>
                 <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
-                <Link to="/start-today"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Start</Button></Link>
+                <Link to="/start-today?plan=1"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Plan</Button></Link>
                 <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
               </>
             )}
@@ -188,15 +233,15 @@ export default function Dashboard() {
           <Card className="panel p-4 border-primary/30 bg-primary/5">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Eblocki OS - Not Configured</div>
-                <p className="text-sm mt-1 text-muted-foreground">No personalised modes found. Add modes so proof can route to the right standards.</p>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Modes not set up</div>
+                <p className="text-sm mt-1 text-muted-foreground">Add at least one mode so proof routes to the right standard.</p>
               </div>
-              <Link to="/modes"><Button size="sm">Configure Modes</Button></Link>
+              <Link to="/modes"><Button size="sm">Set up modes</Button></Link>
             </div>
           </Card>
         )}
 
-        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} />}
+        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} latestEvidenceStrength={latestArtifact?.evidence_strength} />}
 
         {allArtifacts.length === 0 && (
           <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
@@ -204,16 +249,42 @@ export default function Dashboard() {
               Start here
             </div>
             <h2 className="mt-2 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">
-              Submit one piece of real work.
+              Submit your first proof.
             </h2>
             <p className="mt-2 text-sm text-muted-foreground text-wrap-safe">
-              Eblocki will check whether it actually proves progress, then tell you the next action.
+              Eblocki will tell you what counted, what was weak, and what to do next.
             </p>
             <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
               <Link to="/proof?first=1" className="w-full sm:w-auto">
-                <Button size="sm" className="w-full sm:w-auto">
-                  Submit Proof
+                <Button
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    void logEvent("activation_landing_primary_cta_clicked", {
+                      route: "/dashboard",
+                      destination: "/proof?first=1",
+                      ctaName: "dashboard_submit_first_proof",
+                    });
+                  }}
+                >
+                  Submit first proof
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
+              </Link>
+              <Link to="/proof-week" className="w-full sm:w-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    void logEvent("activation_landing_primary_cta_clicked", {
+                      route: "/dashboard",
+                      destination: "/proof-week",
+                      ctaName: "dashboard_see_what_counts",
+                    });
+                  }}
+                >
+                  See what counts
                 </Button>
               </Link>
             </div>
@@ -221,95 +292,107 @@ export default function Dashboard() {
         )}
 
         {allArtifacts.length > 0 && (
-        <>
-        <EvidenceCommandPanel
-          view={view}
-          pending={pending}
-          recent={recent}
-          topPending={topPending}
-          latestArtifact={latestArtifact}
-        />
+          <>
+            <EvidenceCommandPanel
+              view={view}
+              pending={pending}
+              recent={recent}
+              topPending={topPending}
+              latestArtifact={latestArtifact}
+            />
 
-        <DashboardForecastTabs
-          value={diagnosticsTab}
-          onValueChange={openDiagnosticsTab}
-          forecastSlot={
-            <>
-              {temporalResult ? (
-                <TemporalCommandCard result={temporalResult} />
-              ) : (
-                <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
-              )}
-              <TemporalFeedbackPanel />
-              <InterventionCard state={(currentState as BehaviouralState) ?? state} />
-            </>
-          }
-          evidenceSlot={
-            <>
-              {user && <IdentityLedger userId={user.id} limit={5} />}
-              <div className="grid lg:grid-cols-2 gap-4">
-                <MomentumPanel />
-                <WeeklyRetro />
-              </div>
-              <QuickCheckInCard
-                quick={quick}
-                setQuick={setQuick}
-                mode={mode}
-                state={state}
-                onDiagnose={handleCheckIn}
-              />
-              <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
-                <div className="flex items-center justify-between gap-3 min-w-0">
-                  <div className="min-w-0">
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Identity</div>
-                    <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
-                      {currentMode ? `Last coach mode: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
-                    </p>
+            <DashboardForecastTabs
+              value={diagnosticsTab}
+              onValueChange={openDiagnosticsTab}
+              forecastSlot={
+                <>
+                  {temporalResult ? (
+                    <TemporalCommandCard result={temporalResult} />
+                  ) : (
+                    <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
+                  )}
+                  <TemporalFeedbackPanel />
+                  <InterventionCard state={(currentState as BehaviouralState) ?? state} />
+                </>
+              }
+              evidenceSlot={
+                <>
+                  {user && <IdentityLedger userId={user.id} limit={5} />}
+                  <div className="grid lg:grid-cols-2 gap-4">
+                    <MomentumPanel />
+                    <WeeklyRetro />
                   </div>
-                  {currentState && <StateBadge state={currentState as BehaviouralState} />}
-                </div>
-                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  <MetricCell label="Modes" value={String(view.evidenceSummary.modesCount)} />
-                  <MetricCell label="Latest" value={view.evidenceSummary.latestProofTitle ?? "none"} />
-                  <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
-                </div>
-              </Card>
-            </>
-          }
-          auditSlot={
-            <>
-              <TemporalIntelligencePanel />
-              <TemporalModelAuditPanel />
-              <div className="space-y-3">
-                <ProductMatchPanel
-                  artifacts={allArtifacts}
-                  temporal={temporalResult}
-                  accessLevel="free"
-                  operatingProfile={{
-                    primaryDomain: activeDomains[0] ?? null,
-                    recommendationsAllowed: true,
-                    trustPreference: "neutral",
-                  }}
-                />
-                <InterestSignalCard />
-              </div>
-            </>
-          }
-        />
-        </>
+                  <QuickCheckInCard
+                    quick={quick}
+                    setQuick={setQuick}
+                    mode={mode}
+                    state={state}
+                    onDiagnose={handleCheckIn}
+                  />
+                  <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
+                    <div className="flex items-center justify-between gap-3 min-w-0">
+                      <div className="min-w-0">
+                        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Current setup</div>
+                        <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
+                          {currentMode ? `Last coach lens: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
+                        </p>
+                      </div>
+                      {currentState && <StateBadge state={currentState as BehaviouralState} />}
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <MetricCell label="Mode count" value={String(view.evidenceSummary.modesCount)} />
+                      <MetricCell label="Latest proof" value={view.evidenceSummary.latestProofTitle ?? "none"} />
+                      <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
+                    </div>
+                  </Card>
+                </>
+              }
+              auditSlot={
+                <>
+                  <TemporalIntelligencePanel />
+                  <TemporalModelAuditPanel />
+                  <div className="space-y-3">
+                    <ProductMatchPanel
+                      artifacts={allArtifacts}
+                      temporal={temporalResult}
+                      accessLevel="free"
+                      operatingProfile={{
+                        primaryDomain: activeDomains[0] ?? null,
+                        recommendationsAllowed: true,
+                        trustPreference: "neutral",
+                      }}
+                    />
+                    <InterestSignalCard />
+                  </div>
+                </>
+              }
+            />
+          </>
         )}
       </div>
     </AppShell>
   );
 }
 
-function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardViewModel>; state: BehaviouralState | null }) {
+export function CommandHero({
+  view,
+  state,
+  latestEvidenceStrength,
+}: {
+  view: ReturnType<typeof buildDashboardViewModel>;
+  state: BehaviouralState | null;
+  latestEvidenceStrength?: string | null;
+}) {
+  const secondaryLabel = view.commandSummary.secondaryHref === "/coach" ? "Open coach" : "Plan today";
+  const identityImpact = isEvidenceStrength(latestEvidenceStrength)
+    ? verdictIdentityImpact(latestEvidenceStrength)
+    : null;
   return (
     <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
       <div className="flex items-start justify-between gap-4 flex-wrap min-w-0">
         <div className="min-w-0 max-w-3xl">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Today // {view.commandSummary.label}</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Today // Next step</span>
             <span className="rounded-sm border border-border bg-background/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
               {view.dashboardStatus.replace(/_/g, " ")}
             </span>
@@ -317,18 +400,18 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
           </div>
           <h2 className="mt-3 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">{view.commandSummary.title}</h2>
           <p className="mt-2 text-sm text-muted-foreground max-w-2xl text-wrap-safe">
-            <span className="text-foreground">Next Command:</span> {view.commandSummary.nextBestAction}
+            <span className="text-foreground">After this proof:</span> {view.commandSummary.nextBestAction}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-wrap">
           <Link to={view.commandSummary.primaryHref} className="w-full sm:w-auto">
             <Button size="sm" className="w-full sm:w-auto">
-              {view.commandSummary.primaryCta}<ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+              Submit proof<ArrowRight className="h-3.5 w-3.5 ml-1.5" />
             </Button>
           </Link>
           <Link to={view.commandSummary.secondaryHref} className="w-full sm:w-auto">
             <Button size="sm" variant="outline" className="w-full sm:w-auto">
-              {view.commandSummary.secondaryCta}
+              {secondaryLabel}
             </Button>
           </Link>
         </div>
@@ -336,7 +419,12 @@ function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardVi
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
         <CommandSignal icon={<Target />} label="Proof required" value={view.commandSummary.proofRequired} />
         <CommandSignal icon={<ShieldAlert />} label="Risk if ignored" value={view.commandSummary.highestRisk} />
-        <CommandSignal icon={<Gavel />} label="Latest verdict" value={view.commandLayer.latestCourtSignal} />
+        <CommandSignal
+          icon={<Gavel />}
+          label="Latest verdict"
+          value={view.commandLayer.latestCourtSignal}
+          hint={identityImpact?.headline}
+        />
       </div>
     </Card>
   );
@@ -350,10 +438,10 @@ function EvidenceCommandPanel({
   latestArtifact,
 }: {
   view: ReturnType<typeof buildDashboardViewModel>;
-  pending: any[];
-  recent: any[];
-  topPending: any;
-  latestArtifact: any;
+  pending: DashboardCommitmentRow[];
+  recent: DashboardProofRow[];
+  topPending: DashboardCommitmentRow | undefined;
+  latestArtifact: DashboardProofRow | undefined;
 }) {
   const [showAllRecent, setShowAllRecent] = useState(false);
   const [showSecondary, setShowSecondary] = useState(false);
@@ -361,7 +449,7 @@ function EvidenceCommandPanel({
   const desktopLimit = Math.min(recent.length, 4);
   return (
     <section className="space-y-3">
-      <SectionHeader eyebrow="Evidence" title="Recent Proof" detail={`${view.evidenceSummary.weekArtifacts} this week`} />
+      <SectionHeader eyebrow="Proof" title="Recent proof" detail={`${view.evidenceSummary.weekArtifacts} this week`} />
       <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 mobile-safe-card">
         <div className="grid grid-cols-3 gap-2">
           <MetricCell label="Artifacts" value={String(view.evidenceSummary.weekArtifacts)} />
@@ -370,17 +458,17 @@ function EvidenceCommandPanel({
         </div>
 
         <div className="mt-4 grid gap-3">
-          <EvidenceBlock icon={<FileText />} label="Pending proof" action="Submit" href="/proof">
-            {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open Coach to forge one."}
+          <EvidenceBlock icon={<FileText />} label="Next proof" action="Submit" href="/proof">
+            {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open coach to forge one."}
           </EvidenceBlock>
           <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3`}>
-            <EvidenceBlock icon={<Gavel />} label="Latest verdict" action="Open" href="/proof">
-              {latestArtifact ? `${latestArtifact.title} - ${latestArtifact.evidence_strength ?? "unscored"}` : "No proof yet. Submit one piece of proof to activate Eblocki."}
+            <EvidenceBlock icon={<Gavel />} label="Last verdict" action="Open" href="/proof">
+              {latestArtifact ? `${latestArtifact.title} - ${latestArtifact.evidence_strength ?? "unscored"}` : "No proof yet. Submit one artifact to start the verdict loop."}
             </EvidenceBlock>
-            <EvidenceBlock icon={<CircleDot />} label="Domain signal" action="Modes" href="/modes">
+            <EvidenceBlock icon={<CircleDot />} label="Weak spot" action="Modes" href="/modes">
               {view.evidenceSummary.strongestDomain
                 ? `Strongest: ${view.evidenceSummary.strongestDomain}. Weakest: ${view.evidenceSummary.weakestDomain ?? "none flagged"}.`
-                : "No weekly domain signal yet."}
+                : "No weekly mode signal yet."}
             </EvidenceBlock>
           </div>
           <button
@@ -388,14 +476,14 @@ function EvidenceCommandPanel({
             onClick={() => setShowSecondary((open) => !open)}
             className="md:hidden font-mono text-[10px] uppercase tracking-widest text-primary hover:underline self-start"
           >
-            {showSecondary ? "Hide verdict & domain" : "Show verdict & domain"}
+            {showSecondary ? "Hide last verdict" : "Show last verdict"}
           </button>
         </div>
 
         <div className="mt-4 grid gap-2">
           <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Recent proof</div>
           {recent.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No proof logged yet. The system has no evidence.</p>
+            <p className="text-sm text-muted-foreground">No proof logged yet. Submit one artifact to start the record.</p>
           ) : (
             <>
               {recent.slice(0, desktopLimit).map((proof, idx) => (
@@ -407,7 +495,7 @@ function EvidenceCommandPanel({
                     <div className="truncate text-sm">{proof.title}</div>
                     <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{proof.domain}</div>
                   </div>
-                  {proof.evidence_strength && <EvidenceStrengthBadge strength={proof.evidence_strength} score={proof.quality_score} />}
+                  {isEvidenceStrength(proof.evidence_strength) && <EvidenceStrengthBadge strength={proof.evidence_strength} score={proof.quality_score ?? undefined} />}
                 </div>
               ))}
               {recent.length > mobileLimit && (
@@ -425,7 +513,7 @@ function EvidenceCommandPanel({
 
         {pending.length > 1 && (
           <Link to="/proof" className="mt-3 inline-flex items-center gap-1 text-xs font-mono text-primary hover:underline">
-            {pending.length} pending contracts <ArrowRight className="h-3 w-3" />
+            {pending.length} pending proof contracts <ArrowRight className="h-3 w-3" />
           </Link>
         )}
       </Card>
@@ -489,7 +577,7 @@ function SectionHeader({ eyebrow, title, detail }: { eyebrow: string; title: str
   );
 }
 
-function CommandSignal({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+function CommandSignal({ icon, label, value, hint }: { icon: ReactNode; label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-sm border border-primary/20 bg-background/30 p-3 min-w-0">
       <div className="flex items-center gap-1.5 text-primary [&_svg]:h-3.5 [&_svg]:w-3.5">
@@ -497,6 +585,14 @@ function CommandSignal({ icon, label, value }: { icon: ReactNode; label: string;
         <span className="font-mono text-[9px] uppercase tracking-widest">{label}</span>
       </div>
       <div className="mt-1 text-sm leading-snug line-clamp-2">{value}</div>
+      {hint && (
+        <div
+          className="mt-1 text-xs leading-snug text-muted-foreground line-clamp-1 break-words"
+          data-testid="dashboard-verdict-identity-impact"
+        >
+          {hint}
+        </div>
+      )}
     </div>
   );
 }

@@ -197,10 +197,14 @@ export function auditTemporalLoop(input: TemporalLoopAuditInput = {}): TemporalL
   addFinding(
     findings,
     "calibration_classification",
-    !!calibration,
-    calibration ? "Calibration can classify the outcome." : "Calibration has no usable snapshot/outcome pair yet.",
-  );
-  if (!calibration) missingPieces.push("calibration result");
+  !!calibration && calibration.resolved,
+  calibration?.resolved
+    ? "Calibration can classify the outcome."
+    : "Calibration is awaiting later proof before it can classify the outcome.",
+);
+
+if (!calibration?.resolved) {
+  missingPieces.push("resolved calibration result");
 
   addFinding(
     findings,
@@ -304,4 +308,5 @@ export function auditTemporalLoop(input: TemporalLoopAuditInput = {}): TemporalL
     userSafeSummary: userSummary(status),
     developerSafeSummary,
   };
+}
 }

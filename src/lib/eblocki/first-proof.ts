@@ -16,10 +16,10 @@ export const FIRST_PROOF_QUERY_VALUE = "1";
 export const FIRST_PROOF_COPY = {
   title: "Submit your first proof.",
   subtitle:
-    "Paste one piece of real work. Eblocki will check whether it proves progress and give you the next action.",
-  helperHeader: "What counts?",
+    "Paste one piece of real work. Eblocki will tell you what counted, what was weak, and what to do next.",
+  helperHeader: "What counts as proof?",
   successTitle: "First proof submitted.",
-  successCta: "Back to dashboard",
+  successCta: "See my next step",
 } as const;
 
 export interface FirstProofExample {
@@ -34,6 +34,15 @@ export const FIRST_PROOF_EXAMPLES: FirstProofExample[] = [
   { domain: "Law", example: "IRAC paragraph" },
   { domain: "Psychology", example: "psychology concept explanation" },
 ];
+
+export const FIRST_PROOF_STANDARD = {
+  whatCounts:
+    "A visible piece of work you actually produced, pasted or attached clearly enough to check.",
+  stronger:
+    "It gets stronger when it includes your own words, a correction, specific detail, or a clear next improvement.",
+  whatToPaste:
+    "Paste the work itself: an essay paragraph, study notes, a corrected answer, an IRAC paragraph, or a concept explanation.",
+} as const;
 
 /**
  * Safe defaults applied when a first-proof submission is sent without the

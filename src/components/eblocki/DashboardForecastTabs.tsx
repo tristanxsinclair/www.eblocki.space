@@ -4,8 +4,8 @@ import { MobileCollapse } from "./MobileCollapse";
 
 /**
  * Command-First Dashboard wrapper: collapses every advanced diagnostic into
- * a single Tabs surface (Forecast / Evidence / Audit) so the user sees the
- * Command, Proof CTA, Risk line and latest Verdict above the fold.
+ * a single Tabs surface so the user sees the next command, proof CTA, risk,
+ * and latest verdict above the fold.
  *
  * Presentational only — accepts already-rendered slot nodes. The Dashboard
  * keeps ownership of data fetching and child state.
@@ -31,26 +31,26 @@ export function DashboardForecastTabs({
       <div className="hidden md:flex items-end justify-between gap-3">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            Diagnostics
+            More detail
           </div>
           <h2 id="dashboard-diagnostics-heading" className="text-sm font-semibold mt-0.5">
-            Forecast · Evidence · Audit
+            Next, proof history, and deeper analysis
           </h2>
         </div>
         <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-          one tap to expand
+          open when you want the why
         </span>
       </div>
       <MobileCollapse
-        eyebrow="Diagnostics"
-        label="Forecast · Evidence · Audit"
+        eyebrow="More detail"
+        label="Next, proof history, and deeper analysis"
         trackId="dashboard_diagnostics"
       >
         <Tabs value={value} onValueChange={onValueChange} className="space-y-3">
           <TabsList className="grid w-full grid-cols-3 h-auto bg-card/60 border border-border p-1">
-            <TabsTrigger value="forecast" className="text-xs">Forecast</TabsTrigger>
-            <TabsTrigger value="evidence" className="text-xs">Evidence</TabsTrigger>
-            <TabsTrigger value="audit" className="text-xs">Audit</TabsTrigger>
+            <TabsTrigger value="forecast" className="text-xs">Next</TabsTrigger>
+            <TabsTrigger value="evidence" className="text-xs">Proof</TabsTrigger>
+            <TabsTrigger value="audit" className="text-xs">Details</TabsTrigger>
           </TabsList>
           <TabsContent value="forecast" className="space-y-3 min-w-0">
             {forecastSlot}

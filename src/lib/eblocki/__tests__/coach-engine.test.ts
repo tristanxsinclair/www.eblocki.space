@@ -58,6 +58,23 @@ describe("coach engine", () => {
     expect(result.detectedIntent).toBe("execution_lock");
   });
 
+  it("forces detected domain when a non-auto mode is selected", () => {
+    const result = buildCoachResponse({
+      input: "Help me think through this issue today",
+      preferredMode: "law_reasoning",
+    });
+    expect(result.responseMode).toBe("law_reasoning");
+    expect(result.detectedDomain).toBe("law");
+  });
+
+  it("respects auto mode and keeps router-detected domain", () => {
+    const result = buildCoachResponse({
+      input: "Can you give me a hand with this today?",
+      preferredMode: "auto",
+    });
+    expect(result.detectedDomain).toBe("general");
+  });
+
   it("handles empty input safely", () => {
     expect(() => buildCoachResponse({ input: "" })).not.toThrow();
     expect(buildCoachResponse({ input: "" }).proofAction).toBeTruthy();

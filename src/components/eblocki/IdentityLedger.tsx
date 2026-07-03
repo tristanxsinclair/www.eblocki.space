@@ -15,6 +15,7 @@ interface LedgerRow {
 export function IdentityLedger({ userId, limit = 25 }: { userId: string; limit?: number }) {
   const [rows, setRows] = useState<LedgerRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +55,10 @@ export function IdentityLedger({ userId, limit = 25 }: { userId: string; limit?:
             : r.kind === "escalation"
               ? "text-primary border-primary/30"
               : "text-accent border-accent/30";
+        const verdictLabel = (r.verdict ?? "").replace(/_/g, " ");
+        const isLong = (r.summary ?? "").length > 180;
+        const isOpen = !!expanded[r.id];
+        const summaryText = !isLong || isOpen ? r.summary : r.summary.slice(0, 180).trimEnd() + "…";
         return (
           <li
             key={r.id}
@@ -61,7 +66,21 @@ export function IdentityLedger({ userId, limit = 25 }: { userId: string; limit?:
           >
             <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1">
-              <div className="font-mono text-xs text-foreground">{r.summary}</div>
+              {verdictLabel && (
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary mb-1">
+                  Verdict: {verdictLabel} · {r.domain}
+                </div>
+              )}
+              <div className="font-mono text-xs text-foreground break-words">{summaryText}</div>
+              {isLong && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded((prev) => ({ ...prev, [r.id]: !isOpen }))}
+                  className="mt-1 font-mono text-[10px] uppercase tracking-widest text-primary hover:underline"
+                >
+                  {isOpen ? "Hide full evidence" : "Show full evidence"}
+                </button>
+              )}
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-1">
                 {new Date(r.created_at).toLocaleString()} · {r.domain}
               </div>
