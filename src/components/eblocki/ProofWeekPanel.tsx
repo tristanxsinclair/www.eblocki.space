@@ -60,7 +60,7 @@ export function ProofWeekPanel({ artifactDates }: { artifactDates: string[] }) {
 
   if (!joinedAt) {
     return (
-      <Card className="panel p-4 md:p-5 border-primary/30 bg-primary/5">
+      <Card className="panel p-4 md:p-5 border-primary/30 bg-primary/5 mobile-safe-card text-wrap-safe">
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-primary" />
           <span className="font-mono text-[10px] uppercase tracking-widest text-primary">7-Day Proof Week</span>
@@ -79,7 +79,7 @@ export function ProofWeekPanel({ artifactDates }: { artifactDates: string[] }) {
 
   if (status.completed) {
     return (
-      <Card className="panel p-4 md:p-5 border-primary/40">
+      <Card className="panel p-4 md:p-5 border-primary/40 mobile-safe-card text-wrap-safe">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-primary" />
           <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Week complete</span>
@@ -97,7 +97,7 @@ export function ProofWeekPanel({ artifactDates }: { artifactDates: string[] }) {
 
   const today = status.today!;
   return (
-    <Card className="panel p-4 md:p-5 border-primary/30">
+    <Card className="panel p-4 md:p-5 border-primary/30 mobile-safe-card text-wrap-safe min-w-0 max-w-full">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-primary" />

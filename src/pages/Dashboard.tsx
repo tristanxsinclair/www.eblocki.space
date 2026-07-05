@@ -47,6 +47,7 @@ import {
 } from "@/lib/eblocki/dashboard-view-model";
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
+import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 
 const EVIDENCE_STRENGTHS: EvidenceStrength[] = ["weak", "moderate", "strong", "elite"];
 
@@ -76,6 +77,10 @@ export default function Dashboard() {
   const [dashboardLoaded, setDashboardLoaded] = useState(false);
 
   const todayISO = new Date().toISOString().slice(0, 10);
+  const artifactDates = useMemo(
+    () => allArtifacts.map((artifact) => artifact.created_at).filter((value): value is string => !!value),
+    [allArtifacts],
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -290,6 +295,8 @@ export default function Dashboard() {
             </div>
           </Card>
         )}
+
+        <ProofWeekPanel artifactDates={artifactDates} />
 
         {allArtifacts.length > 0 && (
           <>
