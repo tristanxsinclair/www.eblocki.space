@@ -48,6 +48,10 @@ import {
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
 import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
+import { ProofClosureCard } from "@/components/eblocki/ProofClosureCard";
+import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { hasProofOnDate } from "@/lib/eblocki/user-facing-copy";
 
 const EVIDENCE_STRENGTHS: EvidenceStrength[] = ["weak", "moderate", "strong", "elite"];
 
@@ -59,6 +63,7 @@ function isEvidenceStrength(value: string | null | undefined): value is Evidence
 }
 
 export default function Dashboard() {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
   const [today, setToday] = useState<DashboardDailySheetRow | null>(null);
@@ -80,6 +85,10 @@ export default function Dashboard() {
   const artifactDates = useMemo(
     () => allArtifacts.map((artifact) => artifact.created_at).filter((value): value is string => !!value),
     [allArtifacts],
+  );
+  const proofToday = useMemo(
+    () => hasProofOnDate(allArtifacts, todayISO),
+    [allArtifacts, todayISO],
   );
 
   useEffect(() => {
@@ -222,33 +231,66 @@ export default function Dashboard() {
               Today
             </h1>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit proof</Button></Link>
-            {allArtifacts.length > 0 && (
-              <>
-                <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
-                <Link to="/start-today?plan=1"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Plan</Button></Link>
-                <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
-              </>
-            )}
-          </div>
+          {!isMobile && (
+            <div className="flex gap-2 flex-wrap">
+              <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit proof</Button></Link>
+              {allArtifacts.length > 0 && (
+                <>
+                  <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
+                  <Link to="/start-today?plan=1"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Plan</Button></Link>
+                  <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
+                </>
+              )}
+            </div>
+          )}
         </header>
 
-        {activeDomains.length === 0 && (
-          <Card className="panel p-4 border-primary/30 bg-primary/5">
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Modes not set up</div>
-                <p className="text-sm mt-1 text-muted-foreground">Add at least one mode so proof routes to the right standard.</p>
-              </div>
-              <Link to="/modes"><Button size="sm">Set up modes</Button></Link>
-            </div>
-          </Card>
+        {isMobile && (
+          <ProofClosureCard
+            view={view}
+            proofToday={proofToday}
+            hasAnyProof={allArtifacts.length > 0}
+            latestArtifact={latestArtifact}
+            todayISO={todayISO}
+          />
         )}
 
-        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} latestEvidenceStrength={latestArtifact?.evidence_strength} />}
+        {activeDomains.length === 0 && (
+          isMobile ? (
+            <MobileCollapse
+              eyebrow="Setup"
+              label="Modes not set up"
+              trackId="dashboard_modes_setup"
+            >
+              <Card className="panel p-4 border-primary/30 bg-primary/5 mobile-safe-card min-w-0 max-w-full">
+                <p className="text-sm text-muted-foreground break-words">
+                  Add at least one mode so proof routes to the right standard. You can still submit proof now.
+                </p>
+                <Link to="/modes" className="mt-3 inline-block w-full">
+                  <Button size="default" variant="outline" className="w-full min-h-[44px] native-tap">
+                    Set up modes
+                  </Button>
+                </Link>
+              </Card>
+            </MobileCollapse>
+          ) : (
+            <Card className="panel p-4 border-primary/30 bg-primary/5">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Modes not set up</div>
+                  <p className="text-sm mt-1 text-muted-foreground">Add at least one mode so proof routes to the right standard.</p>
+                </div>
+                <Link to="/modes"><Button size="sm">Set up modes</Button></Link>
+              </div>
+            </Card>
+          )
+        )}
 
-        {allArtifacts.length === 0 && (
+        {!isMobile && allArtifacts.length > 0 && (
+          <CommandHero view={view} state={currentState} latestEvidenceStrength={latestArtifact?.evidence_strength} />
+        )}
+
+        {!isMobile && allArtifacts.length === 0 && (
           <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
             <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
               Start here
@@ -296,9 +338,103 @@ export default function Dashboard() {
           </Card>
         )}
 
-        <ProofWeekPanel artifactDates={artifactDates} />
+        {isMobile ? (
+          <MobileCollapse
+            eyebrow="Proof Week"
+            label="7-day proof challenge"
+            trackId="proof_week_panel"
+          >
+            <ProofWeekPanel artifactDates={artifactDates} />
+          </MobileCollapse>
+        ) : (
+          <ProofWeekPanel artifactDates={artifactDates} />
+        )}
 
         {allArtifacts.length > 0 && (
+          isMobile ? (
+            <MobileCollapse
+              eyebrow="Advanced"
+              label="Forecast, stats, diagnostics"
+              trackId="dashboard_advanced"
+              onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "dashboard_advanced" })}
+            >
+              <div className="space-y-5">
+                <EvidenceCommandPanel
+                  view={view}
+                  pending={pending}
+                  recent={recent}
+                  topPending={topPending}
+                  latestArtifact={latestArtifact}
+                />
+                <DashboardForecastTabs
+                  value={diagnosticsTab}
+                  onValueChange={openDiagnosticsTab}
+                  forecastSlot={
+                    <>
+                      {temporalResult ? (
+                        <TemporalCommandCard result={temporalResult} />
+                      ) : (
+                        <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
+                      )}
+                      <TemporalFeedbackPanel />
+                      <InterventionCard state={(currentState as BehaviouralState) ?? state} />
+                    </>
+                  }
+                  evidenceSlot={
+                    <>
+                      {user && <IdentityLedger userId={user.id} limit={5} />}
+                      <div className="grid lg:grid-cols-2 gap-4">
+                        <MomentumPanel />
+                        <WeeklyRetro />
+                      </div>
+                      <QuickCheckInCard
+                        quick={quick}
+                        setQuick={setQuick}
+                        mode={mode}
+                        state={state}
+                        onDiagnose={handleCheckIn}
+                      />
+                      <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
+                        <div className="flex items-center justify-between gap-3 min-w-0">
+                          <div className="min-w-0">
+                            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Current setup</div>
+                            <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
+                              {currentMode ? `Last coach lens: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
+                            </p>
+                          </div>
+                          {currentState && <StateBadge state={currentState as BehaviouralState} />}
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          <MetricCell label="Mode count" value={String(view.evidenceSummary.modesCount)} />
+                          <MetricCell label="Latest proof" value={view.evidenceSummary.latestProofTitle ?? "none"} />
+                          <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
+                        </div>
+                      </Card>
+                    </>
+                  }
+                  auditSlot={
+                    <>
+                      <TemporalIntelligencePanel />
+                      <TemporalModelAuditPanel />
+                      <div className="space-y-3">
+                        <ProductMatchPanel
+                          artifacts={allArtifacts}
+                          temporal={temporalResult}
+                          accessLevel="free"
+                          operatingProfile={{
+                            primaryDomain: activeDomains[0] ?? null,
+                            recommendationsAllowed: true,
+                            trustPreference: "neutral",
+                          }}
+                        />
+                        <InterestSignalCard />
+                      </div>
+                    </>
+                  }
+                />
+              </div>
+            </MobileCollapse>
+          ) : (
           <>
             <EvidenceCommandPanel
               view={view}
@@ -375,6 +511,7 @@ export default function Dashboard() {
               }
             />
           </>
+          )
         )}
       </div>
     </AppShell>

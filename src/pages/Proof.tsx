@@ -38,6 +38,8 @@ import { Seo } from "@/components/Seo";
 import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
 import { extractNextUpgrade } from "@/lib/eblocki/next-upgrade-extract";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { plainVerdictLabel } from "@/lib/eblocki/user-facing-copy";
 import {
   FIRST_PROOF_COPY,
   FIRST_PROOF_DEFAULTS,
@@ -199,6 +201,7 @@ function VerdictFeedback({ artifactId }: { artifactId: string }) {
 
 export default function Proof() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [params] = useSearchParams();
   const firstProofMode = isFirstProofMode(params);
   const temporalBrief = useMemo(() => parseTemporalProofParams(params), [params]);
@@ -212,7 +215,8 @@ export default function Proof() {
   const [selectedModeId, setSelectedModeId] = useState<string>("");
   const [linkedContractId, setLinkedContractId] = useState<string>("");
   const [title, setTitle] = useState("");
-  const [artifactType, setArtifactType] = useState<string>("");
+  const [firstProofDomain, setFirstProofDomain] = useState(FIRST_PROOF_DEFAULTS.domain);
+  const [artifactType, setArtifactType] = useState<string>(FIRST_PROOF_DEFAULTS.artifactType);
   const [content, setContent] = useState("");
   const [reflection, setReflection] = useState("");
   const [nextUpgrade, setNextUpgrade] = useState("");
@@ -384,7 +388,7 @@ export default function Proof() {
       const domainValue = (
         selectedMode?.mode_id ??
         linkedContract?.domain ??
-        (firstProofMode ? FIRST_PROOF_DEFAULTS.domain : modeId)
+        (firstProofMode ? firstProofDomain : modeId)
       ).toLowerCase();
       const submissionPreview = buildProofStandardPreview({
         domain: domainValue,
@@ -548,7 +552,11 @@ export default function Proof() {
         classifyStudyActivity({ content, title, artifactType }),
       );
 
-      toast.success(`Verdict: ${score.qualityScore}/10 - ${score.evidenceStrength}`);
+      toast.success(
+        isMobile || firstProofMode
+          ? `Proof submitted — ${plainVerdictLabel(score.evidenceStrength, score.qualityScore)}`
+          : `Verdict: ${score.qualityScore}/10 - ${score.evidenceStrength}`,
+      );
       if (firstProofMode) {
         setFirstProofSubmitted(true);
         void logEvent("proof_capture_completed", { route: "/proof", source: "first_proof" });
@@ -775,67 +783,69 @@ export default function Proof() {
         )}
 
         {temporalBrief.isTemporal && !firstProofMode && (
-          <Card
-            className="panel p-4 border-primary/40 bg-primary/5 max-w-full overflow-hidden min-w-0"
-            data-testid="temporal-proof-brief"
-          >
-            <div className="flex items-start gap-3 min-w-0">
-              <Radar className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <div className="min-w-0 flex-1 space-y-2">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                  Forecast-linked proof
+          <MobileCollapse eyebrow="Forecast" label="Forecast-linked proof" trackId="proof_temporal_brief">
+            <Card
+              className="panel p-4 border-primary/40 bg-primary/5 max-w-full overflow-hidden min-w-0"
+              data-testid="temporal-proof-brief"
+            >
+              <div className="flex items-start gap-3 min-w-0">
+                <Radar className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                    Forecast-linked proof
+                  </div>
+                  <dl className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-2">
+                    <div className="min-w-0">
+                      <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                        Domain
+                      </dt>
+                      <dd className="break-words text-foreground">
+                        {temporalBrief.domain ?? "—"}
+                        {temporalBrief.domain && !temporalDomainMatch && (
+                          <span className="ml-1 text-[10px] text-muted-foreground">
+                            (guidance only — no matching active mode)
+                          </span>
+                        )}
+                      </dd>
+                    </div>
+                    <div className="min-w-0">
+                      <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                        Expected level
+                      </dt>
+                      <dd className="break-words text-foreground">
+                        {temporalBrief.level.replace(/_/g, " ")}
+                      </dd>
+                    </div>
+                    <div className="min-w-0 sm:col-span-2">
+                      <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                        Proof required
+                      </dt>
+                      <dd className="break-words text-foreground">
+                        {temporalBrief.proof ?? "—"}
+                      </dd>
+                    </div>
+                    <div className="min-w-0 sm:col-span-2">
+                      <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                        Reason
+                      </dt>
+                      <dd className="break-words text-foreground">
+                        {temporalBrief.reason ? temporalBrief.reason.replace(/_/g, " ") : "—"}
+                      </dd>
+                    </div>
+                    <div className="min-w-0">
+                      <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+                        Timebox
+                      </dt>
+                      <dd className="break-words text-foreground">{temporalBrief.timebox}</dd>
+                    </div>
+                  </dl>
+                  <p className="text-[11px] text-muted-foreground break-words">
+                    Submit one measurable artifact below. This brief is guidance — it never overwrites what you type.
+                  </p>
                 </div>
-                <dl className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-2">
-                  <div className="min-w-0">
-                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
-                      Domain
-                    </dt>
-                    <dd className="break-words text-foreground">
-                      {temporalBrief.domain ?? "—"}
-                      {temporalBrief.domain && !temporalDomainMatch && (
-                        <span className="ml-1 text-[10px] text-muted-foreground">
-                          (guidance only — no matching active mode)
-                        </span>
-                      )}
-                    </dd>
-                  </div>
-                  <div className="min-w-0">
-                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
-                      Expected level
-                    </dt>
-                    <dd className="break-words text-foreground">
-                      {temporalBrief.level.replace(/_/g, " ")}
-                    </dd>
-                  </div>
-                  <div className="min-w-0 sm:col-span-2">
-                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
-                      Proof required
-                    </dt>
-                    <dd className="break-words text-foreground">
-                      {temporalBrief.proof ?? "—"}
-                    </dd>
-                  </div>
-                  <div className="min-w-0 sm:col-span-2">
-                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
-                      Reason
-                    </dt>
-                    <dd className="break-words text-foreground">
-                      {temporalBrief.reason ? temporalBrief.reason.replace(/_/g, " ") : "—"}
-                    </dd>
-                  </div>
-                  <div className="min-w-0">
-                    <dt className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
-                      Timebox
-                    </dt>
-                    <dd className="break-words text-foreground">{temporalBrief.timebox}</dd>
-                  </div>
-                </dl>
-                <p className="text-[11px] text-muted-foreground break-words">
-                  Submit one measurable artifact below. This brief is guidance — it never overwrites what you type.
-                </p>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </MobileCollapse>
         )}
 
         {firstProofMode ? (
@@ -945,15 +955,21 @@ export default function Proof() {
 
         {/* Verdict card */}
         {verdict && (
-          <Card className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden">
+          <Card className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden" id="feedback">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
+              <div className="flex items-center gap-2 min-w-0">
+                <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
                 <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                  Proof Receipt
+                  {isMobile || firstProofMode ? "Proof submitted" : "Proof Receipt"}
                 </span>
               </div>
-              <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
+              {isMobile || firstProofMode ? (
+                <span className="text-sm font-semibold text-primary shrink-0">
+                  {plainVerdictLabel(verdict.evidenceStrength, verdict.qualityScore)}
+                </span>
+              ) : (
+                <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
+              )}
             </div>
             {(() => {
               const impact = verdictIdentityImpact(verdict.evidenceStrength);
@@ -992,6 +1008,28 @@ export default function Proof() {
                 <div className="mt-3 rounded-sm border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
                   Next: open Today for your updated command, then come back tomorrow with the next proof.
                 </div>
+              </>
+            ) : isMobile ? (
+              <>
+                <div className="mt-3 grid gap-3 text-sm">
+                  <VerdictRow label="What counted" value={verdict.feedback} />
+                  <VerdictRow label="Next command" value={verdict.nextUpgrade} />
+                </div>
+                <MobileCollapse eyebrow="Verdict" label="Full verdict details" trackId="proof_verdict_details">
+                  <div className="grid gap-3 text-sm">
+                    <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
+                    <VerdictRow label="Missing standard" value={verdict.missingStandard} />
+                    <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
+                    <VerdictRow label="Why it scored that way" value={verdict.why} />
+                    <VerdictRow label="Elite version" value={verdict.eliteVersion} />
+                    <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
+                    <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
+                    <VerdictRow
+                      label="Standard raised"
+                      value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
+                    />
+                  </div>
+                </MobileCollapse>
               </>
             ) : (
               <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
@@ -1126,14 +1164,47 @@ export default function Proof() {
             )}
 
             {firstProofMode ? (
-              <div>
-                <Label htmlFor="proof-title">Title</Label>
-                <Input
-                  id="proof-title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Short name for this piece of work"
-                />
+              <div className="grid gap-3">
+                <div>
+                  <Label htmlFor="proof-title">What did you produce?</Label>
+                  <Input
+                    id="proof-title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Short name for this piece of work"
+                  />
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="proof-first-domain">Domain</Label>
+                    <select
+                      id="proof-first-domain"
+                      value={firstProofDomain}
+                      onChange={(e) => setFirstProofDomain(e.target.value)}
+                      className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value={FIRST_PROOF_DEFAULTS.domain}>General</option>
+                      {activeModes.map((mode) => (
+                        <option key={mode.mode_id} value={mode.mode_id.toLowerCase()}>
+                          {mode.display_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="proof-artifact-type-first">Proof type</Label>
+                    <select
+                      id="proof-artifact-type-first"
+                      value={artifactType}
+                      onChange={(e) => setArtifactType(e.target.value)}
+                      className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      {ARTIFACT_TYPES.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 gap-3">
@@ -1214,42 +1285,20 @@ export default function Proof() {
               />
             </button>
             <div className={`${detailOpen || reflection || nextUpgrade || pressureFlag || transferFlag || attachment ? "grid" : "hidden"} gap-3`}>
-              {firstProofMode && (
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="proof-mode-select">Mode</Label>
-                    {activeModes.length === 0 ? (
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        No personalised modes yet. Defaults will be used.
-                      </div>
-                    ) : (
-                      <select
-                        id="proof-mode-select"
-                        value={selectedModeId}
-                        onChange={(e) => setSelectedModeId(e.target.value)}
-                        className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="">- default -</option>
-                        {activeModes.map((mode) => (
-                          <option key={mode.mode_id} value={mode.mode_id}>{mode.display_name}</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="proof-artifact-type">Proof type</Label>
-                    <select
-                      id="proof-artifact-type"
-                      value={artifactType}
-                      onChange={(e) => setArtifactType(e.target.value)}
-                      className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">{`default (${FIRST_PROOF_DEFAULTS.artifactType})`}</option>
-                      {ARTIFACT_TYPES.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-                  </div>
+              {firstProofMode && activeModes.length > 0 && (
+                <div>
+                  <Label htmlFor="proof-mode-select">Mode (optional)</Label>
+                  <select
+                    id="proof-mode-select"
+                    value={selectedModeId}
+                    onChange={(e) => setSelectedModeId(e.target.value)}
+                    className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">- default -</option>
+                    {activeModes.map((mode) => (
+                      <option key={mode.mode_id} value={mode.mode_id}>{mode.display_name}</option>
+                    ))}
+                  </select>
                 </div>
               )}
               <div>
@@ -1508,7 +1557,7 @@ export default function Proof() {
                 !title.trim() ||
                 (!firstProofMode && !artifactType.trim())
               }
-              className="w-full"
+              className="w-full min-h-[44px] native-tap"
             >
               {submitting
                 ? "Submitting…"
