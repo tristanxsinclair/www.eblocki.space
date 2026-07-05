@@ -1,6 +1,6 @@
 # Mobile Proof Closure Gate
 
-**Last run:** 2026-07-06  
+**Last run:** 2026-07-06 (semantic integrity pass)  
 **Branch:** `grok/mobile-proof-closure-20260706-0037`  
 **Final status:** **READY WITH MINOR RISKS**
 
@@ -13,55 +13,65 @@ Open Eblocki → see today is not closed → submit one proof → get verdict �
 Primary mobile question: **What do I do now?**  
 Primary mobile answer: **Submit one proof from today.**
 
+**Doctrine enforced:** A day closes only when proof **counts**. Submitting weak or unscored proof does not close the day.
+
 ---
 
-## What was changed
+## Pass 1 — Proof closure (commit `83160ec`)
 
 | Area | Change |
 |------|--------|
-| **Mobile dashboard** | New `ProofClosureCard` is the first above-the-fold surface on `< md`. Single primary CTA (Submit proof). Open/closed today state with plain verdict + next command when proof exists. |
-| **Dashboard header** | Competing header CTAs hidden on mobile (Submit proof / Coach / Plan / Modes). |
-| **Modes setup** | On mobile, collapsed behind `MobileCollapse` below closure card — no longer competes with primary CTA. |
-| **Proof Week** | Collapsed on mobile behind disclosure toggle. |
-| **Advanced dashboard** | `EvidenceCommandPanel`, `DashboardForecastTabs` (forecast, evidence, audit), identity ledger, momentum, temporal panels — collapsed on mobile under “Forecast, stats, diagnostics”. Desktop unchanged. |
-| **Proof form (first-use)** | Domain + proof type visible on first proof; title → “What did you produce?”; optional fields behind existing disclosures; 44px submit tap target. |
-| **Proof payoff** | Verdict card uses plain labels on mobile (`Counted` / `Needs upgrade` / `Did not count yet`); full court mechanics behind “Full verdict details”; `id="feedback"` anchor for Proof Week link. |
-| **Plain language** | New `user-facing-copy.ts` maps internal tokens (`accepted_strong`, `elite_evidence`, etc.) for primary surfaces. |
-| **Forecast on Proof** | Temporal proof brief collapsed on mobile via `MobileCollapse`; always visible on desktop. |
+| **Mobile dashboard** | `ProofClosureCard` first above the fold; single primary CTA |
+| **Advanced containment** | Forecast, stats, Proof Week collapsed on mobile |
+| **Plain language** | `user-facing-copy.ts` for verdict trichotomy |
+| **Proof form** | First-use fields simplified; 44px tap targets |
+
+---
+
+## Pass 2 — Semantic integrity (this pass)
+
+| Area | Change |
+|------|--------|
+| **Today status semantics** | `resolveTodayClosure()` — closed only when verdict is **Counted** (`strong`/`elite` or score ≥7). Weak/unscored → **Today still open**. Pending score → **Proof filed**. |
+| **Today artifact** | Dashboard passes `todayArtifact` (same-day proof), not latest overall proof |
+| **Closure CTAs** | Removed “Back to Today” on dashboard; uses **Improve proof** / **View proof** / **Back tomorrow** (text-only secondary removed when redundant) |
+| **Proof page order** | Form → verdict payoff → Definitions/Stats collapsed below |
+| **Mode → Domain** | Proof form primary label **Domain** / **Area**; linked contract moved to optional on mobile |
+| **Enum cleanup** | `plainCourtVerdict`, `plainTierLabel`, `plainLedgerText` on Operator Progress Record, `CourtVerdictBadge`, completed artifacts, dashboard last verdict |
+| **Coach** | Mobile subtitle simplified; GameForge moved below input / “after diagnosis” |
+| **Modes** | Mobile copy **Areas**; card containment (`min-w-0`, stacked metrics, bottom padding) |
+| **Operator** | Mobile-safe container; stacked stat grid |
+
+---
+
+## Today closure status mapping
+
+| State | Eyebrow | Headline | Primary CTA |
+|-------|---------|----------|-------------|
+| No proof today | Today open | Today is not closed yet. | Submit proof |
+| Proof filed, no verdict yet | Proof filed | You filed proof. Verdict pending. | View proof |
+| Proof did not count / needs upgrade | Today still open | You filed proof, but it did not count yet. (or needs upgrade) | Improve proof |
+| Proof counted | Today closed | Your proof counted today. | View proof |
 
 ---
 
 ## Machinery hidden on mobile (not deleted)
 
-Collapsed or moved below fold on `< md`:
-
-- CommandHero (desktop only)
-- Dashboard header action row (Coach, Plan, Modes)
-- Zero-state “Start here” card (desktop only; mobile uses closure card)
-- Modes-not-set-up banner (collapsed disclosure)
-- Proof Week panel
-- Recent proof list + week stats (`EvidenceCommandPanel`)
-- Forecast tabs: Temporal Command Card, Temporal Feedback, Intervention
-- Identity ledger, momentum, weekly retro, quick check-in, setup metrics
-- Temporal Intelligence + Model Audit panels
-- Product match + interest signals
-- Proof: contract vs artifact definitions, strength tally, pending contracts, completed artifact wall, advanced scoring fields, temporal brief (collapsed)
-- Proof verdict: full court rows, identity escalation label → “Standard raised” in disclosure
-
-**Still available:** All systems remain reachable via disclosure toggles or desktop layout. Intelligence and scoring logic unchanged.
+Unchanged from pass 1 — all advanced systems remain behind disclosure or desktop layout.
 
 ---
 
-## Plain-language mappings (primary mobile copy)
+## Plain-language mappings
 
 | Internal | User-facing |
 |----------|-------------|
-| `accepted_strong` | strong proof |
-| `elite_evidence` | elite proof |
+| `accepted_strong` | Strong proof |
+| `accepted_useful` | Useful proof |
+| `elite_evidence` / `elite` | Elite proof |
+| `tier 1` | Basic evidence |
+| `tier 3` | High-quality evidence |
 | identity escalation | standard raised |
-| Court of Evidence | verdict |
-| Temporal Engine | forecast |
-| artifact | visible output (defined once in closure card) |
+| Mode (proof form) | Domain / Area |
 
 Verdict trichotomy: **Counted** / **Needs upgrade** / **Did not count yet**.
 
@@ -69,29 +79,27 @@ Verdict trichotomy: **Counted** / **Needs upgrade** / **Did not count yet**.
 
 ## Viewport checks
 
-| Viewport | Dashboard | Proof | Method |
-|----------|-----------|-------|--------|
-| 320px | NOT RUN | NOT RUN | No browser/viewport harness in this pass |
-| 375px | NOT RUN | NOT RUN | No browser/viewport harness in this pass |
-| 390px | NOT RUN | NOT RUN | No browser/viewport harness in this pass |
-| 414px | NOT RUN | NOT RUN | No browser/viewport harness in this pass |
+| Viewport | Dashboard | Proof | Coach | Operator | Modes | Method |
+|----------|-----------|-------|-------|----------|-------|--------|
+| 320px | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | No browser harness |
+| 375px | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | No browser harness |
+| 390px | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | No browser harness |
+| 414px | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | No browser harness |
 
-**Code-level containment (inherited Phase 7.3):** `AppShell` `overflow-x-hidden`, `mobile-safe-card`, `min-w-0`, `break-words`, `min-h-[44px]` on primary CTAs, `MobileCollapse` for progressive disclosure, bottom safe-area patterns in existing shell.
+**Code-level containment:** `mobile-safe-page`, `min-w-0`, `max-w-full`, `break-words`, `pb-[calc(96px+env(safe-area-inset-bottom))]` on Modes/Operator, `AppShell` `pb-24` on main.
 
-**Honest assessment:** Visual viewport QA was **not** performed. Status reflects build/test pass + code inspection only.
+**Honest assessment:** Visual viewport QA was **not** performed.
 
 ---
 
 ## First-proof friction assessment
 
-| Factor | Before | After |
-|--------|--------|-------|
-| Dashboard first screen | CommandHero + forecast tabs + stats competing | One closure card: status + definition + Submit proof |
-| First proof fields | Mixed with advanced proof machinery | Domain, type, title, content, preview, submit |
-| Post-submit | Raw strength badges / court jargon | Plain verdict + next command + back to Today |
-| Time-to-understand | User studies system | User sees “today not closed” in ~5s (intended; not user-tested) |
-
-Estimated friction reduction: meaningful for mobile first-use; **not validated with live users in this pass**.
+| Factor | Status |
+|--------|--------|
+| Form before meta (Definitions/Stats) | Fixed — form first, meta collapsed below |
+| Semantic “today closed” | Fixed — weak proof no longer closes day |
+| Raw enums in Progress Record | Fixed — plain court/tier mapping |
+| Mode jargon in form | Fixed — Domain on primary path |
 
 ---
 
@@ -99,24 +107,23 @@ Estimated friction reduction: meaningful for mobile first-use; **not validated w
 
 | Command | Result | Notes |
 |---------|--------|-------|
-| `npm run build` | **PASS** | Vite production build OK (~5s). Bundle >500 kB warning (pre-existing). |
-| `npm run test -- --run` | **PASS** | **267/267** tests, 35 files. Includes new `user-facing-copy.test.ts`. |
-| `npm run lint` | **FAIL** | **69 problems** (56 errors, 13 warnings). Pre-existing repo-wide debt; not introduced by this pass. |
-| `npm run lint:eblocki` | **PASS** | Eblocki-scoped surfaces clean. |
+| `npm run build` | **PASS** | ~4s |
+| `npm run test -- --run` | **PASS** | **271/271** tests (includes closure semantics tests) |
+| `npm run lint` | **FAIL** | 69 pre-existing repo-wide issues |
+| `npm run lint:eblocki` | **PASS** | |
 
 ---
 
 ## Known risks
 
-1. **No manual mobile viewport QA** — horizontal scroll, CTA clipping, and bottom-nav overlap not verified on device.
-2. **Closure card uses `allArtifacts` for today check** — limited to fetched artifact set (5 recent + full set for temporal); edge case if proof exists but not in loaded window is unlikely for same-day submit.
-3. **`npm run lint` repo-wide still fails** — CI may flag if full lint is required (historically `lint:eblocki` is the gate).
-4. **Desktop dashboard unchanged in spirit** — CommandHero and full forecast remain; beta focus is mobile first-use.
-5. **Live auth / Supabase / production** — not exercised in this pass.
+1. **No manual viewport QA** on device widths.
+2. **`Needs upgrade` still leaves day open** — intentional; user must improve proof or submit stronger output.
+3. **Repo-wide lint still fails** — pre-existing.
+4. **Live auth / production** — not exercised.
 
 ---
 
-## Files touched
+## Files touched (both passes)
 
 **Created:**
 - `src/components/eblocki/ProofClosureCard.tsx`
@@ -127,5 +134,8 @@ Estimated friction reduction: meaningful for mobile first-use; **not validated w
 **Modified:**
 - `src/pages/Dashboard.tsx`
 - `src/pages/Proof.tsx`
-
-**Not committed:** `terminals/`, `mcps/`, accidental `supabase/functions/mcp/index.ts` (restored).
+- `src/pages/Coach.tsx`
+- `src/pages/Modes.tsx`
+- `src/pages/Operator.tsx`
+- `src/components/eblocki/IdentityLedger.tsx`
+- `src/components/eblocki/CourtVerdictBadge.tsx`

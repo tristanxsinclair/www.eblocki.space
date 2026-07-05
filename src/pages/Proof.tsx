@@ -39,7 +39,7 @@ import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
 import { extractNextUpgrade } from "@/lib/eblocki/next-upgrade-extract";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { plainVerdictLabel } from "@/lib/eblocki/user-facing-copy";
+import { plainEvidenceStrength, plainVerdictLabel } from "@/lib/eblocki/user-facing-copy";
 import {
   FIRST_PROOF_COPY,
   FIRST_PROOF_DEFAULTS,
@@ -902,199 +902,6 @@ export default function Proof() {
           </Card>
         )}
 
-        {!firstProofMode && (
-          <MobileCollapse eyebrow="Definitions" label="Contract vs Artifact" trackId="proof_definitions">
-            <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
-              <div className="flex items-start gap-3">
-                <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                    Definitions
-                  </span>
-                  <p className="text-sm text-muted-foreground mt-1 break-words">
-                    A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
-                    A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </MobileCollapse>
-        )}
-
-        {/* Strength tally */}
-        {!firstProofMode && (
-          <MobileCollapse eyebrow="Stats" label="Strength tally & filter" trackId="proof_stats">
-            <Card className="panel p-4 max-w-full overflow-hidden">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="grid grid-cols-4 gap-2 flex-1">
-                  {(["weak", "moderate", "strong", "elite"] as const).map((s) => (
-                    <div key={s} className="rounded-sm border border-border p-2 text-center min-w-0">
-                      <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{s}</div>
-                      <div className={"mt-1 text-lg font-semibold font-mono " + (s === "elite" ? "text-primary" : "")}>{strengthCount(s)}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="proof-domain-filter" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Filter</Label>
-                  <select
-                    id="proof-domain-filter"
-                    value={filterDomain}
-                    onChange={(e) => setFilterDomain(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-1.5 text-sm max-w-full"
-                  >
-                    <option value="all">all modes</option>
-                    {activeModes.map((mode) => (
-                      <option key={mode.mode_id} value={mode.mode_id.toLowerCase()}>{mode.display_name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </Card>
-          </MobileCollapse>
-        )}
-
-        {/* Verdict card */}
-        {verdict && (
-          <Card className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden" id="feedback">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2 min-w-0">
-                <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                  {isMobile || firstProofMode ? "Proof submitted" : "Proof Receipt"}
-                </span>
-              </div>
-              {isMobile || firstProofMode ? (
-                <span className="text-sm font-semibold text-primary shrink-0">
-                  {plainVerdictLabel(verdict.evidenceStrength, verdict.qualityScore)}
-                </span>
-              ) : (
-                <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
-              )}
-            </div>
-            {(() => {
-              const impact = verdictIdentityImpact(verdict.evidenceStrength);
-              const toneClass =
-                impact.tone === "warn"
-                  ? "border-amber-500/40 bg-amber-500/5 text-amber-200"
-                  : impact.tone === "good"
-                    ? "border-primary/40 bg-primary/5 text-primary"
-                    : impact.tone === "elite"
-                      ? "border-primary/60 bg-primary/10 text-primary"
-                      : "border-border bg-muted/30 text-foreground";
-              return (
-                <div
-                  className={`mt-3 rounded-sm border p-3 text-sm ${toneClass}`}
-                  data-testid="verdict-identity-impact"
-                >
-                  <div className="font-medium">{impact.headline}</div>
-                  <div className="mt-1 text-xs opacity-90">{impact.subtext}</div>
-                </div>
-              );
-            })()}
-            {firstProofMode ? (
-              <>
-                <div className="mt-3 grid gap-3 text-sm">
-                  <VerdictRow label="What counted" value={verdict.feedback} />
-                  <VerdictRow
-                    label="What was weak or missing"
-                    value={
-                      verdict.evidenceStrength === "elite"
-                        ? "Nothing major — this is a strong first proof."
-                        : verdict.missingStandard
-                    }
-                  />
-                  <VerdictRow label="One next action" value={verdict.nextUpgrade} />
-                </div>
-                <div className="mt-3 rounded-sm border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
-                  Next: open Today for your updated command, then come back tomorrow with the next proof.
-                </div>
-              </>
-            ) : isMobile ? (
-              <>
-                <div className="mt-3 grid gap-3 text-sm">
-                  <VerdictRow label="What counted" value={verdict.feedback} />
-                  <VerdictRow label="Next command" value={verdict.nextUpgrade} />
-                </div>
-                <MobileCollapse eyebrow="Verdict" label="Full verdict details" trackId="proof_verdict_details">
-                  <div className="grid gap-3 text-sm">
-                    <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
-                    <VerdictRow label="Missing standard" value={verdict.missingStandard} />
-                    <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
-                    <VerdictRow label="Why it scored that way" value={verdict.why} />
-                    <VerdictRow label="Elite version" value={verdict.eliteVersion} />
-                    <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
-                    <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
-                    <VerdictRow
-                      label="Standard raised"
-                      value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
-                    />
-                  </div>
-                </MobileCollapse>
-              </>
-            ) : (
-              <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
-                <VerdictRow label="What counted" value={verdict.feedback} />
-                <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
-                <VerdictRow label="Missing standard" value={verdict.missingStandard} />
-                <VerdictRow label="Next command" value={verdict.nextUpgrade} />
-                <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
-                <VerdictRow label="Why it scored that way" value={verdict.why} />
-                <VerdictRow label="Elite version" value={verdict.eliteVersion} />
-                <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
-                <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
-                <VerdictRow
-                  label="Identity escalation"
-                  value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
-                />
-              </div>
-            )}
-            {verdict.attachmentUrl && (
-              <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
-                <Paperclip className="h-3 w-3 text-primary" />
-                <span className="text-muted-foreground">Attached evidence:</span>
-                <a href={verdict.attachmentUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate">
-                  {verdict.attachmentName ?? "view file"}
-                </a>
-              </div>
-            )}
-            {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
-            {submittedStudyClassification && !firstProofMode && (
-              <div className="mt-4">
-                <StudyVerdictHint
-                  classification={submittedStudyClassification}
-                  label="Fake study detector"
-                />
-              </div>
-            )}
-            <div className="mt-4 flex flex-col sm:flex-row gap-2">
-              <Link to="/dashboard" className="w-full sm:w-auto">
-                <Button
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    void logEvent(firstProofMode ? "activation_verdict_cta_clicked" : "proof_verdict_cta_clicked", {
-                      route: "/proof",
-                      source: firstProofMode ? "first_proof" : "proof",
-                      ctaName: "back_to_today",
-                      destination: "/dashboard",
-                    });
-                  }}
-                >
-                  {firstProofMode ? "See my next step" : "Back to Today"}
-                </Button>
-              </Link>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => { setVerdict(null); setSubmittedStudyClassification(null); setDetailOpen(false); }}
-              >
-                Submit another proof
-              </Button>
-            </div>
-          </Card>
-        )}
-
         {/* Submission form */}
         <Card className="panel p-4 md:p-5 max-w-full overflow-hidden">
           <div className="flex items-center gap-2">
@@ -1105,22 +912,22 @@ export default function Proof() {
           </div>
 
           <div className="mt-4 grid gap-3">
-            {!firstProofMode && (
+            {!firstProofMode && !isMobile && (
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="proof-mode-select">Mode</Label>
+                  <Label htmlFor="proof-mode-select">Domain</Label>
                   {activeModes.length === 0 ? (
                     <div className="mt-2 text-xs text-muted-foreground">
-                      No personalised modes yet. <Link to="/modes" className="text-primary hover:underline">Setup My OS</Link> so artifacts route correctly.
+                      No areas set up yet. <Link to="/modes" className="text-primary hover:underline">Set up areas</Link> so proof routes correctly.
                     </div>
                   ) : (
                     <select
                       id="proof-mode-select"
                       value={selectedModeId}
                       onChange={(e) => setSelectedModeId(e.target.value)}
-                      className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
-                      <option value="">- pick a mode -</option>
+                      <option value="">- pick an area -</option>
                       {activeModes.map((mode) => (
                         <option key={mode.mode_id} value={mode.mode_id}>{mode.display_name}</option>
                       ))}
@@ -1134,7 +941,7 @@ export default function Proof() {
                     id="proof-contract-link"
                     value={linkedContractId}
                     onChange={(e) => setLinkedContractId(e.target.value)}
-                    className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="">- none -</option>
                     {pending.map((p) => (
@@ -1207,29 +1014,54 @@ export default function Proof() {
                 </div>
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid gap-3">
                 <div>
-                  <Label htmlFor="proof-title">Title</Label>
+                  <Label htmlFor="proof-title">What did you produce?</Label>
                   <Input
                     id="proof-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="What did you produce?"
+                    placeholder="Short name for this piece of work"
+                    className="min-h-[44px]"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="proof-artifact-type">Artifact type</Label>
-                  <select
-                    id="proof-artifact-type"
-                    value={artifactType}
-                    onChange={(e) => setArtifactType(e.target.value)}
-                    className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">choose proof type</option>
-                    {ARTIFACT_TYPES.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {isMobile && (
+                    <div>
+                      <Label htmlFor="proof-mode-select-mobile">Domain</Label>
+                      {activeModes.length === 0 ? (
+                        <div className="mt-2 text-xs text-muted-foreground break-words">
+                          No areas set up yet. <Link to="/modes" className="text-primary hover:underline">Set up areas</Link>
+                        </div>
+                      ) : (
+                        <select
+                          id="proof-mode-select-mobile"
+                          value={selectedModeId}
+                          onChange={(e) => setSelectedModeId(e.target.value)}
+                          className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="">- pick an area -</option>
+                          {activeModes.map((mode) => (
+                            <option key={mode.mode_id} value={mode.mode_id}>{mode.display_name}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
+                  <div className={isMobile ? "" : "sm:col-span-2"}>
+                    <Label htmlFor="proof-artifact-type">Proof type</Label>
+                    <select
+                      id="proof-artifact-type"
+                      value={artifactType}
+                      onChange={(e) => setArtifactType(e.target.value)}
+                      className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">choose proof type</option>
+                      {ARTIFACT_TYPES.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             )}
@@ -1284,10 +1116,28 @@ export default function Proof() {
                 className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${detailOpen ? "rotate-180" : ""}`}
               />
             </button>
-            <div className={`${detailOpen || reflection || nextUpgrade || pressureFlag || transferFlag || attachment ? "grid" : "hidden"} gap-3`}>
+            <div className={`${detailOpen || reflection || nextUpgrade || pressureFlag || transferFlag || attachment || linkedContractId ? "grid" : "hidden"} gap-3`}>
+              {isMobile && !firstProofMode && (
+                <div>
+                  <Label htmlFor="proof-contract-link-mobile">Link a pending contract (optional)</Label>
+                  <select
+                    id="proof-contract-link-mobile"
+                    value={linkedContractId}
+                    onChange={(e) => setLinkedContractId(e.target.value)}
+                    className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">- none -</option>
+                    {pending.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.mode ?? p.domain} - {p.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {firstProofMode && activeModes.length > 0 && (
                 <div>
-                  <Label htmlFor="proof-mode-select">Mode (optional)</Label>
+                  <Label htmlFor="proof-mode-select">Domain (optional)</Label>
                   <select
                     id="proof-mode-select"
                     value={selectedModeId}
@@ -1570,6 +1420,197 @@ export default function Proof() {
           </div>
         </Card>
 
+        {verdict && (
+          <Card className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden" id="feedback">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                  {isMobile || firstProofMode ? "Proof submitted" : "Proof Receipt"}
+                </span>
+              </div>
+              {isMobile || firstProofMode ? (
+                <span className="text-sm font-semibold text-primary shrink-0">
+                  {plainVerdictLabel(verdict.evidenceStrength, verdict.qualityScore)}
+                </span>
+              ) : (
+                <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
+              )}
+            </div>
+            {(() => {
+              const impact = verdictIdentityImpact(verdict.evidenceStrength);
+              const toneClass =
+                impact.tone === "warn"
+                  ? "border-amber-500/40 bg-amber-500/5 text-amber-200"
+                  : impact.tone === "good"
+                    ? "border-primary/40 bg-primary/5 text-primary"
+                    : impact.tone === "elite"
+                      ? "border-primary/60 bg-primary/10 text-primary"
+                      : "border-border bg-muted/30 text-foreground";
+              return (
+                <div
+                  className={`mt-3 rounded-sm border p-3 text-sm ${toneClass}`}
+                  data-testid="verdict-identity-impact"
+                >
+                  <div className="font-medium">{impact.headline}</div>
+                  <div className="mt-1 text-xs opacity-90">{impact.subtext}</div>
+                </div>
+              );
+            })()}
+            {firstProofMode ? (
+              <>
+                <div className="mt-3 grid gap-3 text-sm">
+                  <VerdictRow label="What counted" value={verdict.feedback} />
+                  <VerdictRow
+                    label="What was weak or missing"
+                    value={
+                      verdict.evidenceStrength === "elite"
+                        ? "Nothing major — this is a strong first proof."
+                        : verdict.missingStandard
+                    }
+                  />
+                  <VerdictRow label="One next action" value={verdict.nextUpgrade} />
+                </div>
+                <div className="mt-3 rounded-sm border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
+                  Next: open Today for your updated command, then come back tomorrow with the next proof.
+                </div>
+              </>
+            ) : isMobile ? (
+              <>
+                <div className="mt-3 grid gap-3 text-sm">
+                  <VerdictRow label="What counted" value={verdict.feedback} />
+                  <VerdictRow label="Next command" value={verdict.nextUpgrade} />
+                </div>
+                <MobileCollapse eyebrow="Verdict" label="Full verdict details" trackId="proof_verdict_details">
+                  <div className="grid gap-3 text-sm">
+                    <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
+                    <VerdictRow label="Missing standard" value={verdict.missingStandard} />
+                    <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
+                    <VerdictRow label="Why it scored that way" value={verdict.why} />
+                    <VerdictRow label="Elite version" value={verdict.eliteVersion} />
+                    <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
+                    <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
+                    <VerdictRow
+                      label="Standard raised"
+                      value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
+                    />
+                  </div>
+                </MobileCollapse>
+              </>
+            ) : (
+              <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
+                <VerdictRow label="What counted" value={verdict.feedback} />
+                <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
+                <VerdictRow label="Missing standard" value={verdict.missingStandard} />
+                <VerdictRow label="Next command" value={verdict.nextUpgrade} />
+                <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
+                <VerdictRow label="Why it scored that way" value={verdict.why} />
+                <VerdictRow label="Elite version" value={verdict.eliteVersion} />
+                <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
+                <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
+                <VerdictRow
+                  label="Identity escalation"
+                  value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
+                />
+              </div>
+            )}
+            {verdict.attachmentUrl && (
+              <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
+                <Paperclip className="h-3 w-3 text-primary" />
+                <span className="text-muted-foreground">Attached evidence:</span>
+                <a href={verdict.attachmentUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate">
+                  {verdict.attachmentName ?? "view file"}
+                </a>
+              </div>
+            )}
+            {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
+            {submittedStudyClassification && !firstProofMode && (
+              <div className="mt-4">
+                <StudyVerdictHint
+                  classification={submittedStudyClassification}
+                  label="Fake study detector"
+                />
+              </div>
+            )}
+            <div className="mt-4 flex flex-col sm:flex-row gap-2">
+              <Link to="/dashboard" className="w-full sm:w-auto">
+                <Button
+                  size="sm"
+                  className="w-full sm:w-auto min-h-[44px] native-tap"
+                  onClick={() => {
+                    void logEvent(firstProofMode ? "activation_verdict_cta_clicked" : "proof_verdict_cta_clicked", {
+                      route: "/proof",
+                      source: firstProofMode ? "first_proof" : "proof",
+                      ctaName: "back_to_today",
+                      destination: "/dashboard",
+                    });
+                  }}
+                >
+                  {firstProofMode ? "See my next step" : "Back to Today"}
+                </Button>
+              </Link>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full sm:w-auto min-h-[44px] native-tap"
+                onClick={() => { setVerdict(null); setSubmittedStudyClassification(null); setDetailOpen(false); }}
+              >
+                Submit another proof
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {!firstProofMode && (
+          <MobileCollapse eyebrow="Definitions" label="Contract vs Artifact" trackId="proof_definitions">
+            <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
+              <div className="flex items-start gap-3">
+                <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                    Definitions
+                  </span>
+                  <p className="text-sm text-muted-foreground mt-1 break-words">
+                    A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
+                    A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </MobileCollapse>
+        )}
+
+        {!firstProofMode && (
+          <MobileCollapse eyebrow="Stats" label="Strength tally & filter" trackId="proof_stats">
+            <Card className="panel p-4 max-w-full overflow-hidden">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="grid grid-cols-4 gap-2 flex-1">
+                  {(["weak", "moderate", "strong", "elite"] as const).map((s) => (
+                    <div key={s} className="rounded-sm border border-border p-2 text-center min-w-0">
+                      <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{s}</div>
+                      <div className={"mt-1 text-lg font-semibold font-mono " + (s === "elite" ? "text-primary" : "")}>{strengthCount(s)}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="proof-domain-filter" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Filter</Label>
+                  <select
+                    id="proof-domain-filter"
+                    value={filterDomain}
+                    onChange={(e) => setFilterDomain(e.target.value)}
+                    className="rounded-md border border-input bg-background px-3 py-1.5 text-sm max-w-full"
+                  >
+                    <option value="all">all areas</option>
+                    {activeModes.map((mode) => (
+                      <option key={mode.mode_id} value={mode.mode_id.toLowerCase()}>{mode.display_name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </Card>
+          </MobileCollapse>
+        )}
+
         {/* Pending contracts */}
         {!firstProofMode && (
           <MobileCollapse
@@ -1693,6 +1734,7 @@ function CompletedArtifactsList({ items }: { items: ProofArtifactRow[] }) {
 }
 
 function CompletedArtifactCard({ artifact }: { artifact: ProofArtifactRow }) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const fullFeedback: string = artifact.feedback ?? "";
   const summary = summariseArtifactContent(fullFeedback);
@@ -1704,7 +1746,13 @@ function CompletedArtifactCard({ artifact }: { artifact: ProofArtifactRow }) {
           {artifact.domain} - {artifact.artifact_type ?? "artifact"} - {artifact.created_at?.slice(0, 10)}
         </div>
         {artifact.evidence_strength && (
-          <EvidenceStrengthBadge strength={artifact.evidence_strength as EvidenceStrength} score={artifact.quality_score} />
+          isMobile ? (
+            <span className="text-xs font-medium text-primary shrink-0">
+              {plainEvidenceStrength(artifact.evidence_strength)}
+            </span>
+          ) : (
+            <EvidenceStrengthBadge strength={artifact.evidence_strength as EvidenceStrength} score={artifact.quality_score} />
+          )
         )}
       </div>
       <div className="text-sm font-medium mt-1 break-words">{artifact.title}</div>

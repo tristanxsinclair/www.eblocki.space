@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   compressForecastSummary,
   hasProofOnDate,
+  plainCourtVerdict,
   plainEvidenceStrength,
+  plainLedgerText,
   plainRiskLine,
+  plainTierLabel,
   plainVerdictLabel,
+  resolveTodayClosure,
 } from "../user-facing-copy";
 
 describe("user-facing-copy", () => {
@@ -21,13 +25,38 @@ describe("user-facing-copy", () => {
   });
 
   it("maps internal strength tokens to plain evidence language", () => {
-    expect(plainEvidenceStrength("accepted_strong")).toBe("strong proof");
-    expect(plainEvidenceStrength("elite")).toBe("elite proof");
+    expect(plainEvidenceStrength("accepted_strong")).toBe("Strong proof");
+    expect(plainEvidenceStrength("accepted_useful")).toBe("Useful proof");
+    expect(plainEvidenceStrength("elite")).toBe("Elite proof");
+  });
+
+  it("maps court verdict enums", () => {
+    expect(plainCourtVerdict("accepted_strong")).toBe("Strong proof");
+    expect(plainCourtVerdict("accepted_useful")).toBe("Useful proof");
+  });
+
+  it("maps tier labels for operator surfaces", () => {
+    expect(plainTierLabel(1)).toBe("Basic evidence");
+    expect(plainTierLabel(3)).toBe("High-quality evidence");
+  });
+
+  it("resolves today closure — day only closes when proof counts", () => {
+    expect(resolveTodayClosure(false).status).toBe("open");
+    expect(resolveTodayClosure(true, "weak", 3).status).toBe("still_open");
+    expect(resolveTodayClosure(true, "moderate", 6).status).toBe("still_open");
+    expect(resolveTodayClosure(true, "strong", 8).status).toBe("closed");
+    expect(resolveTodayClosure(true, null, null).status).toBe("filed_pending");
   });
 
   it("compresses risk lines without internal enum language", () => {
     expect(plainRiskLine("shallow_proof")).toBe("Shallow proof");
     expect(plainRiskLine("accepted_strong required").toLowerCase()).toContain("strong proof");
+  });
+
+  it("scrubs ledger summary enums", () => {
+    expect(plainLedgerText("accepted_strong tier 3")).not.toContain("accepted_strong");
+    expect(plainLedgerText("accepted_strong tier 3").toLowerCase()).toContain("strong proof");
+    expect(plainLedgerText("accepted_strong tier 3").toLowerCase()).toContain("high-quality evidence");
   });
 
   it("builds a compressed forecast summary when evidence exists", () => {
