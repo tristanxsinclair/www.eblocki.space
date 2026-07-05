@@ -172,14 +172,14 @@ function VerdictFeedback({ artifactId }: { artifactId: string }) {
 
   if (submitted) {
     return (
-      <div className="mt-4 rounded-sm border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
+      <div id="feedback" className="mt-4 rounded-sm border border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
         Feedback recorded. Thanks — this helps Eblocki improve future proof verdicts.
       </div>
     );
   }
 
   return (
-    <div className="mt-4 rounded-sm border border-border bg-background/40 p-3">
+    <div id="feedback" className="mt-4 rounded-sm border border-border bg-background/40 p-3">
       <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Was this judgment useful?</div>
       <div className="mt-2 flex flex-wrap gap-2">
         <Button size="sm" variant={choice === "yes" ? "default" : "outline"} disabled={submitting} onClick={() => submit("yes")}>Yes</Button>
