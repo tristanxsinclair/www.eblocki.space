@@ -1,5 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { verdictIdentityImpact } from "../verdict-identity-impact";
+import {
+  isEvidenceStrength,
+  verdictIdentityImpact,
+} from "@/lib/eblocki/verdict-identity-impact";
+
+describe("isEvidenceStrength", () => {
+  it("accepts only current evidence strength values", () => {
+    expect(isEvidenceStrength("weak")).toBe(true);
+    expect(isEvidenceStrength("moderate")).toBe(true);
+    expect(isEvidenceStrength("strong")).toBe(true);
+    expect(isEvidenceStrength("elite")).toBe(true);
+  });
+
+  it("rejects legacy or invalid evidence strength values", () => {
+    expect(isEvidenceStrength("useful")).toBe(false);
+    expect(isEvidenceStrength("accepted_strong")).toBe(false);
+    expect(isEvidenceStrength(null)).toBe(false);
+    expect(isEvidenceStrength(undefined)).toBe(false);
+  });
+});
 
 describe("verdictIdentityImpact", () => {
   it("weak proof protects the streak but does not compound identity", () => {
