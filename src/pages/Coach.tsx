@@ -31,6 +31,7 @@ import {
 import { Seo } from "@/components/Seo";
 import { logEvent } from "@/lib/eblocki/analytics";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import {
   buildCoachResponse,
   type CoachEngineResult,
@@ -277,7 +278,7 @@ export default function Coach() {
         description="Diagnose the situation, get the answer, create proof, and generate a practice pack when skill repetition is the right move."
         path="/coach"
       />
-      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-5 min-w-0 max-w-full text-wrap-safe">
+      <div className="mobile-safe-page p-4 md:p-8 max-w-5xl mx-auto space-y-5 min-w-0 max-w-full text-wrap-safe pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-8">
         <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end min-w-0">
           <div className="min-w-0">
             {!isMobile && (
@@ -312,24 +313,44 @@ export default function Coach() {
               onChange={(event) => setInput(event.target.value)}
               className="min-h-[170px] resize-none w-full max-w-full"
             />
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Mode chips</div>
-              <div className="flex flex-wrap gap-2">
-                {MODE_CHIPS.map((chip) => (
-                  <button
-                    key={chip.value}
-                    type="button"
-                    onClick={() => setSelectedMode(chip.value)}
-                    className={cn(
-                      "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors",
-                      selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
-                    )}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
+            {isMobile ? (
+              <MobileCollapse eyebrow="Optional" label="Focus area (optional)" trackId="coach_mode_chips">
+                <div className="flex flex-wrap gap-2">
+                  {MODE_CHIPS.map((chip) => (
+                    <button
+                      key={chip.value}
+                      type="button"
+                      onClick={() => setSelectedMode(chip.value)}
+                      className={cn(
+                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors min-h-[44px]",
+                        selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                      )}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </MobileCollapse>
+            ) : (
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Mode chips</div>
+                <div className="flex flex-wrap gap-2">
+                  {MODE_CHIPS.map((chip) => (
+                    <button
+                      key={chip.value}
+                      type="button"
+                      onClick={() => setSelectedMode(chip.value)}
+                      className={cn(
+                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors",
+                        selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                      )}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             <div className="flex items-center justify-between gap-3 flex-wrap border-t border-border pt-4">
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{input.length}/5000</div>
               <Button onClick={send} disabled={loading} className="gap-2 w-full sm:w-auto">
@@ -388,12 +409,14 @@ export default function Coach() {
                 <Signal label="Domain" value={engineResult.detectedDomain} icon={<Radar />} />
                 <Signal label="Intent" value={engineResult.detectedIntent.replace(/_/g, " ")} icon={<Crosshair />} />
                 <Signal label="State" value={engineResult.detectedState.replace(/_/g, " ")} icon={<BrainCircuit />} />
-                <Signal label="Mode" value={engineResult.responseMode.replace(/_/g, " ")} icon={<MessageSquare />} />
+                <Signal label={isMobile ? "Response style" : "Mode"} value={engineResult.responseMode.replace(/_/g, " ")} icon={<MessageSquare />} />
                 <Signal label="Urgency" value={engineResult.urgency.replace(/_/g, " ")} icon={<ShieldCheck />} />
               </div>
-              <p className="mt-3 text-xs text-muted-foreground break-words">
-                Internal prompt summary: {engineResult.internalPromptSummary}
-              </p>
+              {!isMobile && (
+                <p className="mt-3 text-xs text-muted-foreground break-words">
+                  Internal prompt summary: {engineResult.internalPromptSummary}
+                </p>
+              )}
             </Card>
 
             {engineResult.warning && (
