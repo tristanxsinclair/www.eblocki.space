@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { logEvent } from "@/lib/eblocki/analytics";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   buildCoachResponse,
   type CoachEngineResult,
@@ -125,6 +126,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 export default function Coach() {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const location = useLocation();
   const routeState = (location.state ?? {}) as CoachRouteState;
@@ -278,15 +280,21 @@ export default function Coach() {
       <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-5 min-w-0 max-w-full text-wrap-safe">
         <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end min-w-0">
           <div className="min-w-0">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Coach // Diagnosis Engine</span>
+            {!isMobile && (
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Coach // Diagnosis Engine</span>
+            )}
             <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Bring the messy problem. Leave with proof.</h1>
             <p className="text-sm text-muted-foreground mt-1 max-w-2xl break-words">
-              Coach classifies the domain, intent, state, urgency, and response mode. It answers directly, creates a proof action, and suggests GameForge when practice is the right intervention.
+              {isMobile
+                ? "Paste the messy problem. Eblocki turns it into one proof action you can complete today."
+                : "Coach classifies the domain, intent, state, urgency, and response mode. It answers directly, creates a proof action, and suggests GameForge when practice is the right intervention."}
             </p>
           </div>
-          <Link to="/gameforge">
-            <Button size="sm" variant="outline" className="gap-2"><Gamepad2 className="h-3.5 w-3.5" /> GameForge</Button>
-          </Link>
+          {!isMobile && (
+            <Link to="/gameforge">
+              <Button size="sm" variant="outline" className="gap-2"><Gamepad2 className="h-3.5 w-3.5" /> GameForge</Button>
+            </Link>
+          )}
         </header>
 
         <Card className="panel overflow-hidden border-primary/25 bg-card/60 max-w-full">
@@ -344,6 +352,13 @@ export default function Coach() {
               <EmptyCell icon={<Target />} title="Proof" body="Convert the answer into one artifact requirement." />
               <EmptyCell icon={<Gamepad2 />} title="Practice" body="Send weak concepts to GameForge when repetition is useful." />
             </div>
+            {isMobile && (
+              <Link to="/gameforge" className="mt-3 inline-block w-full">
+                <Button size="sm" variant="outline" className="w-full min-h-[44px] native-tap gap-2">
+                  <Gamepad2 className="h-3.5 w-3.5" /> GameForge (after diagnosis)
+                </Button>
+              </Link>
+            )}
           </Card>
         )}
 

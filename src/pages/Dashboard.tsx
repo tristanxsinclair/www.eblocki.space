@@ -51,7 +51,7 @@ import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 import { ProofClosureCard } from "@/components/eblocki/ProofClosureCard";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { hasProofOnDate } from "@/lib/eblocki/user-facing-copy";
+import { hasProofOnDate, plainEvidenceStrength } from "@/lib/eblocki/user-facing-copy";
 
 const EVIDENCE_STRENGTHS: EvidenceStrength[] = ["weak", "moderate", "strong", "elite"];
 
@@ -88,6 +88,10 @@ export default function Dashboard() {
   );
   const proofToday = useMemo(
     () => hasProofOnDate(allArtifacts, todayISO),
+    [allArtifacts, todayISO],
+  );
+  const todayArtifact = useMemo(
+    () => allArtifacts.find((artifact) => artifact.created_at?.slice(0, 10) === todayISO) ?? null,
     [allArtifacts, todayISO],
   );
 
@@ -250,7 +254,7 @@ export default function Dashboard() {
             view={view}
             proofToday={proofToday}
             hasAnyProof={allArtifacts.length > 0}
-            latestArtifact={latestArtifact}
+            todayArtifact={todayArtifact}
             todayISO={todayISO}
           />
         )}
@@ -607,7 +611,9 @@ function EvidenceCommandPanel({
           </EvidenceBlock>
           <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3`}>
             <EvidenceBlock icon={<Gavel />} label="Last verdict" action="Open" href="/proof">
-              {latestArtifact ? `${latestArtifact.title} - ${latestArtifact.evidence_strength ?? "unscored"}` : "No proof yet. Submit one artifact to start the verdict loop."}
+              {latestArtifact
+                ? `${latestArtifact.title} - ${plainEvidenceStrength(latestArtifact.evidence_strength)}`
+                : "No proof yet. Submit one artifact to start the verdict loop."}
             </EvidenceBlock>
             <EvidenceBlock icon={<CircleDot />} label="Weak spot" action="Modes" href="/modes">
               {view.evidenceSummary.strongestDomain
