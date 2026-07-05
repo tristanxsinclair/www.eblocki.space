@@ -1,6 +1,6 @@
 import { defineTool } from "@lovable.dev/mcp-js";
 import { z } from "zod";
-import { getProofStandardLookup } from "@/lib/eblocki/proof-check";
+import { getProofStandardLookup } from "../../eblocki/proof-check";
 
 export default defineTool({
   name: "get_proof_standard",

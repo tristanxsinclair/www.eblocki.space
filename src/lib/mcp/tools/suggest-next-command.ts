@@ -4,7 +4,7 @@ import {
   buildRefusalPayload,
   checkAnalysisSafety,
   runProofCheck,
-} from "@/lib/eblocki/proof-check";
+} from "../../eblocki/proof-check";
 
 export default defineTool({
   name: "suggest_next_command",
