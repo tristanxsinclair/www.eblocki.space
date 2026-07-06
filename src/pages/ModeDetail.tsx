@@ -348,8 +348,10 @@ export default function ModeDetail() {
                         {c.evidence_standard && (
                           <div className="mt-0.5 text-xs text-muted-foreground"><span className="text-foreground font-mono">Standard:</span> {c.evidence_standard}</div>
                         )}
-                        <Link to={proofLink} className="mt-2 inline-block">
-                          <Button size="sm" variant="outline">Submit Proof</Button>
+                        <Link to={proofLink} className="mt-3 block sm:inline-block">
+                          <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]">
+                            Submit Proof
+                          </Button>
                         </Link>
                       </li>
                     ))}
