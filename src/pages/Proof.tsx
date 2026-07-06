@@ -215,7 +215,7 @@ export default function Proof() {
   const [selectedModeId, setSelectedModeId] = useState<string>("");
   const [linkedContractId, setLinkedContractId] = useState<string>("");
   const [title, setTitle] = useState("");
-  const [firstProofDomain, setFirstProofDomain] = useState(FIRST_PROOF_DEFAULTS.domain);
+  const [firstProofDomain, setFirstProofDomain] = useState<string>(FIRST_PROOF_DEFAULTS.domain);
   const [artifactType, setArtifactType] = useState<string>(FIRST_PROOF_DEFAULTS.artifactType);
   const [content, setContent] = useState("");
   const [reflection, setReflection] = useState("");
