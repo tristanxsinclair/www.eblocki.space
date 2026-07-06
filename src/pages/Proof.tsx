@@ -1532,7 +1532,6 @@ export default function Proof() {
             )}
             {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
             {submittedStudyClassification && !firstProofMode && isStudyDomain(
-              verdict?.domain,
               selectedMode?.mode_id,
               selectedMode?.display_name,
               linkedContract?.domain,
