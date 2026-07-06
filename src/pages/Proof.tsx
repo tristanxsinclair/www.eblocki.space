@@ -1077,7 +1077,13 @@ export default function Proof() {
               )
             )}
 
-            {!firstProofMode && content.trim().length >= 12 && (
+            {!firstProofMode && content.trim().length >= 12 && isStudyDomain(
+              selectedMode?.mode_id,
+              selectedMode?.display_name,
+              linkedContract?.domain,
+              linkedContract?.mode,
+              artifactType,
+            ) && (
               <StudyVerdictHint
                 classification={liveStudyClassification}
                 label="Fake study detector"
@@ -1525,7 +1531,14 @@ export default function Proof() {
               </div>
             )}
             {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
-            {submittedStudyClassification && !firstProofMode && (
+            {submittedStudyClassification && !firstProofMode && isStudyDomain(
+              verdict?.domain,
+              selectedMode?.mode_id,
+              selectedMode?.display_name,
+              linkedContract?.domain,
+              linkedContract?.mode,
+              artifactType,
+            ) && (
               <div className="mt-4">
                 <StudyVerdictHint
                   classification={submittedStudyClassification}
