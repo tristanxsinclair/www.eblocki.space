@@ -15,6 +15,7 @@ import { ProofStandardPreviewPanel } from "@/components/eblocki/ProofStandardPre
 import { scoreProofArtifact, type EvidenceStrength } from "@/lib/eblocki/proof-scoring";
 import { classifyStudyActivity } from "@/lib/eblocki/fake-study-detector";
 import { StudyVerdictHint } from "@/components/eblocki/StudyVerdictHint";
+import { isStudyDomain } from "@/lib/eblocki/display-labels";
 import { buildProofStandardPreview, type ProofStandardPreview } from "@/lib/eblocki/proof-standard-preview";
 import type { UserMode } from "@/lib/eblocki/modes";
 import { computeTemporal } from "@/lib/eblocki/temporal-engine";
@@ -215,7 +216,7 @@ export default function Proof() {
   const [selectedModeId, setSelectedModeId] = useState<string>("");
   const [linkedContractId, setLinkedContractId] = useState<string>("");
   const [title, setTitle] = useState("");
-  const [firstProofDomain, setFirstProofDomain] = useState(FIRST_PROOF_DEFAULTS.domain);
+  const [firstProofDomain, setFirstProofDomain] = useState<string>(FIRST_PROOF_DEFAULTS.domain);
   const [artifactType, setArtifactType] = useState<string>(FIRST_PROOF_DEFAULTS.artifactType);
   const [content, setContent] = useState("");
   const [reflection, setReflection] = useState("");
@@ -1076,7 +1077,13 @@ export default function Proof() {
               )
             )}
 
-            {!firstProofMode && content.trim().length >= 12 && (
+            {!firstProofMode && content.trim().length >= 12 && isStudyDomain(
+              selectedMode?.mode_id,
+              selectedMode?.display_name,
+              linkedContract?.domain,
+              linkedContract?.mode,
+              artifactType,
+            ) && (
               <StudyVerdictHint
                 classification={liveStudyClassification}
                 label="Fake study detector"
@@ -1524,7 +1531,13 @@ export default function Proof() {
               </div>
             )}
             {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
-            {submittedStudyClassification && !firstProofMode && (
+            {submittedStudyClassification && !firstProofMode && isStudyDomain(
+              selectedMode?.mode_id,
+              selectedMode?.display_name,
+              linkedContract?.domain,
+              linkedContract?.mode,
+              artifactType,
+            ) && (
               <div className="mt-4">
                 <StudyVerdictHint
                   classification={submittedStudyClassification}
