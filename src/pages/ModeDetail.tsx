@@ -12,6 +12,7 @@ import { ModeBadge } from "@/components/eblocki/Badges";
 import { calculateModeProgress } from "@/lib/eblocki/mode-progress";
 import { TRISTAN_DEFAULT_MODES, GENERAL_DEFAULT_MODES, type EblockiDefaultMode } from "@/lib/eblocki/default-modes";
 import type { UserMode } from "@/lib/eblocki/modes";
+import { humaniseModeId } from "@/lib/eblocki/display-labels";
 import { toast } from "sonner";
 import { ArrowLeft, BookOpen, ClipboardList, Gavel, MessageSquare, Scale, Sparkles } from "lucide-react";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
