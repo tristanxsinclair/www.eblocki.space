@@ -191,7 +191,9 @@ export default function ModeDetail() {
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <ModeBadge mode={mode.mode_id} />
-              <span className="text-sm text-muted-foreground">{mode.mode_id}</span>
+              <span className="text-sm text-muted-foreground">
+                {humaniseModeId(mode.mode_id, mode.display_name)}
+              </span>
               <span className={`font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm border ${isActiveMode ? "border-primary/40 text-primary" : "border-border text-muted-foreground"}`}>
                 {isActiveMode ? "Active" : "Inactive"}
               </span>
