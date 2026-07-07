@@ -47,6 +47,8 @@ import {
 } from "@/lib/eblocki/dashboard-view-model";
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
+import { buildProofEntryHref } from "@/lib/eblocki/first-proof";
+import { isSameLocalDay, localDayKey } from "@/lib/eblocki/local-day";
 import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 import { ProofClosureCard } from "@/components/eblocki/ProofClosureCard";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
@@ -81,6 +83,7 @@ export default function Dashboard() {
   const [queryFailed, setQueryFailed] = useState(false);
   const [dashboardLoaded, setDashboardLoaded] = useState(false);
 
+  const todayISO = localDayKey();
   const todayISO = new Date().toISOString().slice(0, 10);
   const artifactDates = useMemo(
     () => allArtifacts.map((artifact) => artifact.created_at).filter((value): value is string => !!value),
@@ -162,13 +165,13 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user || allArtifacts.length === 0) return;
-    const latestCreatedAt = allArtifacts[0]?.created_at?.slice(0, 10);
-    if (!latestCreatedAt || latestCreatedAt === todayISO) return;
+    const latestCreatedAt = allArtifacts[0]?.created_at;
+    if (!latestCreatedAt || isSameLocalDay(latestCreatedAt)) return;
     void logEvent("activation_day_2_return_seen", {
       route: "/dashboard",
       source: "today",
     });
-  }, [user, allArtifacts, todayISO]);
+  }, [user, allArtifacts]);
 
   const currentMode = recentCoach[0]?.mode ?? null;
   const currentState = ((today?.state as BehaviouralState | null) ?? (recentCoach[0]?.state_detected as BehaviouralState | null) ?? null);
@@ -202,6 +205,11 @@ export default function Dashboard() {
     temporalResult,
     queryFailed,
   }), [today, pending, recent, allArtifacts, recentCoach, activeDomains.length, temporalResult, queryFailed]);
+  const hasProofToday = view.evidenceSummary.proofsTodayCount > 0;
+  const submitProofHref = buildProofEntryHref({
+    firstProof: allArtifacts.length === 0,
+    uglyStart: !hasProofToday,
+  });
 
   const handleCheckIn = () => {
     if (!quick.trim()) return;
@@ -235,6 +243,24 @@ export default function Dashboard() {
               Today
             </h1>
           </div>
+          <div className="flex gap-2 flex-wrap">
+            <Link to={submitProofHref}><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit proof</Button></Link>
+            {hasProofToday && allArtifacts.length > 0 && (
+              <>
+                <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
+                <Link to="/start-today?plan=1"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Plan</Button></Link>
+                <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
+              </>
+            )}
+          </div>
+        </header>
+
+        {hasProofToday && activeDomains.length === 0 && (
+          <Card className="panel p-4 border-primary/30 bg-primary/5">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Modes not set up</div>
+                <p className="text-sm mt-1 text-muted-foreground">Add at least one mode so proof routes to the right standard.</p>
           {!isMobile && (
             <div className="flex gap-2 flex-wrap">
               <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit proof</Button></Link>
@@ -290,6 +316,19 @@ export default function Dashboard() {
           )
         )}
 
+        {hasProofToday ? (
+          <CommandHero view={view} state={currentState} />
+        ) : (
+          <AntiAvoidanceGate
+            view={view}
+            state={currentState}
+            submitProofHref={submitProofHref}
+            hasAnyProof={allArtifacts.length > 0}
+            hasModes={activeDomains.length > 0}
+          />
+        )}
+
+        {hasProofToday ? (
         {!isMobile && allArtifacts.length > 0 && (
           <CommandHero view={view} state={currentState} latestEvidenceStrength={latestArtifact?.evidence_strength} />
         )}
@@ -515,6 +554,8 @@ export default function Dashboard() {
               }
             />
           </>
+        ) : (
+          <CollapsedPanelsNotice />
           )
         )}
       </div>
@@ -522,6 +563,87 @@ export default function Dashboard() {
   );
 }
 
+function AntiAvoidanceGate({
+  view,
+  state,
+  submitProofHref,
+  hasAnyProof,
+  hasModes,
+}: {
+  view: ReturnType<typeof buildDashboardViewModel>;
+  state: BehaviouralState | null;
+  submitProofHref: string;
+  hasAnyProof: boolean;
+  hasModes: boolean;
+}) {
+  const noProofCopy = hasAnyProof
+    ? "No proof yet today. Submit one measurable artifact to activate the command layer."
+    : "No proof yet. Submit one measurable artifact to activate the command layer.";
+
+  return (
+    <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
+      <div className="flex items-start justify-between gap-4 flex-wrap min-w-0">
+        <div className="min-w-0 max-w-3xl">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Anti-Avoidance Mode</span>
+            <span className="rounded-sm border border-border bg-background/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+              {view.commandLayer.activeRoute.replace(/_/g, " ")}
+            </span>
+            {state && <StateBadge state={state} />}
+          </div>
+          <h2 className="mt-3 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">
+            {noProofCopy}
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground text-wrap-safe">
+            Planning is blocked until proof exists.
+          </p>
+        </div>
+        <div className="w-full sm:w-auto">
+          <Link to={submitProofHref} className="w-full sm:w-auto">
+            <Button
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                void logEvent("activation_landing_primary_cta_clicked", {
+                  route: "/dashboard",
+                  destination: submitProofHref,
+                  ctaName: "dashboard_submit_proof_now",
+                });
+              }}
+            >
+              Submit Proof
+              <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <GateDetail label="One command" value={view.commandLayer.todayCommand} />
+        <GateDetail label="Proof required" value={view.commandLayer.proofContract} />
+        <GateDetail label="Timebox" value={view.commandLayer.timebox} />
+        <GateDetail label="What does not count" value={view.commandLayer.whatDoesNotCount[0] ?? "Plans without an artifact."} />
+      </div>
+
+      {!hasModes && (
+        <p className="mt-4 text-xs text-muted-foreground text-wrap-safe">
+          No mode is configured yet. Eblocki will fall back to the general standard until you set one up after today&apos;s proof.
+        </p>
+      )}
+
+      <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-xs text-muted-foreground text-wrap-safe">
+          One artifact. One standard. One verdict.
+        </p>
+        <Link to="/start-today" className="font-mono text-[10px] uppercase tracking-widest text-primary hover:underline">
+          Open command gate
+        </Link>
+      </div>
+    </Card>
+  );
+}
+
+function CommandHero({ view, state }: { view: ReturnType<typeof buildDashboardViewModel>; state: BehaviouralState | null }) {
 export function CommandHero({
   view,
   state,
@@ -573,6 +695,28 @@ export function CommandHero({
           value={view.commandLayer.latestCourtSignal}
           hint={identityImpact?.headline}
         />
+      </div>
+    </Card>
+  );
+}
+
+function CollapsedPanelsNotice() {
+  return (
+    <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            Secondary panels collapsed
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
+            Planning is blocked until proof exists. Stats, forecasts, Sentinel, identity ledger, and long review stay secondary until today&apos;s proof is filed.
+          </p>
+        </div>
+        <Link to="/start-today" className="w-full sm:w-auto">
+          <Button size="sm" variant="outline" className="w-full sm:w-auto">
+            Review command gate
+          </Button>
+        </Link>
       </div>
     </Card>
   );
@@ -727,6 +871,16 @@ function SectionHeader({ eyebrow, title, detail }: { eyebrow: string; title: str
   );
 }
 
+function GateDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-sm border border-primary/20 bg-background/30 p-3 min-w-0">
+      <div className="font-mono text-[9px] uppercase tracking-widest text-primary">{label}</div>
+      <div className="mt-1 text-sm leading-snug text-wrap-safe">{value}</div>
+    </div>
+  );
+}
+
+function CommandSignal({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
 function CommandSignal({ icon, label, value, hint }: { icon: ReactNode; label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-sm border border-primary/20 bg-background/30 p-3 min-w-0">
