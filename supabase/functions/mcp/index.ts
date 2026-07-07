@@ -2,7 +2,1412 @@
 // To take ownership, delete this banner line; the plugin then leaves the file alone.
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
+// src/lib/mcp/index.ts
+import { defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
+
+// src/lib/mcp/tools/check-proof-artifact.ts
+import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z } from "npm:zod@^3.25.76";
+
+// src/lib/eblocki/modes.ts
+var MODE_DOMAINS = {
+  LAW_MAX: "law",
+  PSYCH_HD: "psychology",
+  SALES_CLOSE: "sales",
+  EBLOCKI: "discipline",
+  SPORT: "sport",
+  BRAND: "brand",
+  CAREER_MONEY: "career",
+  GENERAL_EXECUTION: "general"
+};
+
+// src/lib/eblocki/law-mastery.ts
+function buildTwoSourceBankProofTask() {
+  return [
+    "Create two source-bank entries:",
+    "1. BLAW1003 - Native Title Act 1993 (Cth)",
+    "2. LAWS1004 - Competition and Consumer Act 2010 (Cth), Schedule 2 Australian Consumer Law"
+  ].join("\n");
+}
+
+// src/lib/eblocki/domain-standards.ts
+var DOMAIN_STANDARD_REGISTRY = {
+  law_irac_standard: {
+    key: "law_irac_standard",
+    label: "Law IRAC Standard",
+    criteria: [
+      "issue identified",
+      "rule stated accurately",
+      "authority used",
+      "application to facts",
+      "conclusion",
+      "counterargument or limitation where relevant",
+      "citation precision"
+    ],
+    requiredEvidence: [
+      "issue identified",
+      "rule stated accurately",
+      "authority used",
+      "application to facts",
+      "conclusion",
+      "counterargument or limitation where relevant",
+      "citation precision"
+    ],
+    missingStandard: "Missing law-answer standard: issue, rule, authority, application, conclusion, and citation precision.",
+    eliteVersion: "A precise IRAC answer with authority, fact application, limitation, and a defensible conclusion.",
+    nextUpgrade: "Add authority and fact-specific application before polishing style."
+  },
+  law_source_bank_standard: {
+    key: "law_source_bank_standard",
+    label: "Law Source Bank Standard",
+    criteria: [
+      "source name",
+      "jurisdiction",
+      "authority level",
+      "current version / access checked",
+      "key provision/material",
+      "key rule",
+      "unit relevance",
+      "possible assessment use",
+      "limitation/counterargument",
+      "confidence rating"
+    ],
+    requiredEvidence: [
+      "source name",
+      "jurisdiction",
+      "authority level",
+      "current version checked",
+      "key provision/material",
+      "key rule",
+      "unit relevance",
+      "assessment use",
+      "limitation/counterargument",
+      "confidence rating"
+    ],
+    missingStandard: "Missing source-bank standard: source, jurisdiction, authority level, current version check, key rule, unit relevance, assessment use, limitation, and confidence rating.",
+    eliteVersion: "A verified source-bank entry that can be used directly in an issue matrix or problem answer.",
+    nextUpgrade: "Convert verified source-bank entries into one issue matrix before writing IRAC."
+  },
+  academic_proof_plan_standard: {
+    key: "academic_proof_plan_standard",
+    label: "Academic Proof Plan Standard",
+    criteria: [
+      "unit objective clear",
+      "weekly artifact system",
+      "authoritative source strategy",
+      "proof cadence",
+      "feedback loop",
+      "assessment relevance",
+      "first executable artifact"
+    ],
+    requiredEvidence: [
+      "unit objective clear",
+      "weekly artifact system",
+      "authoritative source strategy",
+      "proof cadence",
+      "feedback loop",
+      "assessment relevance",
+      "first executable artifact"
+    ],
+    missingStandard: "Missing academic proof-plan standard: unit objective, weekly artifact system, source strategy, proof cadence, feedback loop, assessment relevance, and first executable artifact.",
+    eliteVersion: "A study operating system that produces visible assessment-ready artifacts every week.",
+    nextUpgrade: "Start the first executable artifact instead of expanding the plan."
+  },
+  product_system_review_standard: {
+    key: "product_system_review_standard",
+    label: "Product System Review Standard",
+    criteria: [
+      "specific product issue identified",
+      "evidence from actual output/screen",
+      "corrected logic proposed",
+      "implementation path stated",
+      "measurable test or acceptance criterion",
+      "next upgrade defined"
+    ],
+    requiredEvidence: [
+      "specific product issue identified",
+      "evidence from actual output/screen",
+      "corrected logic proposed",
+      "implementation path stated",
+      "measurable test or acceptance criterion",
+      "next upgrade defined"
+    ],
+    missingStandard: "Missing product-system standard: actual output evidence, corrected logic, implementation path, measurable test, and next upgrade.",
+    eliteVersion: "A product review that names the flawed behavior, shows the evidence, proposes corrected logic, and defines an implementation test.",
+    nextUpgrade: "Implement or test the corrected logic before claiming identity-level progress."
+  },
+  eblocki_implementation_standard: {
+    key: "eblocki_implementation_standard",
+    label: "Eblocki Implementation Standard",
+    criteria: [
+      "file changes made",
+      "logic implemented",
+      "UI updated where relevant",
+      "tests added",
+      "build/test result shown",
+      "no new lint debt in touched files",
+      "user-facing behaviour improved"
+    ],
+    requiredEvidence: [
+      "file changes made",
+      "logic implemented",
+      "UI updated where relevant",
+      "tests added",
+      "build/test result shown",
+      "no new lint debt in touched files",
+      "user-facing behaviour improved"
+    ],
+    missingStandard: "Missing implementation standard: file changes, implemented logic, relevant UI, tests, verification result, lint status, and user-facing behaviour improvement.",
+    eliteVersion: "A shipped change with exact files, tests, build result, and clear user-facing improvement.",
+    nextUpgrade: "Run verification and document the before/after behavior."
+  },
+  general_proof_standard: {
+    key: "general_proof_standard",
+    label: "General Proof Standard",
+    criteria: ["visible artifact", "applied detail", "feedback awareness", "next upgrade"],
+    requiredEvidence: ["visible artifact", "applied detail", "feedback awareness", "next upgrade"],
+    missingStandard: "Missing general proof standard: visible artifact, applied detail, feedback awareness, and next upgrade.",
+    eliteVersion: "A visible artifact with applied detail, correction, and a stronger next standard.",
+    nextUpgrade: "Make the artifact more concrete and attach a measurable correction."
+  }
+};
+function normalise(value) {
+  return (value ?? "").toLowerCase().replace(/[_-]+/g, " ").trim();
+}
+function hasAny(text, markers) {
+  return markers.some((marker) => text.includes(marker));
+}
+function selectDomainStandard(input = {}) {
+  const domain = normalise(input.domain);
+  const intent = normalise(input.intent);
+  const artifactType = normalise(input.artifactType);
+  const signalText = normalise(input.signalText);
+  const slotCombined = `${domain} ${intent} ${artifactType}`;
+  const combined = `${slotCombined} ${signalText}`.trim();
+  if (hasAny(combined, [
+    "file changes",
+    "commit reference",
+    "tests added",
+    "build result",
+    "test result",
+    "code change",
+    "pull request",
+    "merged pr",
+    "deployed to production"
+  ])) {
+    return DOMAIN_STANDARD_REGISTRY.eblocki_implementation_standard;
+  }
+  if (hasAny(slotCombined, ["source bank", "authority log", "authority logging", "statute note", "case note", "issue matrix"])) {
+    return DOMAIN_STANDARD_REGISTRY.law_source_bank_standard;
+  }
+  if (hasAny(slotCombined, ["academic proof plan", "study system", "mastery plan", "unit plan", "weekly law proof", "academic workflow", "law academic"])) {
+    return DOMAIN_STANDARD_REGISTRY.academic_proof_plan_standard;
+  }
+  const PRODUCT_SIGNALS = [
+    "product system",
+    "product review",
+    "product issue",
+    "product bug",
+    "router",
+    "routing",
+    "route ",
+    "ux",
+    "ui bug",
+    "ui issue",
+    "ux issue",
+    "logic critique",
+    "bug",
+    "eblocki",
+    "coach output",
+    "coach response",
+    "coach router",
+    "coach routing",
+    "coach mode",
+    "proof action",
+    "proof contract",
+    "proof action card",
+    "court of evidence",
+    "verdict screen",
+    "dashboard",
+    "mobile containment",
+    "implementation path",
+    "acceptance test",
+    "response composer",
+    "standard selection",
+    "scoring bug",
+    "specificity leak",
+    "app behaviour",
+    "app behavior",
+    "lovable",
+    "codex",
+    "build pass",
+    "test pass"
+  ];
+  if (hasAny(combined, PRODUCT_SIGNALS)) {
+    return DOMAIN_STANDARD_REGISTRY.product_system_review_standard;
+  }
+  if (hasAny(slotCombined, ["irac", "legal reasoning", "legal answer", "problem answer", "law answer"])) {
+    return DOMAIN_STANDARD_REGISTRY.law_irac_standard;
+  }
+  if (domain === "law") return DOMAIN_STANDARD_REGISTRY.law_irac_standard;
+  if (domain === "product" || domain === "eblocki") return DOMAIN_STANDARD_REGISTRY.product_system_review_standard;
+  return DOMAIN_STANDARD_REGISTRY.general_proof_standard;
+}
+function getDomainStandard(key) {
+  return DOMAIN_STANDARD_REGISTRY[key];
+}
+
+// src/lib/eblocki/coach-router.ts
+function clean(value) {
+  return value.replace(/\s+/g, " ").trim();
+}
+function lower(value) {
+  return clean(value).toLowerCase();
+}
+function has(text, pattern) {
+  return pattern.test(text);
+}
+function requirement(input) {
+  const standard = selectDomainStandard({ artifactType: input.artifactType, intent: input.proofStandardKey });
+  return {
+    ...input,
+    evidenceStandard: standard.criteria.join(" / "),
+    timeboxMinutes: input.timeboxMinutes ?? 25
+  };
+}
+function detectUrgency(text) {
+  if (has(text, /\b(kill myself|suicide|self harm|self-harm|hurt myself|end it)\b/)) return "crisis_boundary";
+  if (has(text, /\b(due today|tonight|urgent|deadline|exam tomorrow|panic)\b/)) return "high";
+  if (text.length < 30) return "low";
+  return "normal";
+}
+function detectState(text, intent) {
+  if (has(text, /\b(urgent|due today|deadline|tonight|exam tomorrow|now)\b/)) return "urgent";
+  if (intent === "academic_proof_plan" || intent === "product_system_review") return "strategic_build";
+  if (intent === "law_source_bank") return "pre_execution";
+  if (has(text, /\b(reorganis|reorganiz|setup|researching more|more planning|perfect plan|template)\b/)) return "overplanning";
+  if (has(text, /\b(avoid|procrastinat|can't start|cant start|scrolling|delaying)\b/)) return "avoidant";
+  if (has(text, /\b(too much|overwhelmed|drowning|behind|chaos)\b/)) return "overloaded";
+  if (has(text, /\b(tired|exhausted|burnt|no energy|flat)\b/)) return "low_energy";
+  if (has(text, /\b(confused|don't understand|dont understand|lost|unclear)\b/)) return "confused";
+  if (has(text, /\b(again|same problem|still stuck|keep doing this)\b/)) return "stuck_loop";
+  if (intent === "execution_lock") return "pre_execution";
+  return "clear";
+}
+function routeCoachInput(input) {
+  const text = lower(input);
+  const evidence = [];
+  const urgency = detectUrgency(text);
+  const mentionsLawUnit = has(text, /\b(blaw\d{4}|laws\d{4}|law unit|law study|law mastery)\b/);
+  const sourceBank = has(text, /\b(source[- ]?bank|authority log|authority logging|statute note|case note|issue matrix|source preparation)\b/);
+  const academicPlan = has(text, /\b(study system|mastery plan|proof plan|unit plan|weekly law proof|academic workflow|unit preparation|source strategy)\b/);
+  const legalAnswer = has(text, /\b(irac|legal answer|problem answer|legal reasoning|issue|rule|application|case explanation|statute explanation|legal analysis)\b/);
+  const proofReview = has(text, /\b(review|judge|verdict|court of evidence|score|critique|audit|mark my|feedback on)\b/) && has(text, /\b(proof|artifact|answer|paragraph|submission|work)\b/);
+  const productReview = has(text, /\b(eblocki|coach router|router|routing|product system|ux|dashboard|logic|bug|behaviour|behavior)\b/) && has(text, /\b(review|critique|wrong|fix|bug|mismatch|standard|classified|classification|logic)\b/);
+  const executionLock = has(text, /\b(overbuild|overbuilding|planning too much|more theory|drifting|avoid|procrastinat|one artifact|required now)\b/);
+  if (productReview) {
+    evidence.push("product-system behavior or routing critique detected");
+    const recommendedProofArtifact2 = requirement({
+      artifactType: "product_system_review",
+      title: "Product System Review",
+      action: "Submit one product-system review: actual output, corrected logic, implementation path, and measurable acceptance test.",
+      requiredArtifact: "One product-system review with actual output evidence, corrected logic, implementation path, and measurable test.",
+      proofStandardKey: "product_system_review_standard",
+      timeboxMinutes: 25
+    });
+    return {
+      domain: "product",
+      intent: "product_system_review",
+      state: detectState(text, "product_system_review"),
+      mode: "product_builder",
+      urgency,
+      evidence,
+      confidence: 0.92,
+      recommendedProofArtifact: recommendedProofArtifact2,
+      proofStandardKey: "product_system_review_standard"
+    };
+  }
+  if (proofReview) {
+    evidence.push("artifact judgment request detected");
+    const standard = mentionsLawUnit || legalAnswer ? "law_irac_standard" : "general_proof_standard";
+    const recommendedProofArtifact2 = requirement({
+      artifactType: standard === "law_irac_standard" ? "irac_paragraph" : "visible_artifact",
+      title: "Proof Review Submission",
+      action: "Submit the artifact for Court review with the exact standard it should be judged against.",
+      requiredArtifact: "One submitted artifact plus the standard it should be judged against.",
+      proofStandardKey: standard,
+      timeboxMinutes: 15
+    });
+    return {
+      domain: mentionsLawUnit || legalAnswer ? "law" : "general",
+      intent: "proof_review",
+      state: detectState(text, "proof_review"),
+      mode: "proof_review",
+      urgency,
+      evidence,
+      confidence: 0.86,
+      recommendedProofArtifact: recommendedProofArtifact2,
+      proofStandardKey: standard
+    };
+  }
+  if (sourceBank || mentionsLawUnit && has(text, /\b(authority|statute|case|source|matrix)\b/)) {
+    evidence.push("law source-bank preparation detected");
+    const recommendedProofArtifact2 = requirement({
+      artifactType: "source_bank_entries",
+      title: "Law Source Bank Entries",
+      action: buildTwoSourceBankProofTask(),
+      requiredArtifact: "Two completed source-bank entries with source, jurisdiction, authority level, current version check, key rule, unit relevance, assessment use, limitation, and confidence rating.",
+      proofStandardKey: "law_source_bank_standard",
+      timeboxMinutes: 35
+    });
+    return {
+      domain: "law_academic",
+      intent: "law_source_bank",
+      state: detectState(text, "law_source_bank"),
+      mode: "law_source_bank",
+      urgency,
+      evidence,
+      confidence: 0.94,
+      recommendedProofArtifact: recommendedProofArtifact2,
+      proofStandardKey: "law_source_bank_standard"
+    };
+  }
+  if (mentionsLawUnit && academicPlan || academicPlan && has(text, /\blaw\b/)) {
+    evidence.push("law academic mastery or proof-plan request detected");
+    const recommendedProofArtifact2 = requirement({
+      artifactType: "source_bank_entries",
+      title: "BLAW1003 + LAWS1004 Source Bank Start",
+      action: buildTwoSourceBankProofTask(),
+      requiredArtifact: "Two completed source-bank entries: one BLAW1003 authority and one LAWS1004 authority. Do not write IRAC before at least one authority exists.",
+      proofStandardKey: "law_source_bank_standard",
+      timeboxMinutes: 35
+    });
+    return {
+      domain: "law_academic",
+      intent: "academic_proof_plan",
+      state: detectState(text, "academic_proof_plan"),
+      mode: "academic_operating_system",
+      urgency,
+      evidence,
+      confidence: 0.95,
+      recommendedProofArtifact: recommendedProofArtifact2,
+      proofStandardKey: "academic_proof_plan_standard"
+    };
+  }
+  if (legalAnswer) {
+    evidence.push("legal reasoning or IRAC answer request detected");
+    const recommendedProofArtifact2 = requirement({
+      artifactType: "irac_paragraph",
+      title: "IRAC Paragraph",
+      action: "Write one IRAC paragraph with issue, rule, authority, application, conclusion, and one limitation if relevant.",
+      requiredArtifact: "One 200-400 word IRAC paragraph with issue, rule, authority, application, conclusion, and citation precision.",
+      proofStandardKey: "law_irac_standard",
+      timeboxMinutes: 30
+    });
+    return {
+      domain: "law",
+      intent: "legal_reasoning",
+      state: detectState(text, "legal_reasoning"),
+      mode: "law_reasoning",
+      urgency,
+      evidence,
+      confidence: 0.88,
+      recommendedProofArtifact: recommendedProofArtifact2,
+      proofStandardKey: "law_irac_standard"
+    };
+  }
+  if (executionLock) {
+    evidence.push("planning or avoidance pattern detected");
+    const recommendedProofArtifact2 = requirement({
+      artifactType: "visible_artifact",
+      title: "Execution Lock Artifact",
+      action: "Produce one visible artifact in 25 minutes. No second requirement until it exists.",
+      requiredArtifact: "One visible artifact with one evidence standard.",
+      proofStandardKey: "general_proof_standard",
+      timeboxMinutes: 25
+    });
+    return {
+      domain: "general",
+      intent: "execution_lock",
+      state: detectState(text, "execution_lock"),
+      mode: "execution_lock",
+      urgency,
+      evidence,
+      confidence: 0.82,
+      recommendedProofArtifact: recommendedProofArtifact2,
+      proofStandardKey: "general_proof_standard"
+    };
+  }
+  const isQuestion = text.endsWith("?") || has(text, /\b(what|why|how|when|which)\b/);
+  const recommendedProofArtifact = requirement({
+    artifactType: "visible_artifact",
+    title: "General Proof Artifact",
+    action: "Submit one concrete artifact that proves the action happened and names the next upgrade.",
+    requiredArtifact: "One visible artifact with applied detail, feedback awareness, and next upgrade.",
+    proofStandardKey: "general_proof_standard",
+    timeboxMinutes: 25
+  });
+  return {
+    domain: "general",
+    intent: isQuestion ? "question" : "diagnosis",
+    state: detectState(text, isQuestion ? "question" : "diagnosis"),
+    mode: isQuestion ? "direct_answer" : "diagnostic_coaching",
+    urgency,
+    evidence: evidence.length ? evidence : ["general prompt"],
+    confidence: isQuestion ? 0.62 : 0.58,
+    recommendedProofArtifact,
+    proofStandardKey: "general_proof_standard"
+  };
+}
+
+// src/lib/eblocki/proof-contract-alignment.ts
+function normalise2(value) {
+  return (value ?? "").toLowerCase().replace(/[_-]+/g, " ").trim();
+}
+function requiredArtifact(contract) {
+  return contract?.requiredArtifact ?? contract?.required_artifact ?? "";
+}
+function evidenceStandard(contract) {
+  return contract?.evidenceStandard ?? contract?.evidence_standard ?? "";
+}
+function artifactFamily(value) {
+  const text = normalise2(value);
+  if (!text) return "missing";
+  if (/source bank|authority|statute note|case note|issue matrix/.test(text)) return "source_bank_entries";
+  if (/irac|legal answer|problem answer|paragraph/.test(text)) return "irac_paragraph";
+  if (/product system|corrected logic|implementation path|acceptance test|router|ux/.test(text)) return "product_system_review";
+  if (/implementation|file changes|build|test result|commit|shipped/.test(text)) return "implementation_proof";
+  if (/study system|mastery plan|academic proof plan|weekly artifact/.test(text)) return "academic_proof_plan";
+  return "visible_artifact";
+}
+function hasTooManyRequirements(value) {
+  const text = normalise2(value);
+  const markers = ["source bank", "irac", "problem answer", "implementation", "reflection", "issue matrix"].filter((marker) => text.includes(marker));
+  return new Set(markers).size > 1 && /\band\b|\bthen\b|\bplus\b|,/.test(text);
+}
+function isVague(value) {
+  const text = normalise2(value);
+  return !text || text.length < 18 || /do the task|work on it|make progress|some proof|artifact required/.test(text);
+}
+function validateProofContractAlignment(input) {
+  const proofAction = input.proofAction ?? input.recommendedProofArtifact?.action ?? "";
+  const contractArtifact2 = requiredArtifact(input.proofContract);
+  const contractStandard = evidenceStandard(input.proofContract);
+  const recommended = input.recommendedProofArtifact;
+  const actionFamily = artifactFamily(proofAction || recommended?.requiredArtifact);
+  const contractFamily = artifactFamily(contractArtifact2);
+  const issues = [];
+  if (!proofAction.trim()) issues.push("proof_action_missing");
+  if (!contractStandard.trim()) issues.push("proof_standard_missing");
+  if (contractFamily === "missing") issues.push("proof_contract_missing");
+  if (actionFamily !== "missing" && contractFamily !== "missing" && actionFamily !== contractFamily) issues.push("mismatched_artifact_type");
+  if (hasTooManyRequirements(contractArtifact2)) issues.push("too_many_proof_requirements");
+  if (isVague(contractArtifact2)) issues.push("vague_proof_requirement");
+  const recommendedStandard = recommended?.proofStandardKey ?? input.proofStandardKey ?? "general_proof_standard";
+  if (input.proofStandardKey && recommended?.proofStandardKey && input.proofStandardKey !== recommended.proofStandardKey) {
+    if (recommended.artifactType !== "source_bank_entries") issues.push("domain_standard_mismatch");
+  }
+  const fallback = {
+    domain: input.domain ?? input.proofContract?.domain ?? "general",
+    title: recommended?.title ?? input.proofContract?.title ?? "One visible artifact",
+    requiredArtifact: recommended?.requiredArtifact ?? "One visible artifact with one evidence standard.",
+    evidenceStandard: recommended?.evidenceStandard ?? "visible artifact / applied detail / feedback awareness / next upgrade",
+    proofStandardKey: recommendedStandard
+  };
+  if (issues.length > 0) {
+    return {
+      aligned: false,
+      issues,
+      alignedContract: fallback
+    };
+  }
+  return {
+    aligned: true,
+    issues: [],
+    alignedContract: {
+      domain: input.proofContract?.domain ?? fallback.domain,
+      title: input.proofContract?.title ?? fallback.title,
+      requiredArtifact: contractArtifact2,
+      evidenceStandard: contractStandard,
+      proofStandardKey: recommendedStandard
+    }
+  };
+}
+
+// src/lib/eblocki/proof-contract.ts
+var SERIOUS_VERBS = [
+  "write",
+  "draft",
+  "study",
+  "produce",
+  "submit",
+  "build",
+  "practise",
+  "practice",
+  "reflect",
+  "revise",
+  "sell",
+  "train",
+  "complete",
+  "prepare",
+  "ship",
+  "read",
+  "analyse",
+  "analyze",
+  "argue",
+  "summarise",
+  "summarize",
+  "review",
+  "record",
+  "create"
+];
+function modeForRoute(routeMode, fallback) {
+  if (routeMode.includes("law")) return "LAW_MAX";
+  if (routeMode.includes("product") || routeMode.includes("academic")) return fallback === "GENERAL_EXECUTION" ? "EBLOCKI" : fallback;
+  return fallback;
+}
+function buildProofContract(input) {
+  const text = `${input.message}
+${input.assistantOutput}`.toLowerCase();
+  let seriousness = 0;
+  for (const v of SERIOUS_VERBS) {
+    if (new RegExp(`\\b${v}\\b`).test(text)) seriousness += 1;
+  }
+  if (/\b(today|tonight|tomorrow|by \d|deadline)\b/.test(text)) seriousness += 2;
+  if (/\b(exam|due|assessment|shift|match|mastery|source bank)\b/.test(text)) seriousness += 2;
+  seriousness = Math.max(1, Math.min(10, seriousness));
+  const route = routeCoachInput(input.message);
+  const alignment = validateProofContractAlignment({
+    proofAction: route.recommendedProofArtifact.action,
+    recommendedProofArtifact: route.recommendedProofArtifact,
+    proofContract: {
+      domain: route.domain,
+      title: route.recommendedProofArtifact.title,
+      requiredArtifact: route.recommendedProofArtifact.requiredArtifact,
+      evidenceStandard: route.recommendedProofArtifact.evidenceStandard
+    },
+    proofStandardKey: route.recommendedProofArtifact.proofStandardKey,
+    domain: route.domain
+  });
+  const aligned = alignment.alignedContract;
+  const firstLine = input.message.split("\n")[0].slice(0, 80) || aligned.title || "Next action";
+  return {
+    shouldCreate: seriousness >= 4 || ["academic_proof_plan", "law_source_bank", "product_system_review"].includes(route.intent),
+    domain: aligned.domain || MODE_DOMAINS[input.mode],
+    mode: modeForRoute(route.mode, input.mode),
+    title: route.recommendedProofArtifact.title || firstLine,
+    requiredArtifact: aligned.requiredArtifact,
+    evidenceStandard: aligned.evidenceStandard,
+    dueDate: null,
+    seriousnessScore: seriousness,
+    reason: seriousness >= 4 ? `Detected ${seriousness} action signals - proof contract enforced.` : "Route requires one artifact with one evidence standard."
+  };
+}
+var PROOF_QUESTION = "What proof artifact will confirm completion?";
+
+// src/lib/eblocki/proof-standard-preview.ts
+function clean2(value) {
+  return (value ?? "").trim();
+}
+function normalise3(value) {
+  return clean2(value).toLowerCase().replace(/[_-]+/g, " ");
+}
+function contractArtifact(contract) {
+  return contract?.requiredArtifact ?? contract?.required_artifact ?? "";
+}
+function inferArtifactType(input) {
+  const explicit = clean2(input.artifactType);
+  const contract = clean2(contractArtifact(input.proofContract));
+  return explicit || contract || "visible artifact";
+}
+function inferDomain(input) {
+  const domain = clean2(input.domain) || clean2(input.proofContract?.domain);
+  return domain || "general";
+}
+function identityRuleForStandard(key) {
+  switch (key) {
+    case "product_system_review_standard":
+      return {
+        allowed: false,
+        rule: "Strong proof can be accepted, but identity escalation is blocked until implementation or external test evidence exists."
+      };
+    case "eblocki_implementation_standard":
+      return {
+        allowed: true,
+        rule: "Identity escalation can be considered when implementation evidence and verification results are present."
+      };
+    case "law_source_bank_standard":
+      return {
+        allowed: false,
+        rule: "Source-bank proof can support academic progress, but identity escalation requires later applied use such as an issue matrix, paragraph, or problem answer."
+      };
+    case "academic_proof_plan_standard":
+      return {
+        allowed: false,
+        rule: "Planning proof is accepted as setup only. Identity escalation waits for the first visible academic artifact."
+      };
+    case "law_irac_standard":
+      return {
+        allowed: true,
+        rule: "Identity escalation can be considered when the answer uses authority, applies facts, and reaches a defensible conclusion."
+      };
+    default:
+      return {
+        allowed: false,
+        rule: "Identity escalation is blocked until the artifact is concrete, externally checkable, or implemented."
+      };
+  }
+}
+function stableArtifactHint(value) {
+  const text = normalise3(value);
+  if (text.includes("source bank") || text.includes("authority")) return "source-bank entries";
+  if (text.includes("irac") || text.includes("problem answer")) return "IRAC paragraph";
+  if (text.includes("product") || text.includes("router") || text.includes("logic")) return "product system review";
+  if (text.includes("implementation") || text.includes("test result")) return "implementation proof";
+  if (text.includes("academic") || text.includes("mastery") || text.includes("study")) return "academic proof plan";
+  return value || "visible artifact";
+}
+function buildProofStandardPreview(input = {}) {
+  const selectedDomain = inferDomain(input);
+  const artifactType = stableArtifactHint(inferArtifactType(input));
+  const selectionArtifact = [artifactType, contractArtifact(input.proofContract), input.proofAction].map((value) => clean2(value)).filter(Boolean).join(" ");
+  const standard = selectDomainStandard({
+    domain: selectedDomain,
+    intent: input.intent,
+    artifactType: selectionArtifact || artifactType,
+    signalText: input.signalText
+  });
+  const identity = identityRuleForStandard(standard.key);
+  if (!input.proofContract) {
+    return {
+      selectedDomain,
+      artifactType,
+      standardKey: standard.key,
+      standardLabel: standard.label,
+      requiredEvidence: standard.requiredEvidence,
+      missingStandard: standard.missingStandard,
+      eliteVersion: standard.eliteVersion,
+      nextUpgrade: standard.nextUpgrade,
+      identityEscalationAllowed: identity.allowed,
+      identityRule: identity.rule,
+      alignmentStatus: "no_contract",
+      alignmentMessage: "No linked Proof Contract. Court will judge one visible artifact against the selected standard.",
+      contractCompletedLabel: "No linked contract"
+    };
+  }
+  const alignment = validateProofContractAlignment({
+    proofAction: input.proofAction ?? contractArtifact(input.proofContract),
+    proofContract: input.proofContract,
+    proofStandardKey: standard.key,
+    domain: selectedDomain
+  });
+  return {
+    selectedDomain,
+    artifactType,
+    standardKey: standard.key,
+    standardLabel: standard.label,
+    requiredEvidence: standard.requiredEvidence,
+    missingStandard: standard.missingStandard,
+    eliteVersion: standard.eliteVersion,
+    nextUpgrade: standard.nextUpgrade,
+    identityEscalationAllowed: identity.allowed,
+    identityRule: identity.rule,
+    alignmentStatus: alignment.aligned ? "aligned" : "not_aligned",
+    alignmentMessage: alignment.aligned ? "Proof Action and Proof Contract require the same artifact type. Proof accepted only if the artifact matches the contract." : `Contract alignment failed: ${alignment.issues.join(", ")}. Use one visible artifact with one evidence standard.`,
+    contractCompletedLabel: alignment.aligned ? "Aligned contract" : "Fallback contract required"
+  };
+}
+
+// src/lib/eblocki/next-upgrade-extract.ts
+var NEXT_UPGRADE_MAX_CHARS = 280;
+function cap(value, max = NEXT_UPGRADE_MAX_CHARS) {
+  const trimmed = value.trim();
+  if (trimmed.length <= max) return trimmed;
+  return trimmed.slice(0, Math.max(0, max - 1)).trimEnd() + "\u2026";
+}
+function extractLine(text) {
+  if (!text) return "";
+  const re = /(?:^|\n)\s*(?:next\s+upgrade|next\s+required\s+proof)\s*[:-]\s*([^\n]+(?:\n(?!\s*(?:[a-z][a-z0-9 _-]{2,30}\s*:|$))[^\n]+)*)/i;
+  const m = text.match(re);
+  if (!m) return "";
+  return m[1].replace(/\s+/g, " ").trim();
+}
+function extractNextUpgrade(input) {
+  const raw = (input.nextUpgrade ?? "").trim();
+  if (raw) {
+    const embedded = extractLine(raw);
+    if (embedded) return cap(embedded);
+    return cap(raw);
+  }
+  const fromContent = extractLine(input.content ?? "");
+  if (fromContent) return cap(fromContent);
+  const fromReflection = extractLine(input.reflection ?? "");
+  if (fromReflection) return cap(fromReflection);
+  const fallback = (input.fallback ?? "").trim();
+  if (fallback) return cap(fallback);
+  return "Submit implementation or external test evidence.";
+}
+
+// src/lib/eblocki/proof-scoring.ts
+var DOMAIN_MARKERS = {
+  law: ["issue", "rule", "application", "conclusion", "authority", "statute", "case", "jurisdiction", "counterargument", "citation"],
+  law_academic: ["source", "jurisdiction", "authority", "current version", "key rule", "unit relevance", "assessment", "limitation", "confidence"],
+  psychology: ["concept", "application", "evidence", "evaluation", "study", "research", "mechanism", "cognition", "behaviour", "development"],
+  sales: ["customer", "objection", "gse", "warranty", "close", "premium", "pain", "diagnosis", "aov", "attachment"],
+  eblocki: ["state", "proof", "artifact", "avoidance", "bottleneck", "friction", "upgrade", "control", "identity"],
+  product: ["issue", "output", "screen", "corrected logic", "implementation", "test", "acceptance", "route", "standard", "upgrade"],
+  sport: ["movement", "training", "match", "goal", "pressing", "finishing", "drill", "positioning", "energy"],
+  brand: ["hook", "caption", "post", "script", "audience", "identity", "content", "publish", "original"],
+  career_money: ["cost", "risk", "income", "opportunity", "resume", "cover letter", "budget", "decision", "upside"],
+  general: ["proof", "reflection", "feedback", "upgrade", "action"]
+};
+function clampScore(score) {
+  return Math.max(1, Math.min(10, Math.round(score)));
+}
+function evidenceStrengthFromScore(score) {
+  if (score <= 3) return "weak";
+  if (score <= 6) return "moderate";
+  if (score <= 8) return "strong";
+  return "elite";
+}
+function countDomainMarkers(domain, text) {
+  const markers = DOMAIN_MARKERS[domain] ?? DOMAIN_MARKERS.general;
+  const lower3 = text.toLowerCase();
+  return markers.reduce((count, marker) => lower3.includes(marker.toLowerCase()) ? count + 1 : count, 0);
+}
+function hasImplementationProof(text) {
+  return /\b(file changes|logic implemented|tests added|build result|test result|commit|pull request|deployed|implemented)\b/i.test(text);
+}
+function scoreProofArtifact(input) {
+  const domain = String(input.domain || "general").toLowerCase();
+  const title = input.title?.trim() || "";
+  const artifactType = input.artifactType?.trim() || "";
+  const content = input.content?.trim() || "";
+  const reflection = input.reflection?.trim() || "";
+  const nextUpgrade = input.nextUpgrade?.trim() || "";
+  const signalText = [title, content, reflection].filter(Boolean).join("\n");
+  const standard = selectDomainStandard({ domain, artifactType, signalText });
+  const combined = [title, artifactType, content, reflection, nextUpgrade].filter(Boolean).join("\n");
+  const standardHits = standard.criteria.filter((criterion) => combined.toLowerCase().includes(criterion.split(" ")[0].toLowerCase())).length;
+  let score = 1;
+  if (title.length > 4) score += 1;
+  if (artifactType.length > 2) score += 1;
+  if (content.length >= 80) score += 1;
+  if (content.length >= 250) score += 1;
+  if (reflection.length >= 40) score += 1;
+  if (nextUpgrade.length >= 20) score += 1;
+  const markerCount = countDomainMarkers(domain, combined);
+  if (markerCount >= 2) score += 1;
+  if (markerCount >= 4) score += 1;
+  if (standardHits >= 3) score += 1;
+  const hasCorrectionLanguage = /\b(correct|improve|revise|upgrade|next time|weakness|feedback|mistake|fix|implementation|test)\b/i.test(combined);
+  if (hasCorrectionLanguage) score += 1;
+  let finalScore = clampScore(score);
+  const evidenceBody = [title, artifactType, content, reflection].filter(Boolean).join("\n");
+  const implementationProven = hasImplementationProof(evidenceBody);
+  if (standard.key === "product_system_review_standard" && !implementationProven) {
+    finalScore = Math.min(finalScore, 8);
+  }
+  if (standard.key === "general_proof_standard") {
+    const hasConcreteArtifact = content.length >= 250 && reflection.length >= 40 && /\b(shipped|completed|wrote|produced|published|submitted|recorded|delivered|built|drafted|ran|published|attached)\b/i.test(combined);
+    if (!hasConcreteArtifact) {
+      finalScore = Math.min(finalScore, 8);
+    }
+  }
+  const evidenceStrength = evidenceStrengthFromScore(finalScore);
+  let feedback = "";
+  let suggestedUpgrade = "";
+  if (evidenceStrength === "weak") {
+    feedback = `Weak evidence against ${standard.label}. The artifact is too vague or underdeveloped.`;
+    suggestedUpgrade = standard.missingStandard;
+  } else if (evidenceStrength === "moderate") {
+    feedback = `Moderate evidence against ${standard.label}. A concrete artifact exists, but standard coverage is still limited.`;
+    suggestedUpgrade = standard.nextUpgrade;
+  } else if (evidenceStrength === "strong") {
+    feedback = `Strong evidence against ${standard.label}. The artifact shows applied skill and feedback awareness.`;
+    suggestedUpgrade = standard.nextUpgrade;
+  } else {
+    feedback = `Elite evidence against ${standard.label}. The artifact includes action, application, feedback, and a clear upgrade path.`;
+    suggestedUpgrade = "Preserve this standard and repeat it across the next proof cycle.";
+  }
+  const resolvedNextUpgrade = extractNextUpgrade({
+    nextUpgrade,
+    content,
+    reflection,
+    fallback: suggestedUpgrade
+  });
+  return {
+    qualityScore: finalScore,
+    evidenceStrength,
+    feedback,
+    nextUpgrade: resolvedNextUpgrade
+  };
+}
+
+// src/lib/eblocki/fake-study-detector.ts
+var STUDY_VERDICT_COPY = {
+  weak: "You touched the material, but did not prove command of it. Upgrade required.",
+  useful: "This helps, but it is not strong evidence yet. Convert it into application.",
+  strong: "This is real study evidence. Store it and raise the next standard.",
+  elite: "This proves capability under pressure or correction. Identity evidence accepted."
+};
+var UPGRADE_BY_SIGNAL = {
+  weak_passive_reading: "Close the notes. Write 5 points from memory.",
+  weak_highlighting: "Close the book. Produce one paragraph from memory.",
+  weak_watching: "Turn the video into one exam-style answer without replaying it.",
+  weak_copying_notes: "Close the source. Write the same idea in your own words.",
+  weak_organisation: "Stop organising. Produce one subject artifact in the next 25 minutes.",
+  useful_flashcards: "Mark your missed cards and write the correction rule for each.",
+  useful_ai_explanation: "Apply this concept to a new scenario without re-asking the AI.",
+  useful_focus_timer: "Convert today's session into one assessable paragraph.",
+  useful_summary: "Turn the summary into one exam-style answer from memory.",
+  useful_short_quiz: "Mark the missed answers and write the correction rule.",
+  strong_irac: "Add one counterargument or limitation, then time the next attempt.",
+  strong_essay_plan: "Write the paragraph the plan implies. Then time the next attempt.",
+  strong_from_memory: "Repeat under a shorter time limit, then self-mark.",
+  strong_applied: "Add one counterargument or limitation.",
+  strong_practice_question: "Self-mark, store the mistake, and schedule a retrieval rep.",
+  strong_mistake_ledger: "Schedule a retrieval rep on this mistake within 48 hours.",
+  elite_timed_marked: "Repeat this under a shorter time limit.",
+  elite_feedback_rewrite: "Save before/after versions as identity evidence.",
+  fallback_action: "Convert this into one assessable paragraph or worked answer.",
+  fallback_none: "Close the notes. Write 5 points from memory."
+};
+var DEFAULT_UPGRADE = {
+  weak: "Close the notes. Write 5 points from memory.",
+  useful: "Apply this concept to a new scenario.",
+  strong: "Add one counterargument or limitation.",
+  elite: "Save before/after versions as identity evidence."
+};
+var REASON_BY_SIGNAL = {
+  elite_timed_marked: "Timed output that was marked or self-marked.",
+  elite_feedback_rewrite: "Output improved after feedback or rewrite.",
+  strong_irac: "Structured legal answer (IRAC).",
+  strong_essay_plan: "Essay plan with thesis and evidence logic.",
+  strong_from_memory: "Output produced from memory without notes.",
+  strong_applied: "Concept applied to a new scenario or case.",
+  strong_practice_question: "Practice question attempted.",
+  strong_mistake_ledger: "Mistake captured for correction.",
+  useful_flashcards: "Active recall via flashcards.",
+  useful_ai_explanation: "AI-assisted explanation logged.",
+  useful_focus_timer: "Focus-timer session with some output.",
+  useful_summary: "Summary written in own words.",
+  useful_short_quiz: "Short quiz attempted.",
+  weak_passive_reading: "Passive reading of slides or chapter.",
+  weak_highlighting: "Highlighting without producing output.",
+  weak_watching: "Watching a video or recording passively.",
+  weak_copying_notes: "Copying notes without converting them.",
+  weak_organisation: "Organising notes, dashboards or timetables without subject output.",
+  fallback_action: "Action verb detected but no study-activity signal.",
+  fallback_none: "No assessable study activity detected."
+};
+var ELITE_PATTERNS = [
+  // Timed AND (marked|self-marked|corrected). "closed-book timed" also counts.
+  {
+    signal: "elite_timed_marked",
+    re: /\b(closed[\s-]?book\s+(timed|test|answer)|timed[^.]{0,40}(self[\s-]?mark|marked|corrected)|(self[\s-]?mark|marked|corrected)[^.]{0,40}timed)\b/i
+  },
+  {
+    signal: "elite_feedback_rewrite",
+    re: /\b(rewrote|rewrite|redrafted)\b[^.]{0,60}\b(feedback|correction|marker|tutor|rubric)\b|\b(feedback|correction)\b[^.]{0,60}\b(rewrite|rewrote|redraft)\b/i
+  }
+];
+var STRONG_PATTERNS = [
+  { signal: "strong_irac", re: /\birac\b/i },
+  { signal: "strong_essay_plan", re: /\b(essay plan|thesis[^.]{0,40}(evidence|paragraph)|paragraph logic)\b/i },
+  { signal: "strong_from_memory", re: /\b(from memory|without (the )?notes|closed[\s-]?book)\b/i },
+  { signal: "strong_practice_question", re: /\b(practice question|past paper|exam (answer|question)|timed (answer|question|practice))\b/i },
+  { signal: "strong_mistake_ledger", re: /\bmistake ledger\b/i },
+  { signal: "strong_applied", re: /\bapplied\b[^.]{0,40}\bto\b|\b(taught (myself|aloud|it back)|explained (it )?aloud)\b/i }
+];
+var USEFUL_PATTERNS = [
+  { signal: "useful_flashcards", re: /\b(flashcard|flash card|quizlet|anki)\b/i },
+  { signal: "useful_ai_explanation", re: /\b(asked (the )?(ai|chatgpt|gpt|claude)|chatgpt explain|ai explanation)\b/i },
+  { signal: "useful_focus_timer", re: /\b(pomodoro|focus timer|focus session)\b/i },
+  { signal: "useful_summary", re: /\b(summari[sz]ed?|summary in (my )?own words|in my own words)\b/i },
+  { signal: "useful_short_quiz", re: /\b(short quiz|quick quiz|recall (session|test|round))\b/i }
+];
+var WEAK_PATTERNS = [
+  { signal: "weak_passive_reading", re: /\b(re[\s-]?read|reread|read (over |through )?(the )?(slides|chapter|textbook|notes|book))\b/i },
+  { signal: "weak_highlighting", re: /\bhighlight(ing|ed)?\b/i },
+  { signal: "weak_watching", re: /\bwatch(ed|ing)?\s+(a |the )?(video|lecture|recording|explanation|playlist)\b/i },
+  { signal: "weak_copying_notes", re: /\bcop(y|ied|ying) (out |down )?(the )?notes\b/i },
+  { signal: "weak_organisation", re: /\b(made|built|created)\b[^.\n]{0,40}\b(dashboard|timetable|schedule|study plan|notion)\b|\borgani[sz]ed (my )?notes\b/i }
+];
+var FALLBACK_ACTION_RE = /\b(wrote|completed|produced|shipped|submitted|published|delivered)\b/i;
+function tierVerdict(signal) {
+  if (signal.startsWith("elite")) return "elite";
+  if (signal.startsWith("strong")) return "strong";
+  if (signal.startsWith("useful")) return "useful";
+  if (signal === "fallback_action") return "useful";
+  return "weak";
+}
+function firstMatch(text, patterns) {
+  for (const { signal, re } of patterns) {
+    if (re.test(text)) return signal;
+  }
+  return null;
+}
+function classifyStudyActivity(input) {
+  const content = (input?.content ?? "").toString();
+  const title = (input?.title ?? "").toString();
+  const artifactType = (input?.artifactType ?? "").toString();
+  const combined = [title, artifactType, content].filter(Boolean).join("\n");
+  let signal = null;
+  if (combined.trim().length > 0) {
+    signal = firstMatch(combined, ELITE_PATTERNS) ?? firstMatch(combined, STRONG_PATTERNS) ?? firstMatch(combined, USEFUL_PATTERNS) ?? firstMatch(combined, WEAK_PATTERNS);
+    if (!signal) {
+      if (content.length >= 250 && FALLBACK_ACTION_RE.test(combined)) {
+        signal = "fallback_action";
+      } else {
+        signal = "fallback_none";
+      }
+    }
+  } else {
+    signal = "fallback_none";
+  }
+  const verdict = tierVerdict(signal);
+  const upgradeCommand = UPGRADE_BY_SIGNAL[signal] ?? DEFAULT_UPGRADE[verdict];
+  const reason = REASON_BY_SIGNAL[signal];
+  return {
+    verdict,
+    reason,
+    verdictCopy: STUDY_VERDICT_COPY[verdict],
+    upgradeCommand,
+    matchedSignal: signal
+  };
+}
+
+// src/lib/eblocki/proof-check.ts
+var READ_ONLY_NOTICE = "Read-only proof analysis on pasted text only. No account access, saved history, or write actions.";
+var LIMITATIONS = [
+  "Judges only the text supplied in this request.",
+  "Does not verify external truth, files, links, screenshots, or live systems.",
+  "Does not access Supabase, saved account history, dashboard state, or prior sessions.",
+  "Returns rubric-based evidence judgment only, not a factual certification of completion."
+];
+var SENSITIVE_PATTERNS = [
+  { reason: "password", pattern: /\bpassword\s*[:=]/i },
+  { reason: "api_key", pattern: /\b(api[_ -]?key|secret key)\s*[:=]/i },
+  { reason: "access_token", pattern: /\b(access token|bearer token|refresh token)\s*[:=]/i },
+  { reason: "private_key", pattern: /-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----/i },
+  { reason: "credit_card", pattern: /\b(?:\d[ -]*?){13,19}\b/ },
+  { reason: "ssn", pattern: /\b\d{3}-\d{2}-\d{4}\b/ },
+  { reason: "government_id", pattern: /\b(passport number|driver'?s license|driver licence|national id|tax file number|tfn)\b/i },
+  { reason: "health_data", pattern: /\b(medicare number|health insurance number|medical record number)\b/i }
+];
+var ANALYSIS_BLOCK_PATTERNS = [
+  { reason: "ignore_rules", pattern: /\b(ignore|bypass|override)\b[^.\n]{0,40}\b(rule|rules|policy|policies|instruction|instructions|safety)\b/i },
+  { reason: "invent_evidence", pattern: /\b(invent|fabricate|make up|fake)\b[^.\n]{0,50}\b(evidence|proof|artifact|citation|result)\b/i },
+  { reason: "force_completion_claim", pattern: /\b(tell me|say|claim)\b[^.\n]{0,40}\b(i'?m|i am|we are)\b[^.\n]{0,20}\b(done|finished|completed)\b/i },
+  { reason: "saved_account_data_request", pattern: /\b(use|check|read|pull)\b[^.\n]{0,50}\b(saved|stored|account|dashboard|history|supabase|user data)\b/i },
+  { reason: "write_action_request", pattern: /\b(save|write|sync|store|push|update|send)\b[^.\n]{0,50}\b(dashboard|account|supabase|history|result|verdict)\b/i }
+];
+var CLAIM_SPLIT_RE = /[\n.!?]+/;
+var STOP_WORDS = /* @__PURE__ */ new Set([
+  "a",
+  "an",
+  "and",
+  "the",
+  "to",
+  "of",
+  "or",
+  "with",
+  "for",
+  "in",
+  "on",
+  "by",
+  "where",
+  "when",
+  "from"
+]);
+var EVIDENCE_HINTS = {
+  law_irac_standard: {
+    "issue identified": ["issue"],
+    "rule stated accurately": ["rule", "legal rule"],
+    "authority used": ["authority", "case", "statute", "section", "citation"],
+    "application to facts": ["application", "facts", "applied"],
+    conclusion: ["conclusion", "therefore"],
+    "counterargument or limitation where relevant": ["counterargument", "however", "limitation", "alternative"],
+    "citation precision": ["citation", "section", "v"]
+  },
+  law_source_bank_standard: {
+    "source name": ["source", "case", "statute"],
+    jurisdiction: ["jurisdiction"],
+    "authority level": ["authority level", "binding", "persuasive"],
+    "current version checked": ["current version", "access checked", "updated"],
+    "key provision/material": ["provision", "material"],
+    "key rule": ["key rule", "rule"],
+    "unit relevance": ["relevance", "unit"],
+    "assessment use": ["assessment", "use"],
+    "limitation/counterargument": ["limitation", "counterargument"],
+    "confidence rating": ["confidence"]
+  },
+  academic_proof_plan_standard: {
+    "unit objective clear": ["objective", "goal"],
+    "weekly artifact system": ["weekly", "artifact"],
+    "authoritative source strategy": ["source strategy", "authority"],
+    "proof cadence": ["cadence", "schedule", "every week"],
+    "feedback loop": ["feedback"],
+    "assessment relevance": ["assessment", "exam"],
+    "first executable artifact": ["first artifact", "next artifact"]
+  },
+  product_system_review_standard: {
+    "specific product issue identified": ["issue", "bug", "wrong"],
+    "evidence from actual output/screen": ["screen", "output", "actual"],
+    "corrected logic proposed": ["corrected logic", "should", "instead"],
+    "implementation path stated": ["implementation", "path", "change"],
+    "measurable test or acceptance criterion": ["test", "acceptance", "verify"],
+    "next upgrade defined": ["next", "upgrade"]
+  },
+  eblocki_implementation_standard: {
+    "file changes made": ["file", "changed"],
+    "logic implemented": ["implemented", "logic"],
+    "UI updated where relevant": ["ui", "screen"],
+    "tests added": ["test", "spec"],
+    "build/test result shown": ["build", "passed", "result"],
+    "no new lint debt in touched files": ["lint"],
+    "user-facing behaviour improved": ["user-facing", "behaviour", "behavior"]
+  },
+  general_proof_standard: {
+    "visible artifact": ["artifact", "draft", "submission", "recording", "output"],
+    "applied detail": ["applied", "specific", "details"],
+    "feedback awareness": ["feedback", "mistake", "improve"],
+    "next upgrade": ["next", "upgrade"]
+  }
+};
+function clean3(value) {
+  return (value ?? "").trim();
+}
+function lower2(value) {
+  return clean3(value).toLowerCase();
+}
+function clipList(values, limit = 3) {
+  return values.filter(Boolean).slice(0, limit);
+}
+function splitClaims(text) {
+  return text.split(CLAIM_SPLIT_RE).map((part) => clean3(part)).filter(Boolean);
+}
+function tokenise(value) {
+  return lower2(value).split(/[^a-z0-9]+/).filter((token) => token && !STOP_WORDS.has(token));
+}
+function findEvidenceHints(standard, evidence) {
+  return EVIDENCE_HINTS[standard.key]?.[evidence] ?? tokenise(evidence).slice(0, 3);
+}
+function hasAny2(text, patterns) {
+  return patterns.some((pattern) => text.includes(pattern.toLowerCase()));
+}
+function detectMissingEvidence(standard, artifactText) {
+  const lowerArtifact = lower2(artifactText);
+  return standard.requiredEvidence.filter((evidence) => {
+    const hints = findEvidenceHints(standard, evidence);
+    return !hasAny2(lowerArtifact, hints);
+  });
+}
+function detectWeakClaims(artifactText) {
+  return clipList(
+    splitClaims(artifactText).filter((claim) => {
+      const text = lower2(claim);
+      return text.length < 60 && /\b(plan|should|might|want|need to|going to|try to)\b/.test(text);
+    })
+  );
+}
+function detectUnsupportedClaims(artifactText) {
+  return clipList(
+    splitClaims(artifactText).filter((claim) => {
+      const text = lower2(claim);
+      const claimsCompletion = /\b(done|completed|fixed|proved|implemented|mastered|finished|solved|deployed)\b/.test(text);
+      const hasEvidenceMarker = /\b(file|test|result|screenshot|screen|attached|because|evidence|artifact|submitted|published|recorded|built)\b/.test(text);
+      return claimsCompletion && !hasEvidenceMarker;
+    })
+  );
+}
+function resolveRisk(params) {
+  let score = 0;
+  if (params.strength === "weak") score += 2;
+  else if (params.strength === "moderate") score += 1;
+  if (params.studyVerdict === "weak") score += 2;
+  else if (params.studyVerdict === "useful") score += 1;
+  if (params.unsupportedClaims.length > 0) score += 2;
+  if (params.weakClaims.length > 0) score += 1;
+  if (params.routeIntent === "execution_lock") score += 1;
+  if (score >= 5) return "high";
+  if (score >= 3) return "medium";
+  return "low";
+}
+function standardForInput(input, fallbackKey) {
+  if (input.selectedStandard) return getDomainStandard(input.selectedStandard);
+  return getDomainStandard(fallbackKey);
+}
+function modeForDomain(domain) {
+  switch (domain) {
+    case "law":
+    case "law_academic":
+      return "LAW_MAX";
+    case "psychology":
+      return "PSYCH_HD";
+    case "sales":
+      return "SALES_CLOSE";
+    case "sport":
+      return "SPORT";
+    case "brand":
+      return "BRAND";
+    case "product":
+    case "eblocki":
+      return "EBLOCKI";
+    case "career_money":
+    case "finance":
+      return "CAREER_MONEY";
+    default:
+      return "GENERAL_EXECUTION";
+  }
+}
+function buildInputSignal(input) {
+  return [clean3(input.goal), clean3(input.domainHint), clean3(input.artifactText)].filter(Boolean).join("\n");
+}
+function isEmptyArtifact(text) {
+  return clean3(text).length === 0;
+}
+function checkSensitiveData(text) {
+  const reasons = SENSITIVE_PATTERNS.filter(({ pattern }) => pattern.test(text)).map(({ reason }) => reason);
+  return {
+    blocked: reasons.length > 0,
+    reasons
+  };
+}
+function checkAnalysisSafety(input) {
+  const combined = buildInputSignal(input);
+  const reasons = [];
+  if (isEmptyArtifact(input.artifactText)) {
+    reasons.push("empty_artifact");
+  }
+  reasons.push(
+    ...ANALYSIS_BLOCK_PATTERNS.filter(({ pattern }) => pattern.test(combined)).map(({ reason }) => reason)
+  );
+  reasons.push(...checkSensitiveData(combined).reasons);
+  return {
+    blocked: reasons.length > 0,
+    reasons: [...new Set(reasons)]
+  };
+}
+function getProofStandardLookup(input) {
+  const signalText = [clean3(input.goal), clean3(input.domainHint)].filter(Boolean).join("\n");
+  const route = routeCoachInput(signalText || "proof artifact");
+  const preview = buildProofStandardPreview({
+    domain: input.domainHint || route.domain,
+    intent: route.intent,
+    artifactType: route.recommendedProofArtifact.artifactType,
+    proofAction: route.recommendedProofArtifact.action,
+    signalText
+  });
+  const standard = input.selectedStandard ? getDomainStandard(input.selectedStandard) : getDomainStandard(preview.standardKey);
+  return {
+    standardKey: standard.key,
+    standardLabel: standard.label,
+    requiredEvidence: standard.requiredEvidence,
+    missingStandard: standard.missingStandard,
+    eliteVersion: standard.eliteVersion,
+    nextUpgrade: standard.nextUpgrade
+  };
+}
+function runProofCheck(input) {
+  const artifactText = clean3(input.artifactText);
+  const signalText = buildInputSignal(input);
+  const route = routeCoachInput(signalText || artifactText || "proof artifact");
+  const preview = buildProofStandardPreview({
+    domain: input.domainHint || route.domain,
+    intent: route.intent,
+    artifactType: route.recommendedProofArtifact.artifactType,
+    proofAction: route.recommendedProofArtifact.action,
+    signalText
+  });
+  const standard = standardForInput(input, preview.standardKey);
+  const scoring = scoreProofArtifact({
+    domain: input.domainHint || route.domain,
+    title: clean3(input.goal) || route.recommendedProofArtifact.title,
+    artifactType: route.recommendedProofArtifact.artifactType,
+    content: artifactText,
+    reflection: "",
+    nextUpgrade: ""
+  });
+  const study = classifyStudyActivity({
+    title: clean3(input.goal),
+    artifactType: route.recommendedProofArtifact.artifactType,
+    content: artifactText
+  });
+  const missingEvidence = detectMissingEvidence(standard, artifactText);
+  const weakClaims = detectWeakClaims(artifactText);
+  const unsupportedClaims = detectUnsupportedClaims(artifactText);
+  const selfDeceptionRisk = resolveRisk({
+    strength: scoring.evidenceStrength,
+    unsupportedClaims,
+    weakClaims,
+    studyVerdict: study.verdict,
+    routeIntent: route.intent
+  });
+  const proofContract = buildProofContract({
+    message: signalText || artifactText || "proof artifact",
+    assistantOutput: route.recommendedProofArtifact.action,
+    mode: modeForDomain(route.domain)
+  });
+  const reasoningParts = [
+    scoring.feedback,
+    missingEvidence.length ? `Missing evidence: ${missingEvidence.join(", ")}.` : `Required evidence is visible for ${standard.label}.`,
+    `Study verdict: ${study.verdict}. ${study.reason}`
+  ];
+  return {
+    verdict: scoring.evidenceStrength,
+    score: scoring.qualityScore,
+    selectedStandard: standard.key,
+    standardLabel: standard.label,
+    reasoningSummary: reasoningParts.join(" "),
+    selfDeceptionRisk,
+    limitations: LIMITATIONS,
+    missingEvidence,
+    weakClaims,
+    unsupportedClaims,
+    minimumNextArtifact: proofContract.requiredArtifact || route.recommendedProofArtifact.requiredArtifact,
+    nextCommand: study.upgradeCommand || scoring.nextUpgrade || route.recommendedProofArtifact.action,
+    recommendedArtifactType: route.recommendedProofArtifact.artifactType,
+    proofQuestion: PROOF_QUESTION,
+    modeWarning: route.intent === "product_system_review" ? "Judge product behaviour by output evidence, corrected logic, implementation path, and a measurable test." : route.intent === "execution_lock" ? "Planning does not count as proof. Produce one visible artifact first." : "",
+    readOnlyNotice: READ_ONLY_NOTICE
+  };
+}
+function buildRefusalPayload(input) {
+  const check = checkAnalysisSafety(input);
+  return {
+    refused: true,
+    reasons: check.reasons,
+    message: "This proof check can only judge non-sensitive pasted artifact text. It will not ignore rules, invent evidence, claim saved account access, or write/sync anything. Remove sensitive data and retry with a minimal artifact summary of the artifact itself.",
+    limitations: LIMITATIONS,
+    readOnlyNotice: READ_ONLY_NOTICE
+  };
+}
+
+// src/lib/mcp/tools/check-proof-artifact.ts
+var check_proof_artifact_default = defineTool({
+  name: "check_proof_artifact",
+  title: "Check proof artifact",
+  description: "Judge pasted proof artifact text against Eblocki's rubric. Read-only. Does not access account data or verify external facts.",
+  inputSchema: {
+    artifact_text: z.string().min(1).describe("Pasted artifact text only. No files, links, or secrets."),
+    goal: z.string().optional().describe("Optional claimed goal or completion statement."),
+    domain_hint: z.string().optional().describe("Optional domain hint such as law, product, psychology, or general.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: ({ artifact_text, goal, domain_hint }) => {
+    const safety = { artifactText: artifact_text, goal, domainHint: domain_hint };
+    if (checkAnalysisSafety(safety).blocked) {
+      const refusal = buildRefusalPayload(safety);
+      return {
+        content: [{ type: "text", text: JSON.stringify(refusal) }],
+        structuredContent: refusal,
+        isError: true
+      };
+    }
+    const result = runProofCheck({
+      artifactText: artifact_text,
+      goal,
+      domainHint: domain_hint
+    });
+    const payload = {
+      verdict: result.verdict,
+      score: result.score,
+      selected_standard: result.selectedStandard,
+      standard_label: result.standardLabel,
+      reasoning_summary: result.reasoningSummary,
+      self_deception_risk: result.selfDeceptionRisk,
+      limitations: result.limitations,
+      read_only_notice: result.readOnlyNotice
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(payload) }],
+      structuredContent: payload
+    };
+  }
+});
+
+// src/lib/mcp/tools/get-proof-standard.ts
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z2 } from "npm:zod@^3.25.76";
+var get_proof_standard_default = defineTool2({
+  name: "get_proof_standard",
+  title: "Get proof standard",
+  description: "Return Eblocki's rubric for a given goal/domain. Read-only. Does not access account data or persist anything.",
+  inputSchema: {
+    goal: z2.string().optional().describe("Optional task or goal description."),
+    domain_hint: z2.string().optional().describe("Optional domain hint such as law, product, psychology, or general.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: ({ goal, domain_hint }) => {
+    const result = getProofStandardLookup({ goal, domainHint: domain_hint });
+    const payload = {
+      standard_key: result.standardKey,
+      standard_label: result.standardLabel,
+      required_evidence: result.requiredEvidence,
+      missing_standard: result.missingStandard,
+      elite_version: result.eliteVersion,
+      next_upgrade: result.nextUpgrade
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(payload) }],
+      structuredContent: payload
+    };
+  }
+});
+
+// src/lib/mcp/tools/suggest-next-command.ts
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z3 } from "npm:zod@^3.25.76";
+var suggest_next_command_default = defineTool3({
+  name: "suggest_next_command",
+  title: "Suggest next command",
+  description: "Return the next Eblocki proof command from supplied artifact text. Read-only. Does not access account history or write results.",
+  inputSchema: {
+    artifact_text: z3.string().min(1).describe("Pasted artifact text only."),
+    goal: z3.string().optional().describe("Optional goal or claimed completion statement."),
+    domain_hint: z3.string().optional().describe("Optional domain hint.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: ({ artifact_text, goal, domain_hint }) => {
+    const safety = { artifactText: artifact_text, goal, domainHint: domain_hint };
+    if (checkAnalysisSafety(safety).blocked) {
+      const refusal = buildRefusalPayload(safety);
+      return {
+        content: [{ type: "text", text: JSON.stringify(refusal) }],
+        structuredContent: refusal,
+        isError: true
+      };
+    }
+    const result = runProofCheck({
+      artifactText: artifact_text,
+      goal,
+      domainHint: domain_hint
+    });
+    const payload = {
+      next_command: result.nextCommand,
+      recommended_artifact_type: result.recommendedArtifactType,
+      proof_question: result.proofQuestion,
+      mode_warning: result.modeWarning,
+      read_only_notice: result.readOnlyNotice
+    };
+    return {
+      content: [{ type: "text", text: JSON.stringify(payload) }],
+      structuredContent: payload
+    };
+  }
+});
+
+// src/lib/mcp/index.ts
+var mcp_default = defineMcp({
+  name: "eblocki-mcp",
+  title: "Eblocki",
+  version: "0.1.0",
+  instructions: "Eblocki proof tools. Read-only. Judge pasted artifact text against Eblocki's evidence rubric; return proof standards and next commands. Never implies external verification, saved account access, or write actions.",
+  tools: [check_proof_artifact_default, get_proof_standard_default, suggest_next_command_default]
+});
+
 // lovable-mcp-supabase-entry.ts
-import mcp from "npm:C:\\Users\\trist\\Desktop\\eblocki\\www.eblocki.space.snapdragon\\src\\lib\\mcp\\index.ts";
 import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.20.0/stacks/supabase";
-Deno.serve(createSupabaseHandler(mcp, { functionName: "mcp" }));
+Deno.serve(createSupabaseHandler(mcp_default, { functionName: "mcp" }));

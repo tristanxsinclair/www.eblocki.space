@@ -47,6 +47,8 @@ import {
 } from "@/lib/eblocki/dashboard-view-model";
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
+import { buildProofEntryHref } from "@/lib/eblocki/first-proof";
+import { isSameLocalDay, localDayKey } from "@/lib/eblocki/local-day";
 import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 import { ProofClosureCard } from "@/components/eblocki/ProofClosureCard";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
@@ -81,7 +83,7 @@ export default function Dashboard() {
   const [queryFailed, setQueryFailed] = useState(false);
   const [dashboardLoaded, setDashboardLoaded] = useState(false);
 
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = localDayKey();
   const artifactDates = useMemo(
     () => allArtifacts.map((artifact) => artifact.created_at).filter((value): value is string => !!value),
     [allArtifacts],
@@ -91,7 +93,7 @@ export default function Dashboard() {
     [allArtifacts, todayISO],
   );
   const todayArtifact = useMemo(
-    () => allArtifacts.find((artifact) => artifact.created_at?.slice(0, 10) === todayISO) ?? null,
+    () => allArtifacts.find((artifact) => isSameLocalDay(artifact.created_at, todayISO)) ?? null,
     [allArtifacts, todayISO],
   );
 
@@ -162,8 +164,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user || allArtifacts.length === 0) return;
-    const latestCreatedAt = allArtifacts[0]?.created_at?.slice(0, 10);
-    if (!latestCreatedAt || latestCreatedAt === todayISO) return;
+    const latestCreatedAt = allArtifacts[0]?.created_at;
+    if (!latestCreatedAt || isSameLocalDay(latestCreatedAt, todayISO)) return;
     void logEvent("activation_day_2_return_seen", {
       route: "/dashboard",
       source: "today",
@@ -202,6 +204,11 @@ export default function Dashboard() {
     temporalResult,
     queryFailed,
   }), [today, pending, recent, allArtifacts, recentCoach, activeDomains.length, temporalResult, queryFailed]);
+  const hasProofToday = view.evidenceSummary.proofsTodayCount > 0;
+  const submitProofHref = buildProofEntryHref({
+    firstProof: allArtifacts.length === 0,
+    uglyStart: !hasProofToday,
+  });
 
   const handleCheckIn = () => {
     if (!quick.trim()) return;
@@ -237,8 +244,8 @@ export default function Dashboard() {
           </div>
           {!isMobile && (
             <div className="flex gap-2 flex-wrap">
-              <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit proof</Button></Link>
-              {allArtifacts.length > 0 && (
+              <Link to={submitProofHref}><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit proof</Button></Link>
+              {hasProofToday && allArtifacts.length > 0 && (
                 <>
                   <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
                   <Link to="/start-today?plan=1"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Plan</Button></Link>
@@ -306,14 +313,14 @@ export default function Dashboard() {
               Eblocki will tell you what counted, what was weak, and what to do next.
             </p>
             <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
-              <Link to="/proof?first=1" className="w-full sm:w-auto">
+              <Link to={submitProofHref} className="w-full sm:w-auto">
                 <Button
                   size="sm"
                   className="w-full sm:w-auto"
                   onClick={() => {
                     void logEvent("activation_landing_primary_cta_clicked", {
                       route: "/dashboard",
-                      destination: "/proof?first=1",
+                      destination: submitProofHref,
                       ctaName: "dashboard_submit_first_proof",
                     });
                   }}

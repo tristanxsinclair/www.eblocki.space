@@ -1,7 +1,7 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageSquare, Gavel, Settings, LogOut, Crosshair, Sparkles, Hexagon, Swords } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Gavel, Settings, LogOut, Crosshair, Sparkles, Hexagon, Swords, Hammer } from "lucide-react";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 import { LevelUpListener } from "./LevelUpListener";
 import { MobileBottomNav } from "./MobileBottomNav";
@@ -10,6 +10,7 @@ const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/start-today", label: "Start Today", icon: Sparkles },
   { to: "/proof", label: "Proof", icon: Gavel },
+  { to: "/systems", label: "Systems", icon: Hammer },
   { to: "/coach", label: "Coach", icon: MessageSquare },
   { to: "/gameforge", label: "GameForge", icon: Swords },
   { to: "/operator", label: "Operator", icon: Hexagon },

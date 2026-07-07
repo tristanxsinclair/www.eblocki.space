@@ -12,6 +12,8 @@
 
 export const FIRST_PROOF_QUERY_KEY = "first";
 export const FIRST_PROOF_QUERY_VALUE = "1";
+export const UGLY_START_QUERY_KEY = "ugly";
+export const UGLY_START_QUERY_VALUE = "1";
 
 export const FIRST_PROOF_COPY = {
   title: "Submit your first proof.",
@@ -20,6 +22,12 @@ export const FIRST_PROOF_COPY = {
   helperHeader: "What counts as proof?",
   successTitle: "First proof submitted.",
   successCta: "See my next step",
+} as const;
+
+export const UGLY_START_COPY = {
+  title: "Avoidance detected. Start ugly. Quality comes after existence.",
+  subtitle: "2-minute start. One rough sentence or artifact counts. Quality is not judged until artifact exists.",
+  support: "One artifact. One standard. One verdict.",
 } as const;
 
 export interface FirstProofExample {
@@ -89,4 +97,25 @@ export function isFirstProofMode(
 ): boolean {
   if (!params) return false;
   return params.get(FIRST_PROOF_QUERY_KEY) === FIRST_PROOF_QUERY_VALUE;
+}
+
+export function isUglyStartMode(
+  params: { get: (key: string) => string | null } | URLSearchParams | null | undefined,
+): boolean {
+  if (!params) return false;
+  return params.get(UGLY_START_QUERY_KEY) === UGLY_START_QUERY_VALUE;
+}
+
+export function buildProofEntryHref({
+  firstProof = false,
+  uglyStart = false,
+}: {
+  firstProof?: boolean;
+  uglyStart?: boolean;
+} = {}): string {
+  const params = new URLSearchParams();
+  if (firstProof) params.set(FIRST_PROOF_QUERY_KEY, FIRST_PROOF_QUERY_VALUE);
+  if (uglyStart) params.set(UGLY_START_QUERY_KEY, UGLY_START_QUERY_VALUE);
+  const query = params.toString();
+  return query ? `/proof?${query}` : "/proof";
 }

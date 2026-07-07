@@ -13,6 +13,8 @@ import { ModeBadge } from "@/components/eblocki/Badges";
 import { calculateModeProgress } from "@/lib/eblocki/mode-progress";
 import { TRISTAN_DEFAULT_MODES, GENERAL_DEFAULT_MODES, type EblockiDefaultMode } from "@/lib/eblocki/default-modes";
 import type { UserMode } from "@/lib/eblocki/modes";
+import { humaniseModeId } from "@/lib/eblocki/display-labels";
+import { isEvidenceStrength } from "@/lib/eblocki/verdict-identity-impact";
 import { toast } from "sonner";
 import { ArrowLeft, BookOpen, ClipboardList, Gavel, MessageSquare, Scale, Sparkles } from "lucide-react";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
@@ -21,16 +23,6 @@ import { Seo } from "@/components/Seo";
 type ProofArtifactRow = Tables<"proof_artifacts">;
 type ProofCommitmentRow = Tables<"proof_commitments">;
 type CoachInteractionRow = Tables<"coach_interactions">;
-
-function humaniseModeId(value: string | null | undefined): string {
-  if (!value) return "General Execution";
-  return value
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
 
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) return error.message;
@@ -215,7 +207,9 @@ export default function ModeDetail() {
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <ModeBadge mode={mode.mode_id} />
-              <span className="text-sm text-muted-foreground">{humaniseModeId(mode.mode_id)}</span>
+              <span className="text-sm text-muted-foreground">
+                {humaniseModeId(mode.mode_id, mode.display_name)}
+              </span>
               <span className={`font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm border ${isActiveMode ? "border-primary/40 text-primary" : "border-border text-muted-foreground"}`}>
                 {isActiveMode ? "Active" : "Inactive"}
               </span>
@@ -329,7 +323,9 @@ export default function ModeDetail() {
                             {a.artifact_type ?? "artifact"} · {a.created_at?.slice(0, 10)}
                           </div>
                         </div>
-                        {a.evidence_strength && <EvidenceStrengthBadge strength={a.evidence_strength} score={a.quality_score} />}
+                        {isEvidenceStrength(a.evidence_strength) && (
+                          <EvidenceStrengthBadge strength={a.evidence_strength} score={a.quality_score} />
+                        )}
                       </div>
                       {a.feedback && (
                         <div className="mt-1.5 text-[12px] text-muted-foreground line-clamp-2">
@@ -372,8 +368,10 @@ export default function ModeDetail() {
                         {c.evidence_standard && (
                           <div className="mt-0.5 text-xs text-muted-foreground"><span className="text-foreground font-mono">Standard:</span> {c.evidence_standard}</div>
                         )}
-                        <Link to={proofLink} className="mt-2 block sm:inline-block">
-                          <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]">Submit Proof</Button>
+                        <Link to={proofLink} className="mt-3 block sm:inline-block">
+                          <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]">
+                            Submit Proof
+                          </Button>
                         </Link>
                       </li>
                     ))}
