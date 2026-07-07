@@ -81,11 +81,16 @@ export function ProofWeekPanel({ artifactDates }: { artifactDates: string[] }) {
   }
 
   if (status.completed) {
+    const fullyLogged = status.daysWithProof >= 7;
+    const headerLabel = fullyLogged
+      ? "Proof Week complete — 7/7"
+      : `Proof Week closed — ${status.daysWithProof}/7 days logged`;
     return (
       <Card className="panel p-4 md:p-5 border-primary/40 mobile-safe-card text-wrap-safe">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-primary" />
           <span className="font-mono text-[10px] uppercase tracking-widest text-primary">{closedLabel}</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">{headerLabel}</span>
         </div>
         <p className="mt-2 text-sm">
           You logged proof on <span className="text-foreground font-medium">{status.daysWithProof}/7 days</span> ({status.artifactsThisWeek} artifacts).
