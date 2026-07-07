@@ -4,6 +4,13 @@
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
+
+Brand direction (July 2026):
+- Black / near-black base
+- Single neon Eblocki green accent (78 95% 56%)
+- White / soft white contrast
+- Premium, disciplined, high-trust feel
+- Avoid multi-accent noise against the new circular logo
 */
 
 @layer base {
@@ -18,7 +25,7 @@ All colors MUST be HSL.
     --popover: 222 28% 9%;
     --popover-foreground: 210 20% 96%;
 
-    --primary: 78 95% 56%;            /* electric lime — proof/evidence accent */
+    --primary: 78 95% 56%;            /* Eblocki neon green — proof/evidence accent (matches circular logo) */
     --primary-foreground: 222 40% 8%;
 
     --secondary: 222 20% 14%;
@@ -27,7 +34,7 @@ All colors MUST be HSL.
     --muted: 222 18% 14%;
     --muted-foreground: 215 14% 64%;
 
-    --accent: 196 92% 56%;            /* operator cyan */
+    --accent: 196 92% 56%;            /* kept for compatibility but de-emphasized in brand surfaces */
     --accent-foreground: 222 40% 8%;
 
     --destructive: 0 78% 58%;
@@ -45,15 +52,15 @@ All colors MUST be HSL.
 
     --radius: 0.375rem;
 
-    /* Evidence strength */
+    /* Evidence strength — elite now clearly maps to logo green */
     --evidence-weak: 0 60% 55%;
     --evidence-moderate: 38 90% 58%;
     --evidence-strong: 196 90% 56%;
     --evidence-elite: 78 95% 56%;
 
-    /* Gradients & shadows */
+    /* Gradients & shadows — tightened for single-accent logo identity */
     --gradient-operator: linear-gradient(135deg, hsl(222 35% 8%) 0%, hsl(222 30% 4%) 100%);
-    --gradient-evidence: linear-gradient(135deg, hsl(78 95% 56% / 0.15), hsl(196 92% 56% / 0.05));
+    --gradient-evidence: linear-gradient(135deg, hsl(78 95% 56% / 0.12), transparent 100%);
     --shadow-panel: 0 1px 0 0 hsl(222 18% 18%) inset, 0 20px 50px -20px hsl(0 0% 0% / 0.6);
     --shadow-glow: 0 0 0 1px hsl(78 95% 56% / 0.25), 0 0 30px -8px hsl(78 95% 56% / 0.45);
 
@@ -82,19 +89,23 @@ All colors MUST be HSL.
     --card-foreground: 210 20% 96%;
     --popover: 222 28% 9%;
     --popover-foreground: 210 20% 96%;
+
     --primary: 78 95% 56%;
     --primary-foreground: 222 40% 8%;
     --secondary: 222 20% 14%;
     --secondary-foreground: 210 20% 96%;
     --muted: 222 18% 14%;
     --muted-foreground: 215 14% 64%;
+
     --accent: 196 92% 56%;
     --accent-foreground: 222 40% 8%;
+
     --destructive: 0 78% 58%;
     --destructive-foreground: 210 20% 98%;
     --border: 222 18% 16%;
     --input: 222 18% 14%;
     --ring: 78 95% 56%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -114,9 +125,9 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "cv11";
+    /* Tightened for new circular logo: single subtle green accent, minimal cyan */
     background-image:
-      radial-gradient(circle at 0% 0%, hsl(196 92% 56% / 0.06), transparent 40%),
-      radial-gradient(circle at 100% 0%, hsl(78 95% 56% / 0.05), transparent 40%);
+      radial-gradient(circle at 100% 0%, hsl(78 95% 56% / 0.035), transparent 55%);
     background-attachment: fixed;
   }
 
@@ -158,11 +169,8 @@ All colors MUST be HSL.
   .no-select { -webkit-user-select: none; user-select: none; }
 }
 
-/* ── Behavioural UX motion tokens ─────────────────────────────────────────
-   One calm, premium timing curve reused across the app. Avoid casino-style
-   bouncing, scattered durations, and dopamine-spam animations.
-   - calm-in: entrance for new content
-   - lock-in: proof/commitment confirmation (slower, more deliberate)
+/* ── Behavioural UX motion tokens ─────────────────────────────
+   One calm, premium timing curve reused across the app.
 */
 @layer utilities {
   .ease-calm { transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
@@ -185,10 +193,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ── Phase 7.3 mobile containment safety rail ───────────────────────────
-   Prevent body-level horizontal scroll on phone widths. Individual
-   components must still fix their own overflow; this is a backstop.
-*/
+/* ── Phase 7.3 mobile containment safety rail ───────────────────────────── */
 html, body, #root {
   max-width: 100%;
   overflow-x: hidden;
