@@ -1,24 +1,35 @@
 import { cn } from "@/lib/utils";
 
- interface EblockiLogoProps {
+interface EblockiLogoProps {
   variant?: "mark" | "full" | "appIcon" | "wordmark" | "compact";
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
   showTagline?: boolean;
   alt?: string;
+  /**
+   * Optional custom src for the circular mark.
+   * Default: "/brand/eblocki-logo-circular.png" (add the approved asset here).
+   */
+  src?: string;
 }
 
 /**
  * Reusable Eblocki brand logo component.
- * Uses the approved circular neon-green-on-black logo as source of truth.
- * Follows Proof over Intention doctrine — clean, disciplined, high-trust.
+ * Source of truth: the approved circular neon-green-on-black logo.
+ * Doctrine: Proof over Intention. Clean. Disciplined. High-trust. No clutter.
+ * 
+ * Usage:
+ *   <EblockiLogo variant="compact" size="md" />
+ *   <EblockiLogo variant="full" showTagline />
+ *   <EblockiLogo variant="mark" size="lg" /> // for app icon contexts
  */
 export function EblockiLogo({
   variant = "full",
   size = "md",
   className,
   showTagline = false,
-  alt = "Eblocki - Proof over Intention",
+  alt = "Eblocki — Proof over Intention",
+  src = "/brand/eblocki-logo-circular.png",
 }: EblockiLogoProps) {
   const sizeClasses = {
     sm: "h-6 w-6",
@@ -36,25 +47,44 @@ export function EblockiLogo({
 
   const isIconOnly = variant === "mark" || variant === "appIcon";
 
-  // For now, use a styled placeholder that matches the new circular logo aesthetic.
-  // TODO: Replace with actual <img src="/brand/eblocki-logo-circular.png" ... /> once asset is added to public/brand/
-  const LogoMark = () => (
-    <div
-      className={cn(
-        "rounded-full bg-black border border-white/10 flex items-center justify-center shrink-0",
-        "shadow-[0_0_0_1px_hsl(78_95%_56%_/_0.3)]", // subtle green ring matching logo glow
-        sizeClasses[size]
-      )}
-      aria-hidden={isIconOnly}
-    >
-      {/* Placeholder for the circular 'e' mark from approved logo */}
-      <div className="relative h-[70%] w-[70%] flex items-center justify-center">
-        <div className="text-[hsl(78_95%_56%)] font-bold text-[120%] leading-none select-none">E</div>
-        {/* Silver accent arc to echo the logo's metallic element */}
-        <div className="absolute inset-0 rounded-full border-[1.5px] border-white/40" />
+  const LogoMark = () => {
+    // When the real approved circular logo asset exists at /brand/eblocki-logo-circular.png
+    // this will render the premium mark. Until then it shows a clean, matching fallback.
+    return (
+      <div
+        className={cn(
+          "relative flex items-center justify-center shrink-0 overflow-hidden rounded-full",
+          "bg-black border border-white/10",
+          "shadow-[0_0_0_1px_hsl(78_95%_56%_/_0.25)]", // subtle green ring to echo logo
+          sizeClasses[size]
+        )}
+        aria-hidden={isIconOnly}
+      >
+        <img
+          src={src}
+          alt={alt}
+          className="h-full w-full object-contain"
+          onError={(e) => {
+            // Elegant fallback if image not yet added — keeps brand feel
+            const target = e.currentTarget as HTMLImageElement;
+            target.style.display = "none";
+            const fallback = target.parentElement?.querySelector(".logo-fallback");
+            if (fallback) (fallback as HTMLElement).style.display = "flex";
+          }}
+        />
+        {/* Clean fallback (visible only if image fails to load) */}
+        <div
+          className="logo-fallback absolute inset-0 hidden items-center justify-center bg-black"
+          aria-hidden
+        >
+          <div className="relative flex h-[68%] w-[68%] items-center justify-center">
+            <div className="text-[hsl(78_95%_56%)] text-[115%] font-bold leading-none select-none">E</div>
+            <div className="absolute inset-0 rounded-full border-[1.5px] border-white/35" />
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   if (variant === "mark" || variant === "appIcon") {
     return <LogoMark />;
@@ -71,7 +101,7 @@ export function EblockiLogo({
     );
   }
 
-  // "full" variant - logo + wordmark + optional tagline
+  // full variant
   return (
     <div className={cn("flex flex-col items-start gap-0.5 min-w-0", className)}>
       <div className="flex items-center gap-2.5">
@@ -81,7 +111,7 @@ export function EblockiLogo({
             EBLOCKI
           </span>
           {showTagline && (
-            <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary/80 leading-none mt-px">
+            <span className="text-[10px] font-mono uppercase tracking-[0.35em] text-primary/80 leading-none mt-px">
               PROOF OVER INTENTION
             </span>
           )}
