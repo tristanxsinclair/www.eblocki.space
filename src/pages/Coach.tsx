@@ -18,7 +18,6 @@ import {
   BrainCircuit,
   ChevronDown,
   ClipboardCopy,
-  Crosshair,
   Gamepad2,
   Info,
   Loader2,
@@ -38,6 +37,7 @@ import {
   type CoachEngineResult,
   type CoachResponseMode,
 } from "@/lib/eblocki/coach-engine";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
 const MODE_CHIPS: Array<{ label: string; value: CoachResponseMode | "auto" }> = [
   { label: "Auto", value: "auto" },
@@ -290,23 +290,15 @@ export default function Coach() {
       />
       <div className="mobile-safe-page p-4 md:p-8 max-w-5xl mx-auto space-y-5 min-w-0 max-w-full text-wrap-safe pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-8">
         <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end min-w-0">
-          <div className="min-w-0">
-            {!isMobile && (
-              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Coach // Diagnosis Engine</span>
-            )}
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Bring the messy problem. Leave with proof.</h1>
-            <p className="text-sm text-muted-foreground mt-1 max-w-2xl break-words">
-              {isMobile
-                ? "Paste the messy problem. Eblocki turns it into one proof action you can complete today."
-                : "Coach classifies the domain, intent, state, urgency, and response mode. It answers directly, creates a proof action, and suggests GameForge when practice is the right intervention."}
-            </p>
-          </div>
-          {!isMobile && (
-            <Link to="/gameforge">
-              <Button size="sm" variant="outline" className="gap-2"><Gamepad2 className="h-3.5 w-3.5" /> GameForge</Button>
-            </Link>
-          )}
-        </header>
+          <div className="flex items-center gap-3 min-w-0">
+            <EblockiLogo variant="mark" size="md" />
+            <div className="min-w-0">
+              {!isMobile && (
+                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Coach // Diagnosis Engine</span>
+              )}
+              <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Bring the messy problem. Leave with proof.</h1>
+            </div>
+          </header>
 
         <Card className="panel overflow-hidden border-primary/25 bg-card/60 max-w-full">
           <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-3 min-w-0">
