@@ -59,7 +59,7 @@ export default function Operator() {
 
   return (
     <AppShell>
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-10 space-y-8">
+      <div className="mobile-safe-page max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-10 space-y-8 min-w-0 max-w-full pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-10">
         <header className="space-y-1">
           <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Operator Identity</div>
           <h1 className="text-2xl md:text-3xl font-mono tracking-tight">Compound Level Engine</h1>
@@ -75,7 +75,7 @@ export default function Operator() {
           <div className="flex-1 min-w-0 text-center md:text-left">
             <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-primary">{opRank}</div>
             <div className="mt-1 text-xl text-foreground">{opTitle}</div>
-            <div className="mt-3 grid grid-cols-3 gap-3 max-w-sm mx-auto md:mx-0">
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-sm mx-auto md:mx-0 w-full">
               <Stat label="Total XP" value={op?.total_xp ?? 0} />
               <Stat label="Level" value={opLevel} />
               <Stat label="To next" value={Math.max(0, opThreshold - opXp)} />
