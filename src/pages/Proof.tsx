@@ -1018,7 +1018,7 @@ export default function Proof() {
                   {(["weak", "moderate", "strong", "elite"] as const).map((s) => (
                     <div key={s} className="rounded-sm border border-border p-2 text-center min-w-0">
                       <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{s}</div>
-                      <div className={"mt-1 text-lg font-semibold font-mono " + (s === "elite" ? "text-primary" : ""}>{strengthCount(s)}</div>
+                      <div className={"mt-1 text-lg font-semibold font-mono " + (s === "elite" ? "text-primary" : "")}>{strengthCount(s)}</div>
                     </div>
                   ))}
                 </div>
@@ -1030,7 +1030,7 @@ export default function Proof() {
                     onChange={(e) => setFilterDomain(e.target.value)}
                     className="rounded-md border border-input bg-background px-3 py-1.5 text-sm max-w-full"
                   >
-                    <option value="all">all modes</option>
+                    <option value="all">all areas</option>
                     {activeModes.map((mode) => (
                       <option key={mode.mode_id} value={mode.mode_id.toLowerCase()}>{mode.display_name}</option>
                     ))}
@@ -1655,6 +1655,13 @@ export default function Proof() {
           </div>
         </Card>
 
+        {/* Calm processing state while submitting */}
+        {submitting && !verdict && (
+          <div className="flex justify-center py-4">
+            <ProofProcessingState />
+          </div>
+        )}
+
         {verdict && (
           <MotionLockIn active={!!verdict} className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden" id="feedback">
             <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -1903,6 +1910,8 @@ function ProofVerdictSummaryCard({
                 });
               }}
             >
+              {firstProofMode ? "See my next step" : "Back to Today"}
+            </Button>
               {firstProofMode ? "See my next step" : "Back to Today"}
             </Button>
           </Link>
