@@ -16,6 +16,7 @@ import {
   AlertCircle,
   ArrowRight,
   BrainCircuit,
+  ChevronDown,
   ClipboardCopy,
   Crosshair,
   Gamepad2,
@@ -124,6 +125,15 @@ function getErrorMessage(error: unknown, fallback: string): string {
     if (typeof message === "string" && message.trim()) return message;
   }
   return fallback;
+}
+
+function displayToken(value: string | null | undefined): string {
+  if (!value) return "Not detected";
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export default function Coach() {
@@ -404,20 +414,13 @@ export default function Coach() {
 
         {engineResult && (
           <div className="space-y-4">
-            <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-                <Signal label="Domain" value={engineResult.detectedDomain} icon={<Radar />} />
-                <Signal label="Intent" value={engineResult.detectedIntent.replace(/_/g, " ")} icon={<Crosshair />} />
-                <Signal label="State" value={engineResult.detectedState.replace(/_/g, " ")} icon={<BrainCircuit />} />
-                <Signal label={isMobile ? "Response style" : "Mode"} value={engineResult.responseMode.replace(/_/g, " ")} icon={<MessageSquare />} />
-                <Signal label="Urgency" value={engineResult.urgency.replace(/_/g, " ")} icon={<ShieldCheck />} />
-              </div>
-              {!isMobile && (
-                <p className="mt-3 text-xs text-muted-foreground break-words">
-                  Internal prompt summary: {engineResult.internalPromptSummary}
-                </p>
-              )}
-            </Card>
+            <CoachResultSummaryCard
+              engineResult={engineResult}
+              remoteResult={remoteResult}
+              committedId={committedId}
+              committing={committing}
+              onCommit={commit}
+            />
 
             {engineResult.warning && (
               <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
@@ -426,61 +429,45 @@ export default function Coach() {
               </Card>
             )}
 
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)] items-start">
-              <div className="space-y-3">
-                <ResponseSection title="Diagnosis" icon={<Radar />}>{engineResult.diagnosis}</ResponseSection>
-                {responseSections.length > 0 ? (
-                  responseSections.map((section) => (
-                    <ResponseSection key={section.heading} title={section.heading} icon={<MessageSquare />}>
-                      {section.body}
-                    </ResponseSection>
-                  ))
-                ) : (
-                  <ResponseSection title="Answer" icon={<MessageSquare />}>{responseAnswer}</ResponseSection>
-                )}
-                <ResponseSection title="Plan" icon={<Target />}>
-                  <ol className="space-y-2">
-                    {engineResult.plan.map((step, index) => <li key={step} className="break-words">{index + 1}. {step}</li>)}
-                  </ol>
-                </ResponseSection>
+            <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Action</div>
+                <Button size="sm" variant="outline" onClick={copyProofAction} className="gap-1.5"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</Button>
               </div>
-              <div className="space-y-3">
-                <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Action</div>
-                    <Button size="sm" variant="outline" onClick={copyProofAction} className="gap-1.5"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</Button>
+              <p className="mt-2 text-sm leading-6 break-words whitespace-pre-wrap">{engineResult.proofAction}</p>
+              <div className="mt-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{displayToken(engineResult.proofActionType)}</div>
+            </Card>
+
+            <CoachFullReasoning
+              engineResult={engineResult}
+              responseAnswer={responseAnswer}
+              responseSections={responseSections}
+            />
+
+            {engineResult.suggestedGameForgePack && (
+              <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional GameForge Pack</div>
+                    <h3 className="mt-1 text-sm font-semibold break-words">{engineResult.suggestedGameForgePack.title}</h3>
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground break-words">{engineResult.suggestedGameForgePack.reason}</p>
                   </div>
-                  <p className="mt-2 text-sm leading-6 break-words whitespace-pre-wrap">{engineResult.proofAction}</p>
-                  <div className="mt-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{engineResult.proofActionType.replace(/_/g, " ")}</div>
-                </Card>
-                <ResponseSection title="Next Checkpoint" icon={<Crosshair />}>{engineResult.nextCheckpoint}</ResponseSection>
-                {engineResult.followUpQuestion && <ResponseSection title="Follow-up" icon={<Info />}>{engineResult.followUpQuestion}</ResponseSection>}
-                {engineResult.suggestedGameForgePack && (
-                  <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
-                    <div className="flex items-start justify-between gap-3 flex-wrap">
-                      <div className="min-w-0">
-                        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional GameForge Pack</div>
-                        <h3 className="mt-1 text-sm font-semibold break-words">{engineResult.suggestedGameForgePack.title}</h3>
-                        <p className="mt-2 text-xs leading-5 text-muted-foreground break-words">{engineResult.suggestedGameForgePack.reason}</p>
-                      </div>
-                      <Gamepad2 className="h-4 w-4 text-primary shrink-0" />
-                    </div>
-                    <Link
-                      to="/gameforge"
-                      state={{
-                        seed: engineResult.suggestedGameForgePack.sourceMaterial,
-                        mode: engineResult.suggestedGameForgePack.mode,
-                        style: engineResult.suggestedGameForgePack.style,
-                        intensity: "focused",
-                      }}
-                      className="mt-3 inline-flex"
-                    >
-                      <Button size="sm">Generate GameForge Pack <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Button>
-                    </Link>
-                  </Card>
-                )}
-              </div>
-            </div>
+                  <Gamepad2 className="h-4 w-4 text-primary shrink-0" />
+                </div>
+                <Link
+                  to="/gameforge"
+                  state={{
+                    seed: engineResult.suggestedGameForgePack.sourceMaterial,
+                    mode: engineResult.suggestedGameForgePack.mode,
+                    style: engineResult.suggestedGameForgePack.style,
+                    intensity: "focused",
+                  }}
+                  className="mt-3 inline-flex"
+                >
+                  <Button size="sm">Generate GameForge Pack <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Button>
+                </Link>
+              </Card>
+            )}
 
             {remoteResult?.proofContract.shouldCreate && (
               <ProofContractCard
@@ -564,6 +551,133 @@ function Signal({ label, value, icon }: { label: string; value: string; icon: Re
       </div>
       <div className="mt-1 truncate text-sm">{value}</div>
     </div>
+  );
+}
+
+function CoachResultSummaryCard({
+  engineResult,
+  remoteResult,
+  committedId,
+  committing,
+  onCommit,
+}: {
+  engineResult: CoachEngineResult;
+  remoteResult: NormalisedCoachResponse | null;
+  committedId: string | null;
+  committing: boolean;
+  onCommit: () => void;
+}) {
+  const contract = remoteResult?.proofContract;
+  const contractStatus = committedId
+    ? "Proof Contract saved"
+    : contract?.shouldCreate
+      ? "Ready to save"
+      : "Proof action ready";
+  const proofRequired = contract?.requiredArtifact || engineResult.recommendedProofArtifact.requiredArtifact || engineResult.proofAction;
+  const evidenceStandard = contract?.evidenceStandard || engineResult.recommendedProofArtifact.evidenceStandard;
+
+  return (
+    <Card className="panel p-4 md:p-5 border-primary/40 bg-primary/5 max-w-full overflow-hidden">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Coach Result</div>
+          <h2 className="mt-1 text-lg font-semibold leading-snug break-words">{displayToken(engineResult.detectedIntent)}</h2>
+        </div>
+        <span className="rounded-sm border border-primary/40 bg-background/50 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-primary">
+          {contractStatus}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <SummaryField label="Classification" value={`${displayToken(engineResult.detectedDomain)} / ${displayToken(engineResult.responseMode)}`} />
+        <SummaryField label="Detected blocker" value={engineResult.diagnosis} />
+        <SummaryField label="Why it matters" value={engineResult.warning || engineResult.answer} />
+        <SummaryField label="Proof required" value={proofRequired} />
+        <SummaryField label="Next command" value={engineResult.proofAction} emphasis />
+        <SummaryField label="Proof contract status" value={evidenceStandard ? `${contractStatus}: ${evidenceStandard}` : contractStatus} />
+      </div>
+
+      <div className="mt-4 flex flex-col sm:flex-row gap-2">
+        {committedId ? (
+          <Link to="/proof" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto min-h-[44px] native-tap">
+              Submit Proof <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        ) : contract?.shouldCreate ? (
+          <Button onClick={onCommit} disabled={committing} className="w-full sm:w-auto min-h-[44px] native-tap">
+            {committing ? "Saving contract..." : "Save Proof Contract"}
+          </Button>
+        ) : (
+          <Link to="/proof" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto min-h-[44px] native-tap">
+              Submit Proof <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function SummaryField({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
+  return (
+    <div className="rounded-sm border border-border/80 bg-background/40 p-3 min-w-0">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <p className={`mt-1 text-sm leading-6 break-words whitespace-pre-wrap ${emphasis ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function CoachFullReasoning({
+  engineResult,
+  responseAnswer,
+  responseSections,
+}: {
+  engineResult: CoachEngineResult;
+  responseAnswer: string;
+  responseSections: Array<{ heading: string; body: string }>;
+}) {
+  return (
+    <details className="group rounded-sm border border-border bg-card/50 p-4 max-w-full overflow-hidden">
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Full reasoning</span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="mt-3 grid gap-3">
+        <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <Signal label="Domain" value={displayToken(engineResult.detectedDomain)} icon={<Radar />} />
+            <Signal label="Intent" value={displayToken(engineResult.detectedIntent)} icon={<Crosshair />} />
+            <Signal label="State" value={displayToken(engineResult.detectedState)} icon={<BrainCircuit />} />
+            <Signal label="Mode" value={displayToken(engineResult.responseMode)} icon={<MessageSquare />} />
+            <Signal label="Urgency" value={displayToken(engineResult.urgency)} icon={<ShieldCheck />} />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground break-words">
+            Internal prompt summary: {engineResult.internalPromptSummary}
+          </p>
+        </Card>
+        <ResponseSection title="Diagnosis" icon={<Radar />}>{engineResult.diagnosis}</ResponseSection>
+        {responseSections.length > 0 ? (
+          responseSections.map((section) => (
+            <ResponseSection key={section.heading} title={section.heading} icon={<MessageSquare />}>
+              {section.body}
+            </ResponseSection>
+          ))
+        ) : (
+          <ResponseSection title="Answer" icon={<MessageSquare />}>{responseAnswer}</ResponseSection>
+        )}
+        <ResponseSection title="Plan" icon={<Target />}>
+          <ol className="space-y-2">
+            {engineResult.plan.map((step, index) => <li key={step} className="break-words">{index + 1}. {step}</li>)}
+          </ol>
+        </ResponseSection>
+        <ResponseSection title="Next Checkpoint" icon={<Crosshair />}>{engineResult.nextCheckpoint}</ResponseSection>
+        {engineResult.followUpQuestion && <ResponseSection title="Follow-up" icon={<Info />}>{engineResult.followUpQuestion}</ResponseSection>}
+      </div>
+    </details>
   );
 }
 

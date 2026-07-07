@@ -3,6 +3,7 @@ const routes = [
   "/auth",
   "/welcome",
   "/dashboard",
+  "/systems",
   "/proof",
   "/proof?first=1",
   "/proof-week",
