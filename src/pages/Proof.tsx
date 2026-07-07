@@ -53,6 +53,13 @@ import {
 import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
 import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
+import {
+  ProofSubmitButton,
+  MotionVerdictCard,
+  MotionLockIn,
+  MotionNextStep,
+  ProofProcessingState,
+} from "@/components/eblocki/motion";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -1011,7 +1018,7 @@ export default function Proof() {
                   {(["weak", "moderate", "strong", "elite"] as const).map((s) => (
                     <div key={s} className="rounded-sm border border-border p-2 text-center min-w-0">
                       <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{s}</div>
-                      <div className={"mt-1 text-lg font-semibold font-mono " + (s === "elite" ? "text-primary" : "")}>{strengthCount(s)}</div>
+                      <div className={"mt-1 text-lg font-semibold font-mono " + (s === "elite" ? "text-primary" : ""}>{strengthCount(s)}</div>
                     </div>
                   ))}
                 </div>
@@ -1036,7 +1043,7 @@ export default function Proof() {
 
         {/* Verdict card */}
         {verdict && (
-          <Card className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden">
+          <MotionVerdictCard className="max-w-full overflow-hidden">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -1144,7 +1151,7 @@ export default function Proof() {
                   {activeModes.length === 0 ? (
                     <div className="mt-2 text-xs text-muted-foreground">
                       No areas set up yet. <Link to="/modes" className="text-primary hover:underline">Set up areas</Link> so proof routes correctly.
-                </div>
+                    </div>
                   ) : (
                     <select
                       id="proof-mode-select"
@@ -1626,7 +1633,7 @@ export default function Proof() {
               </div>
             )}
 
-            <Button
+            <ProofSubmitButton
               onClick={submit}
               disabled={
                 submitting ||
@@ -1644,63 +1651,47 @@ export default function Proof() {
                   : firstProofMode
                     ? "Submit first proof"
                     : "Submit proof"}
-            </Button>
+            </ProofSubmitButton>
           </div>
         </Card>
 
         {verdict && (
-          <Card className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden" id="feedback">
-            <ProofVerdictSummaryCard
-              verdict={verdict}
-              firstProofMode={firstProofMode}
-              onImprove={() => { setVerdict(null); setSubmittedStudyClassification(null); setDetailOpen(false); }}
-            />
-            {verdict.attachmentUrl && (
-              <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
-                <Paperclip className="h-3 w-3 text-primary" />
-                <span className="text-muted-foreground">Attached evidence:</span>
-                <a href={verdict.attachmentUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate">
-                  {verdict.attachmentName ?? "view file"}
-                </a>
+          <MotionLockIn active={!!verdict} className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden" id="feedback">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof saved.</span>
               </div>
-            )}
-            <ProofVerdictDetails
-              verdict={verdict}
-              firstProofMode={firstProofMode}
-              submittedStudyClassification={submittedStudyClassification}
-            />
-            {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
-            {submittedStudyClassification && !firstProofMode && isStudyDomain(
-              selectedMode?.mode_id,
-              selectedMode?.display_name,
-              linkedContract?.domain,
-              linkedContract?.mode,
-              artifactType,
-            ) && (
-              <div className="mt-4">
-                <StudyVerdictHint
-                  classification={submittedStudyClassification}
-                  label="Fake study detector"
-                />
-              </div>
-            )}
+              <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
+            </div>
+            <div className="mt-3 grid gap-3 text-sm">
+              <VerdictRow label="Count status" value={countStatus(verdict)} />
+              <VerdictRow label="Today status" value={todayStatus(verdict)} />
+              <VerdictRow label="One next command" value={verdict.nextUpgrade} />
+            </div>
             <div className="mt-4 flex flex-col sm:flex-row gap-2">
-              <Link to="/dashboard" className="w-full sm:w-auto">
-                <Button
-                  size="sm"
-                  className="w-full sm:w-auto min-h-[44px] native-tap"
-                  onClick={() => {
-                    void logEvent(firstProofMode ? "activation_verdict_cta_clicked" : "proof_verdict_cta_clicked", {
-                      route: "/proof",
-                      source: firstProofMode ? "first_proof" : "proof",
-                      ctaName: "back_to_today",
-                      destination: "/dashboard",
-                    });
-                  }}
-                >
-                  {firstProofMode ? "See my next step" : "Back to Today"}
+              {shouldImproveProof(verdict) ? (
+                <Button size="sm" className="w-full sm:w-auto min-h-[44px] native-tap" onClick={() => { setVerdict(null); setSubmittedStudyClassification(null); setDetailOpen(false); }}>
+                  Improve proof
                 </Button>
-              </Link>
+              ) : (
+                <Link to="/dashboard" className="w-full sm:w-auto">
+                  <Button
+                    size="sm"
+                    className="w-full sm:w-auto min-h-[44px] native-tap"
+                    onClick={() => {
+                      void logEvent(firstProofMode ? "activation_verdict_cta_clicked" : "proof_verdict_cta_clicked", {
+                        route: "/proof",
+                        source: firstProofMode ? "first_proof" : "proof",
+                        ctaName: "back_to_today",
+                        destination: "/dashboard",
+                      });
+                    }}
+                  >
+                    {firstProofMode ? "See my next step" : "Back to Today"}
+                  </Button>
+                </Link>
+              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -1710,7 +1701,7 @@ export default function Proof() {
                 Submit another proof
               </Button>
             </div>
-          </Card>
+          </MotionLockIn>
         )}
 
         {!firstProofMode && (
