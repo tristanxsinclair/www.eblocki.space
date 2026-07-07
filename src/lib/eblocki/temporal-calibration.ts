@@ -44,6 +44,11 @@ export interface TemporalOutcome {
 
 export type TemporalAccuracySignal = "accurate" | "partially_accurate" | "inaccurate" | "insufficient_data";
 
+export type TemporalForecastAuditOutcome =
+  | "unresolved"
+  | "hit"
+  | "partial"
+  | "missed";
 export interface TemporalWeightAdjustmentSuggestion {
   factor: string;        // e.g. "risk.drift", "confidence.dataVolume"
   direction: "increase" | "decrease" | "hold";
@@ -79,6 +84,9 @@ export interface TemporalCalibrationResult {
   realityCheck: TemporalRealityCheck;
   explanation: string;
   nextCalibrationTarget: string;
+  auditOutcome: TemporalForecastAuditOutcome;
+resolved: boolean;
+accuracyEligible: boolean;
 }
 
 // ---------- snapshot creation ----------
@@ -214,6 +222,21 @@ export function runTemporalRealityCheck(
   };
 }
 
+export function toForecastAuditOutcome(
+  verdict: TemporalAccuracySignal,
+): TemporalForecastAuditOutcome {
+  switch (verdict) {
+    case "accurate":
+      return "hit";
+    case "partially_accurate":
+      return "partial";
+    case "inaccurate":
+      return "missed";
+    case "insufficient_data":
+      return "unresolved";
+  }
+}
+
 // ---------- calibration ----------
 
 export function calibrateForecast(
@@ -221,6 +244,10 @@ export function calibrateForecast(
   outcome: TemporalOutcome,
 ): TemporalCalibrationResult {
   const realityCheck = runTemporalRealityCheck(snapshot, outcome);
+  const auditOutcome = toForecastAuditOutcome(realityCheck.verdict);
+  const resolved = auditOutcome !== "unresolved";
+  const accuracyEligible = resolved;
+
   const arts = outcome.artifactsAfter ?? [];
   const verdicts = outcome.verdictsAfter ?? [];
 
@@ -228,7 +255,7 @@ export function calibrateForecast(
   const acceptedStrong = verdicts.filter(
     (v) => v.verdict === "accepted_strong" || v.verdict === "elite",
   ).length;
-
+  
   const avgQualityAfter = arts.length
     ? arts.reduce((s, a) => s + (a.quality_score ?? 0), 0) / arts.length
     : 0;
@@ -332,6 +359,9 @@ export function calibrateForecast(
     learningSignal,
     realityCheck,
     explanation,
+    auditOutcome,
+    resolved,
+    accuracyEligible,
     nextCalibrationTarget:
       realityCheck.verdict === "accurate"
         ? "Track whether the next forecast sustains accuracy across a 7-day window."

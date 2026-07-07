@@ -12,6 +12,7 @@ import {
   Settings,
   Sparkles,
   LogOut,
+  Hammer,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,7 +26,8 @@ const PRIMARY = [
 const SECONDARY = [
   { to: "/operator", label: "Operator", icon: Hexagon },
   { to: "/gameforge", label: "GameForge", icon: Swords },
-  { to: "/modes", label: "Modes", icon: Layers },
+  { to: "/systems", label: "Systems", icon: Hammer },
+  { to: "/modes", label: "Areas", icon: Layers },
   { to: "/start-today", label: "Start Today", icon: Sparkles },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;

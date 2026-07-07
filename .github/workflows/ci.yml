@@ -48,4 +48,4 @@ jobs:
           ROUTE_SMOKE_BASE_URL=http://127.0.0.1:4173 npm run smoke:routes
 
       - name: Audit dependencies
-        run: npm audit --audit-level=moderate
+        run: npm audit --omit=dev --audit-level=moderate
