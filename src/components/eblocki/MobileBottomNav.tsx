@@ -25,7 +25,7 @@ const PRIMARY = [
 const SECONDARY = [
   { to: "/operator", label: "Operator", icon: Hexagon },
   { to: "/gameforge", label: "GameForge", icon: Swords },
-  { to: "/modes", label: "Modes", icon: Layers },
+  { to: "/modes", label: "Areas", icon: Layers },
   { to: "/start-today", label: "Start Today", icon: Sparkles },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
