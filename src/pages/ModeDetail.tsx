@@ -13,6 +13,7 @@ import { ModeBadge } from "@/components/eblocki/Badges";
 import { calculateModeProgress } from "@/lib/eblocki/mode-progress";
 import { TRISTAN_DEFAULT_MODES, GENERAL_DEFAULT_MODES, type EblockiDefaultMode } from "@/lib/eblocki/default-modes";
 import type { UserMode } from "@/lib/eblocki/modes";
+import { humaniseModeId } from "@/lib/eblocki/display-labels";
 import { toast } from "sonner";
 import { ArrowLeft, BookOpen, ClipboardList, Gavel, MessageSquare, Scale, Sparkles } from "lucide-react";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
@@ -216,6 +217,9 @@ export default function ModeDetail() {
             <div className="flex items-center gap-3 flex-wrap">
               <ModeBadge mode={mode.mode_id} />
               <span className="text-sm text-muted-foreground">{humaniseModeId(mode.mode_id)}</span>
+              <span className="text-sm text-muted-foreground">
+                {humaniseModeId(mode.mode_id, mode.display_name)}
+              </span>
               <span className={`font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm border ${isActiveMode ? "border-primary/40 text-primary" : "border-border text-muted-foreground"}`}>
                 {isActiveMode ? "Active" : "Inactive"}
               </span>
@@ -374,6 +378,10 @@ export default function ModeDetail() {
                         )}
                         <Link to={proofLink} className="mt-2 block sm:inline-block">
                           <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]">Submit Proof</Button>
+                        <Link to={proofLink} className="mt-3 block sm:inline-block">
+                          <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]">
+                            Submit Proof
+                          </Button>
                         </Link>
                       </li>
                     ))}
