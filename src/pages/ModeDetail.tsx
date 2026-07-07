@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
@@ -18,14 +19,37 @@ import { ArrowLeft, BookOpen, ClipboardList, Gavel, MessageSquare, Scale, Sparkl
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
 import { Seo } from "@/components/Seo";
 
+type ProofArtifactRow = Tables<"proof_artifacts">;
+type ProofCommitmentRow = Tables<"proof_commitments">;
+type CoachInteractionRow = Tables<"coach_interactions">;
+
+function humaniseModeId(value: string | null | undefined): string {
+  if (!value) return "General Execution";
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return fallback;
+}
+
 export default function ModeDetail() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { modeId } = useParams();
   const [mode, setMode] = useState<UserMode | EblockiDefaultMode | null>(null);
-  const [artifacts, setArtifacts] = useState<any[]>([]);
-  const [commitments, setCommitments] = useState<any[]>([]);
-  const [interactions, setInteractions] = useState<any[]>([]);
+  const [artifacts, setArtifacts] = useState<ProofArtifactRow[]>([]);
+  const [commitments, setCommitments] = useState<ProofCommitmentRow[]>([]);
+  const [interactions, setInteractions] = useState<CoachInteractionRow[]>([]);
   const [researchNotes, setResearchNotes] = useState("");
   const [researchLoading, setResearchLoading] = useState(false);
   const [modeError, setModeError] = useState<string | null>(null);
@@ -74,8 +98,8 @@ export default function ModeDetail() {
         setCommitments(commitmentsData ?? []);
         setInteractions(interactionsData ?? []);
         setResearchNotes(researchData?.research_summary ?? "");
-      } catch (error: any) {
-        setModeError(error?.message || "Unable to load mode details.");
+      } catch (error: unknown) {
+        setModeError(errorMessage(error, "Unable to load mode details."));
       }
     };
 
@@ -98,8 +122,8 @@ export default function ModeDetail() {
       const { error } = await supabase.from("user_research_profiles").upsert(payload, { onConflict: "user_id,mode_id" });
       if (error) throw error;
       toast.success("Mode research saved.");
-    } catch (err: any) {
-      toast.error(err?.message || "Unable to save research notes.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Unable to save research notes."));
     } finally {
       setResearchLoading(false);
     }
@@ -192,6 +216,7 @@ export default function ModeDetail() {
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <ModeBadge mode={mode.mode_id} />
+              <span className="text-sm text-muted-foreground">{humaniseModeId(mode.mode_id)}</span>
               <span className="text-sm text-muted-foreground">
                 {humaniseModeId(mode.mode_id, mode.display_name)}
               </span>
@@ -351,6 +376,8 @@ export default function ModeDetail() {
                         {c.evidence_standard && (
                           <div className="mt-0.5 text-xs text-muted-foreground"><span className="text-foreground font-mono">Standard:</span> {c.evidence_standard}</div>
                         )}
+                        <Link to={proofLink} className="mt-2 block sm:inline-block">
+                          <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]">Submit Proof</Button>
                         <Link to={proofLink} className="mt-3 block sm:inline-block">
                           <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]">
                             Submit Proof
