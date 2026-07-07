@@ -7,17 +7,28 @@ interface EblockiLogoProps {
   showTagline?: boolean;
   alt?: string;
   /**
-   * Base path without extension. Component will append sizes for srcset.
-   * Recommended: keep the 1024px master at /brand/eblocki-logo-circular.png
+   * Base path without extension.
+   * The component expects both WebP and PNG versions for best performance.
+   *
+   * Recommended files in public/brand/:
+   *   eblocki-logo-circular.webp          (master)
+   *   eblocki-logo-circular-64.webp
+   *   eblocki-logo-circular-128.webp
+   *   eblocki-logo-circular-256.webp
+   *   eblocki-logo-circular.png          (fallback)
+   *   eblocki-logo-circular-64.png
+   *   eblocki-logo-circular-128.png
+   *   eblocki-logo-circular-256.png
    */
   src?: string;
 }
 
 /**
- * Reusable Eblocki brand logo with performance optimizations.
- * - Uses srcset for responsive loading
- * - Critical nav logos use eager + high fetchpriority
- * - Clean fallback matching approved aesthetic
+ * Reusable Eblocki brand logo with modern image optimization.
+ * - Uses <picture> for WebP + PNG fallback
+ * - Responsive srcset on both formats
+ * - Critical nav logos: eager + high fetchpriority
+ * - Clean on-brand fallback if images fail to load
  */
 export function EblockiLogo({
   variant = "full",
@@ -44,8 +55,16 @@ export function EblockiLogo({
   const isIconOnly = variant === "mark" || variant === "appIcon";
   const isCritical = variant === "compact" || variant === "mark"; // nav + headers
 
-  // Responsive srcset (create these sizes in public/brand/)
-  const srcSet = [
+  // WebP srcset (preferred)
+  const webpSrcSet = [
+    `${src}-64.webp 64w`,
+    `${src}-128.webp 128w`,
+    `${src}-256.webp 256w`,
+    `${src}.webp 512w`,
+  ].join(", ");
+
+  // PNG srcset (fallback)
+  const pngSrcSet = [
     `${src}-64.png 64w`,
     `${src}-128.png 128w`,
     `${src}-256.png 256w`,
@@ -63,22 +82,32 @@ export function EblockiLogo({
       )}
       aria-hidden={isIconOnly}
     >
-      <img
-        src={`${src}.png`}
-        srcSet={srcSet}
-        sizes={sizes}
-        alt={alt}
-        className="h-full w-full object-contain"
-        loading={isCritical ? "eager" : "lazy"}
-        fetchPriority={isCritical ? "high" : "auto"}
-        onError={(e) => {
-          const img = e.currentTarget;
-          img.style.display = "none";
-          const fallback = img.parentElement?.querySelector(".logo-fallback") as HTMLElement | null;
-          if (fallback) fallback.style.display = "flex";
-        }}
-      />
-      {/* Elegant fallback (only shows if real image fails) */}
+      <picture>
+        {/* WebP sources (modern browsers) */}
+        <source
+          type="image/webp"
+          srcSet={webpSrcSet}
+          sizes={sizes}
+        />
+        {/* PNG fallback (older browsers + guaranteed support) */}
+        <img
+          src={`${src}.png`}
+          srcSet={pngSrcSet}
+          sizes={sizes}
+          alt={alt}
+          className="h-full w-full object-contain"
+          loading={isCritical ? "eager" : "lazy"}
+          fetchPriority={isCritical ? "high" : "auto"}
+          onError={(e) => {
+            const img = e.currentTarget;
+            img.style.display = "none";
+            const fallback = img.parentElement?.parentElement?.querySelector(".logo-fallback") as HTMLElement | null;
+            if (fallback) fallback.style.display = "flex";
+          }}
+        />
+      </picture>
+
+      {/* Elegant fallback (only shows if all images fail) */}
       <div
         className="logo-fallback absolute inset-0 hidden items-center justify-center bg-black"
         aria-hidden
