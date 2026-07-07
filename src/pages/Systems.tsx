@@ -35,6 +35,13 @@ import {
 type CustomSystemRow = Tables<"custom_systems">;
 type SystemRepRow = Tables<"system_reps">;
 
+type SupabaseLikeError = {
+  code?: unknown;
+  message?: unknown;
+  details?: unknown;
+  hint?: unknown;
+};
+
 type ForgeForm = {
   domain: string;
   improvementGoal: string;
@@ -50,6 +57,35 @@ const INITIAL_FORM: ForgeForm = {
   currentBottleneck: "",
   availableMinutesPerDay: "20",
 };
+
+function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error !== null) {
+    const candidate = error as SupabaseLikeError;
+    for (const value of [candidate.message, candidate.details, candidate.hint]) {
+      if (typeof value === "string" && value.trim()) return value;
+    }
+  }
+  return fallback;
+}
+
+function isDatabaseShapeError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as SupabaseLikeError;
+  const code = typeof candidate.code === "string" ? candidate.code : "";
+  const message = [candidate.message, candidate.details, candidate.hint]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+  return (
+    code === "42P01" ||
+    code === "42501" ||
+    message.includes("custom_systems") ||
+    message.includes("system_reps") ||
+    message.includes("schema cache") ||
+    message.includes("row-level security")
+  );
+}
 
 function jsonArray<T>(value: Json | null | undefined): T[] {
   return Array.isArray(value) ? (value as T[]) : [];
@@ -71,6 +107,54 @@ function cleanNumber(value: string): number {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed)) return 20;
   return Math.max(5, Math.min(180, parsed));
+}
+
+function localKey(userId: string): string {
+  return `eblocki.system-forge.v0.${userId}`;
+}
+
+function readLocalSystem(userId: string): { system: CustomSystemRow | null; rep: SystemRepRow | null } {
+  if (typeof window === "undefined") return { system: null, rep: null };
+  try {
+    const raw = window.localStorage.getItem(localKey(userId));
+    if (!raw) return { system: null, rep: null };
+    const parsed = JSON.parse(raw) as { system?: CustomSystemRow; rep?: SystemRepRow | null };
+    return { system: parsed.system ?? null, rep: parsed.rep ?? null };
+  } catch {
+    return { system: null, rep: null };
+  }
+}
+
+function writeLocalSystem(userId: string, system: CustomSystemRow, rep: SystemRepRow | null = null) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(localKey(userId), JSON.stringify({ system, rep }));
+}
+
+function draftToLocalSystem(userId: string, draft: SystemForgeDraft): CustomSystemRow {
+  const now = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    user_id: userId,
+    name: draft.name,
+    domain: draft.domain,
+    goal: draft.goal,
+    outcome: draft.outcome,
+    bottleneck: draft.bottleneck,
+    available_minutes_per_day: draft.availableMinutesPerDay,
+    skills: draft.skills as Json,
+    daily_loop: draft.dailyLoop,
+    weekly_structure: draft.weeklyStructure as unknown as Json,
+    minimum_viable_rep: draft.minimumViableRep,
+    proof_artifacts: draft.proofArtifacts as Json,
+    scoring_rubric: draft.scoringRubric as unknown as Json,
+    progression_levels: draft.progressionLevels as unknown as Json,
+    review_cycle: draft.reviewCycle,
+    first_command: draft.firstCommand,
+    active_command: draft.activeCommand,
+    is_active: true,
+    created_at: now,
+    updated_at: now,
+  };
 }
 
 export default function Systems() {
@@ -126,8 +210,13 @@ export default function Systems() {
         setLatestRep(null);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not load System Forge.";
-      toast.error(message);
+      if (isDatabaseShapeError(error)) {
+        const local = readLocalSystem(user.id);
+        setActiveSystem(local.system);
+        setLatestRep(local.rep);
+      } else {
+        toast.error(errorMessage(error, "Could not load System Forge."));
+      }
     } finally {
       setLoading(false);
     }
@@ -154,47 +243,55 @@ export default function Systems() {
         throw new Error("Generated command failed the artifact-producing rule.");
       }
 
-      const { error: deactivateError } = await supabase
-        .from("custom_systems")
-        .update({ is_active: false })
-        .eq("user_id", user.id)
-        .eq("is_active", true);
-      if (deactivateError) throw deactivateError;
+      let system: CustomSystemRow;
+      try {
+        const { error: deactivateError } = await supabase
+          .from("custom_systems")
+          .update({ is_active: false })
+          .eq("user_id", user.id)
+          .eq("is_active", true);
+        if (deactivateError) throw deactivateError;
 
-      const { data, error } = await supabase
-        .from("custom_systems")
-        .insert({
-          user_id: user.id,
-          name: draft.name,
-          domain: draft.domain,
-          goal: draft.goal,
-          outcome: draft.outcome,
-          bottleneck: draft.bottleneck,
-          available_minutes_per_day: draft.availableMinutesPerDay,
-          skills: draft.skills as Json,
-          daily_loop: draft.dailyLoop,
-          weekly_structure: draft.weeklyStructure as unknown as Json,
-          minimum_viable_rep: draft.minimumViableRep,
-          proof_artifacts: draft.proofArtifacts as Json,
-          scoring_rubric: draft.scoringRubric as unknown as Json,
-          progression_levels: draft.progressionLevels as unknown as Json,
-          review_cycle: draft.reviewCycle,
-          first_command: draft.firstCommand,
-          active_command: draft.activeCommand,
-          is_active: true,
-        })
-        .select("*")
-        .single();
-      if (error) throw error;
+        const { data, error } = await supabase
+          .from("custom_systems")
+          .insert({
+            user_id: user.id,
+            name: draft.name,
+            domain: draft.domain,
+            goal: draft.goal,
+            outcome: draft.outcome,
+            bottleneck: draft.bottleneck,
+            available_minutes_per_day: draft.availableMinutesPerDay,
+            skills: draft.skills as Json,
+            daily_loop: draft.dailyLoop,
+            weekly_structure: draft.weeklyStructure as unknown as Json,
+            minimum_viable_rep: draft.minimumViableRep,
+            proof_artifacts: draft.proofArtifacts as Json,
+            scoring_rubric: draft.scoringRubric as unknown as Json,
+            progression_levels: draft.progressionLevels as unknown as Json,
+            review_cycle: draft.reviewCycle,
+            first_command: draft.firstCommand,
+            active_command: draft.activeCommand,
+            is_active: true,
+          })
+          .select("*")
+          .single();
+        if (error) throw error;
+        system = data;
+      } catch (dbError) {
+        if (!isDatabaseShapeError(dbError)) throw dbError;
+        system = draftToLocalSystem(user.id, draft);
+        writeLocalSystem(user.id, system);
+        toast.warning("Database migration is not live yet. System saved on this device.");
+      }
 
-      setActiveSystem(data);
+      setActiveSystem(system);
       setLatestRep(null);
       setProofOpen(false);
       setProofContent("");
       toast.success("System forged from your goal.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not forge system.";
-      toast.error(message);
+      toast.error(errorMessage(error, "Could not forge system."));
     } finally {
       setForging(false);
     }
@@ -214,60 +311,96 @@ export default function Systems() {
         selfScore: selfScore ? cleanNumber(selfScore) : null,
       });
       const artifactType = firstArtifact(activeSystem);
-      const { data: artifact, error: artifactError } = await supabase
-        .from("proof_artifacts")
-        .insert({
-          user_id: user.id,
-          domain: activeSystem.domain,
-          title: activeSystem.active_command,
-          artifact_type: artifactType,
-          content: proofContent,
-          quality_score: evaluation.score,
-          evidence_strength: evaluation.verdict,
-          feedback: evaluation.why,
-          next_upgrade: evaluation.nextUpgrade,
-        })
-        .select("id")
-        .single();
-      if (artifactError) throw artifactError;
+      let artifactId: string | null = null;
+      try {
+        const { data: artifact, error: artifactError } = await supabase
+          .from("proof_artifacts")
+          .insert({
+            user_id: user.id,
+            domain: activeSystem.domain,
+            title: activeSystem.active_command,
+            artifact_type: artifactType,
+            content: proofContent,
+            quality_score: evaluation.score,
+            evidence_strength: evaluation.verdict,
+            feedback: evaluation.why,
+            next_upgrade: evaluation.nextUpgrade,
+          })
+          .select("id")
+          .single();
+        if (artifactError) throw artifactError;
+        artifactId = artifact.id;
+      } catch (artifactError) {
+        toast.warning(errorMessage(artifactError, "Proof saved on this device only."));
+      }
 
-      const { data: rep, error: repError } = await supabase
-        .from("system_reps")
-        .insert({
-          user_id: user.id,
-          system_id: activeSystem.id,
-          proof_id: artifact.id,
-          command: activeSystem.active_command,
-          artifact_type: artifactType,
-          proof_content: proofContent,
-          self_score: selfScore ? cleanNumber(selfScore) : null,
-          score: evaluation.score,
-          verdict: evaluation.verdict,
-          weakness: evaluation.weakness,
-          next_upgrade: evaluation.nextUpgrade,
-        })
-        .select("*")
-        .single();
-      if (repError) throw repError;
+      const localRep: SystemRepRow = {
+        id: crypto.randomUUID(),
+        user_id: user.id,
+        system_id: activeSystem.id,
+        proof_id: artifactId,
+        command: activeSystem.active_command,
+        artifact_type: artifactType,
+        proof_content: proofContent,
+        self_score: selfScore ? cleanNumber(selfScore) : null,
+        score: evaluation.score,
+        verdict: evaluation.verdict,
+        weakness: evaluation.weakness,
+        next_upgrade: evaluation.nextUpgrade,
+        created_at: new Date().toISOString(),
+      };
 
-      const { data: updatedSystem, error: updateError } = await supabase
-        .from("custom_systems")
-        .update({ active_command: evaluation.nextUpgrade })
-        .eq("id", activeSystem.id)
-        .eq("user_id", user.id)
-        .select("*")
-        .single();
-      if (updateError) throw updateError;
+      let rep = localRep;
+      let updatedSystem: CustomSystemRow = {
+        ...activeSystem,
+        active_command: evaluation.nextUpgrade,
+        updated_at: new Date().toISOString(),
+      };
+
+      try {
+        const { data: savedRep, error: repError } = await supabase
+          .from("system_reps")
+          .insert({
+            user_id: user.id,
+            system_id: activeSystem.id,
+            proof_id: artifactId,
+            command: activeSystem.active_command,
+            artifact_type: artifactType,
+            proof_content: proofContent,
+            self_score: selfScore ? cleanNumber(selfScore) : null,
+            score: evaluation.score,
+            verdict: evaluation.verdict,
+            weakness: evaluation.weakness,
+            next_upgrade: evaluation.nextUpgrade,
+          })
+          .select("*")
+          .single();
+        if (repError) throw repError;
+        rep = savedRep;
+
+        const { data: savedSystem, error: updateError } = await supabase
+          .from("custom_systems")
+          .update({ active_command: evaluation.nextUpgrade })
+          .eq("id", activeSystem.id)
+          .eq("user_id", user.id)
+          .select("*")
+          .single();
+        if (updateError) throw updateError;
+        updatedSystem = savedSystem;
+      } catch (dbError) {
+        if (!isDatabaseShapeError(dbError)) throw dbError;
+        toast.warning("System rep saved on this device until the database migration is live.");
+      }
 
       setActiveSystem(updatedSystem);
       setLatestRep(rep);
+      writeLocalSystem(user.id, updatedSystem, rep);
       setLastVerdict(evaluation);
       setProofContent("");
       setSelfScore("");
       toast.success("Proof saved. Next upgrade selected.");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not save proof.";
-      toast.error(message);
+      toast.error(errorMessage(error, "Could not save proof."));
     } finally {
       setSubmitting(false);
     }
