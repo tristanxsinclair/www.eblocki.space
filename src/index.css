@@ -171,19 +171,60 @@ Brand direction (July 2026):
 
 /* ── Behavioural UX motion tokens ─────────────────────────────
    One calm, premium timing curve reused across the app.
+   Keep motion minimal, intentional, and respectful of reduced-motion preferences.
 */
 @layer utilities {
   .ease-calm { transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+
+  /* Quick, calm transitions for most interactive elements */
   .motion-calm { transition: all 280ms cubic-bezier(0.22, 1, 0.36, 1); }
+
+  /* Deliberate / commitment actions (proof submission, contract save, etc.) */
   .motion-lock { transition: all 520ms cubic-bezier(0.22, 1, 0.36, 1); }
+
+  /* Subtle hover / interactive feedback */
+  .motion-hover { transition: all 180ms cubic-bezier(0.22, 1, 0.36, 1); }
+
+  /* Very quick micro-interactions (button press, badge update, state change) */
+  .motion-micro { transition: all 120ms cubic-bezier(0.22, 1, 0.36, 1); }
+
+  /* Emphasis / highlight states (new verdict, important update) */
+  .motion-emphasis { transition: all 400ms cubic-bezier(0.22, 1, 0.36, 1); }
+
+  /* Entrance animation for cards, modals, or new content */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .motion-entrance {
+    animation: fade-in-up 280ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+
+  /* Proof commitment / verdict confirmation pulse */
   @keyframes lock-in-pulse {
     0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45); }
     70%  { box-shadow: 0 0 0 14px hsl(var(--primary) / 0); }
     100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
   }
   .lock-in-pulse { animation: lock-in-pulse 720ms cubic-bezier(0.22, 1, 0.36, 1) 1; }
+
   @media (prefers-reduced-motion: reduce) {
-    .motion-calm, .motion-lock, .lock-in-pulse { transition: none !important; animation: none !important; }
+    .motion-calm,
+    .motion-lock,
+    .motion-hover,
+    .motion-micro,
+    .motion-emphasis,
+    .motion-entrance,
+    .lock-in-pulse {
+      transition: none !important;
+      animation: none !important;
+    }
   }
 }
 
