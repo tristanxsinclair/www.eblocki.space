@@ -1,0 +1,290 @@
+[
+  {
+    "route": "/",
+    "viewport": "375x812",
+    "requestedUrl": "http://127.0.0.1:8080/",
+    "finalPath": "/",
+    "title": "Eblocki Proof Week Beta",
+    "pass": true,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/root-375.png",
+    "heading": "Submit real study work.See if it actually counts.",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 16
+    },
+    "textSample": "EBLOCKI SIGN IN EBLOCKI PROOF WEEK BETA Submit real study work. See if it actually counts. Eblocki is a student-first proof loop. Paste one real piece of work, get an honest verdict, and leave with one clear next step. Start Proof Week See How It Works Free beta. You submit real work, not plans. Hon"
+  },
+  {
+    "route": "/onboarding",
+    "viewport": "375x812",
+    "requestedUrl": "http://127.0.0.1:8080/onboarding",
+    "finalPath": "/auth",
+    "title": "Sign in | EBLOCKI",
+    "pass": false,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/onboarding-375.png",
+    "heading": "Sign in",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 164
+    },
+    "textSample": "EBLOCKI SIGN IN Sign in to submit real work, get an honest verdict, and see your next step. Email Password Sign in No account? Create one.Forgot password? You will return to the page you were trying to open after sign-in."
+  },
+  {
+    "route": "/proof",
+    "viewport": "375x812",
+    "requestedUrl": "http://127.0.0.1:8080/proof",
+    "finalPath": "/auth",
+    "title": "Sign in | EBLOCKI",
+    "pass": false,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/proof-375.png",
+    "heading": "Sign in",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 164
+    },
+    "textSample": "EBLOCKI SIGN IN Sign in to submit real work, get an honest verdict, and see your next step. Email Password Sign in No account? Create one.Forgot password? You will return to the page you were trying to open after sign-in."
+  },
+  {
+    "route": "/dashboard",
+    "viewport": "375x812",
+    "requestedUrl": "http://127.0.0.1:8080/dashboard",
+    "finalPath": "/auth",
+    "title": "Sign in | EBLOCKI",
+    "pass": false,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/dashboard-375.png",
+    "heading": "Sign in",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 164
+    },
+    "textSample": "EBLOCKI SIGN IN Sign in to submit real work, get an honest verdict, and see your next step. Email Password Sign in No account? Create one.Forgot password? You will return to the page you were trying to open after sign-in."
+  },
+  {
+    "route": "/start-today",
+    "viewport": "375x812",
+    "requestedUrl": "http://127.0.0.1:8080/start-today",
+    "finalPath": "/auth",
+    "title": "Sign in | EBLOCKI",
+    "pass": false,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/start-today-375.png",
+    "heading": "Sign in",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 164
+    },
+    "textSample": "EBLOCKI SIGN IN Sign in to submit real work, get an honest verdict, and see your next step. Email Password Sign in No account? Create one.Forgot password? You will return to the page you were trying to open after sign-in."
+  },
+  {
+    "route": "/coach",
+    "viewport": "375x812",
+    "requestedUrl": "http://127.0.0.1:8080/coach",
+    "finalPath": "/auth",
+    "title": "Sign in | EBLOCKI",
+    "pass": false,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/coach-375.png",
+    "heading": "Sign in",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 164
+    },
+    "textSample": "EBLOCKI SIGN IN Sign in to submit real work, get an honest verdict, and see your next step. Email Password Sign in No account? Create one.Forgot password? You will return to the page you were trying to open after sign-in."
+  },
+  {
+    "route": "/",
+    "viewport": "390x844",
+    "requestedUrl": "http://127.0.0.1:8080/",
+    "finalPath": "/",
+    "title": "Eblocki Proof Week Beta",
+    "pass": true,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/root-390.png",
+    "heading": "Submit real study work.See if it actually counts.",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 16
+    },
+    "textSample": "EBLOCKI SIGN IN EBLOCKI PROOF WEEK BETA Submit real study work. See if it actually counts. Eblocki is a student-first proof loop. Paste one real piece of work, get an honest verdict, and leave with one clear next step. Start Proof Week See How It Works Free beta. You submit real work, not plans. Hon"
+  },
+  {
+    "route": "/onboarding",
+    "viewport": "390x844",
+    "requestedUrl": "http://127.0.0.1:8080/onboarding",
+    "finalPath": "/auth",
+    "title": "Sign in | EBLOCKI",
+    "pass": false,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/onboarding-390.png",
+    "heading": "Sign in",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 180
+    },
+    "textSample": "EBLOCKI SIGN IN Sign in to submit real work, get an honest verdict, and see your next step. Email Password Sign in No account? Create one.Forgot password? You will return to the page you were trying to open after sign-in."
+  },
+  {
+    "route": "/proof",
+    "viewport": "390x844",
+    "requestedUrl": "http://127.0.0.1:8080/proof",
+    "finalPath": "/auth",
+    "title": "Sign in | EBLOCKI",
+    "pass": false,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/proof-390.png",
+    "heading": "Sign in",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 180
+    },
+    "textSample": "EBLOCKI SIGN IN Sign in to submit real work, get an honest verdict, and see your next step. Email Password Sign in No account? Create one.Forgot password? You will return to the page you were trying to open after sign-in."
+  },
+  {
+    "route": "/dashboard",
+    "viewport": "390x844",
+    "requestedUrl": "http://127.0.0.1:8080/dashboard",
+    "finalPath": "/auth",
+    "title": "Sign in | EBLOCKI",
+    "pass": false,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/dashboard-390.png",
+    "heading": "Sign in",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 180
+    },
+    "textSample": "EBLOCKI SIGN IN Sign in to submit real work, get an honest verdict, and see your next step. Email Password Sign in No account? Create one.Forgot password? You will return to the page you were trying to open after sign-in."
+  },
+  {
+    "route": "/start-today",
+    "viewport": "390x844",
+    "requestedUrl": "http://127.0.0.1:8080/start-today",
+    "finalPath": "/auth",
+    "title": "Sign in | EBLOCKI",
+    "pass": false,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/start-today-390.png",
+    "heading": "Sign in",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 180
+    },
+    "textSample": "EBLOCKI SIGN IN Sign in to submit real work, get an honest verdict, and see your next step. Email Password Sign in No account? Create one.Forgot password? You will return to the page you were trying to open after sign-in."
+  },
+  {
+    "route": "/coach",
+    "viewport": "390x844",
+    "requestedUrl": "http://127.0.0.1:8080/coach",
+    "finalPath": "/auth",
+    "title": "Sign in | EBLOCKI",
+    "pass": false,
+    "horizontalOverflow": false,
+    "primaryCtaVisible": true,
+    "coreActionClear": true,
+    "consoleErrors": false,
+    "consoleWarnings": [
+      "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+      "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath."
+    ],
+    "screenshot": "docs/release/screenshots/coach-390.png",
+    "heading": "Sign in",
+    "primaryAction": {
+      "text": "EBLOCKI",
+      "href": "/",
+      "top": 180
+    },
+    "textSample": "EBLOCKI SIGN IN Sign in to submit real work, get an honest verdict, and see your next step. Email Password Sign in No account? Create one.Forgot password? You will return to the page you were trying to open after sign-in."
+  }
+]
