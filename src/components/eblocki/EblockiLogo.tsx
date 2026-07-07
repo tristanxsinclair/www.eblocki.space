@@ -6,13 +6,18 @@ interface EblockiLogoProps {
   className?: string;
   showTagline?: boolean;
   alt?: string;
+  /**
+   * Base path without extension. Component will append sizes for srcset.
+   * Recommended: keep the 1024px master at /brand/eblocki-logo-circular.png
+   */
   src?: string;
 }
 
 /**
- * Reusable Eblocki brand logo.
- * Source of truth = approved circular logo at /brand/eblocki-logo-circular.png
- * Doctrine: Proof over Intention. Clean. Premium. Disciplined.
+ * Reusable Eblocki brand logo with performance optimizations.
+ * - Uses srcset for responsive loading
+ * - Critical nav logos use eager + high fetchpriority
+ * - Clean fallback matching approved aesthetic
  */
 export function EblockiLogo({
   variant = "full",
@@ -20,7 +25,7 @@ export function EblockiLogo({
   className,
   showTagline = false,
   alt = "Eblocki - Proof over Intention",
-  src = "/brand/eblocki-logo-circular.png",
+  src = "/brand/eblocki-logo-circular",
 }: EblockiLogoProps) {
   const sizeClasses = {
     sm: "h-6 w-6",
@@ -37,6 +42,17 @@ export function EblockiLogo({
   };
 
   const isIconOnly = variant === "mark" || variant === "appIcon";
+  const isCritical = variant === "compact" || variant === "mark"; // nav + headers
+
+  // Responsive srcset (create these sizes in public/brand/)
+  const srcSet = [
+    `${src}-64.png 64w`,
+    `${src}-128.png 128w`,
+    `${src}-256.png 256w`,
+    `${src}.png 512w`,
+  ].join(", ");
+
+  const sizes = "(max-width: 640px) 64px, 128px";
 
   const LogoMark = () => (
     <div
@@ -48,10 +64,13 @@ export function EblockiLogo({
       aria-hidden={isIconOnly}
     >
       <img
-        src={src}
+        src={`${src}.png`}
+        srcSet={srcSet}
+        sizes={sizes}
         alt={alt}
         className="h-full w-full object-contain"
-        loading="lazy"
+        loading={isCritical ? "eager" : "lazy"}
+        fetchPriority={isCritical ? "high" : "auto"}
         onError={(e) => {
           const img = e.currentTarget;
           img.style.display = "none";
@@ -59,7 +78,7 @@ export function EblockiLogo({
           if (fallback) fallback.style.display = "flex";
         }}
       />
-      {/* Elegant fallback (only shows if real image fails to load) */}
+      {/* Elegant fallback (only shows if real image fails) */}
       <div
         className="logo-fallback absolute inset-0 hidden items-center justify-center bg-black"
         aria-hidden
