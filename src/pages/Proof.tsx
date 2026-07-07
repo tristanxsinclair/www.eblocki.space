@@ -52,6 +52,7 @@ import {
 } from "@/lib/eblocki/first-proof";
 import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
 import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -515,10 +516,8 @@ export default function Proof() {
           supabase.from("proof_artifacts")
             .select("id,domain,quality_score,evidence_strength,transfer_flag,pressure_flag,proof_tier,created_at")
             .eq("user_id", user.id).order("created_at", { ascending: false }).limit(200),
-          supabase.from("court_verdicts")
-            .select("verdict,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100),
-          supabase.from("identity_ledger")
-            .select("kind,domain,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100),
+          supabase.from("court_verdicts").select("verdict,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100),
+          supabase.from("identity_ledger").select("kind,domain,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100),
           supabase.from("user_modes").select("mode_id").eq("user_id", user.id).eq("is_active", true),
         ]);
         const temporal = computeTemporal({
@@ -556,8 +555,8 @@ export default function Proof() {
             completed_at: new Date().toISOString(),
             completion_reflection: reflection.trim() || null,
           })
-          .eq("id", linkedContract.id)
-          .is("proof_artifact_id", null);
+        .eq("id", linkedContract.id)
+        .is("proof_artifact_id", null);
         if (!upErr) contractClosed = true;
       }
 
@@ -782,24 +781,24 @@ export default function Proof() {
       />
       <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 min-w-0 max-w-full text-wrap-safe">
         {firstProofMode ? (
-          <header className="min-w-0">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-              Activation · First Proof
-            </span>
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">
-              {FIRST_PROOF_COPY.title}
-            </h1>
-            <p className="mt-2 text-sm md:text-base text-muted-foreground break-words">
-              {FIRST_PROOF_COPY.subtitle}
-            </p>
+          <header className="min-w-0 flex items-center gap-3">
+            <EblockiLogo variant="mark" size="md" />
+            <div>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                Activation · First Proof
+              </span>
+              <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">
+                {FIRST_PROOF_COPY.title}
+              </h1>
+            </div>
           </header>
         ) : (
-          <header className="min-w-0">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Check</span>
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Submit proof</h1>
-            <p className="mt-1 text-sm text-muted-foreground break-words">
-              One measurable artifact. Standard before submission.
-            </p>
+          <header className="min-w-0 flex items-center gap-3">
+            <EblockiLogo variant="mark" size="md" />
+            <div>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Check</span>
+              <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Submit proof</h1>
+            </div>
           </header>
         )}
 
@@ -1145,7 +1144,7 @@ export default function Proof() {
                   {activeModes.length === 0 ? (
                     <div className="mt-2 text-xs text-muted-foreground">
                       No areas set up yet. <Link to="/modes" className="text-primary hover:underline">Set up areas</Link> so proof routes correctly.
-                    </div>
+                </div>
                   ) : (
                     <select
                       id="proof-mode-select"
@@ -1232,8 +1231,11 @@ export default function Proof() {
                       onChange={(e) => setArtifactType(e.target.value)}
                       className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
-                      {ARTIFACT_TYPES.map((t) => (
-                        <option key={t} value={t}>{t}</option>
+                      <option value={FIRST_PROOF_DEFAULTS.artifactType}>General</option>
+                      {activeModes.map((mode) => (
+                        <option key={mode.mode_id} value={mode.mode_id.toLowerCase()}>
+                          {mode.display_name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -1783,6 +1785,9 @@ export default function Proof() {
                         <div className="text-sm font-medium break-words">{p.title}</div>
                         {p.required_artifact && <div className="text-xs text-muted-foreground mt-1 break-words">Required: {p.required_artifact}</div>}
                         {p.evidence_standard && <div className="text-xs text-muted-foreground mt-0.5 break-words">Standard: {p.evidence_standard}</div>}
+                        {p.proof_artifact_id && (
+                          <div className="mt-1 text-destructive">Already closed - submitting will create a new artifact but won't reopen.</div>
+                        )}
                       </div>
                       <Button
                         size="sm"
@@ -1968,7 +1973,7 @@ function ProofVerdictDetails({
           <div className="font-medium">{impact.headline}</div>
           <div className="mt-1 text-xs opacity-90">{impact.subtext}</div>
           <div className="mt-2 text-xs opacity-90">
-            {verdict.identityEscalationAllowed ? "Standard raised" : "Standard not raised"}: {verdict.identityEscalationReason}
+            {verdict.identityEscalationAllowed ? "Standard raised" : "Blocked"}: {verdict.identityEscalationReason}
           </div>
         </div>
         {submittedStudyClassification && !firstProofMode && (
@@ -2030,7 +2035,7 @@ function CompletedArtifactCard({ artifact }: { artifact: ProofArtifactRow }) {
             </span>
           ) : (
             <EvidenceStrengthBadge strength={artifact.evidence_strength as EvidenceStrength} score={artifact.quality_score} />
-          )
+          )}
         )}
       </div>
       <div className="text-sm font-medium mt-1 break-words">{artifact.title}</div>
@@ -2046,10 +2051,7 @@ function CompletedArtifactCard({ artifact }: { artifact: ProofArtifactRow }) {
       )}
       {artifact.attachment_url && (
         <a
-          href={artifact.attachment_url}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-2 inline-flex items-center gap-1.5 text-xs text-primary hover:underline break-all"
+          href={artifact.attachment_url} target="_blank" rel="noreferrer" className="text-primary hover:underline break-all"
         >
           <Paperclip className="h-3 w-3 shrink-0" />
           {artifact.attachment_name ?? "attached evidence"}
