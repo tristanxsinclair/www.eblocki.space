@@ -13,7 +13,6 @@ import { EvidenceStrengthBadge, ModeBadge, StateBadge } from "@/components/ebloc
 import {
   ArrowRight,
   CircleDot,
-  Crosshair,
   FileText,
   Gavel,
   Layers,
@@ -54,6 +53,7 @@ import { ProofClosureCard } from "@/components/eblocki/ProofClosureCard";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { hasProofOnDate, plainEvidenceStrength } from "@/lib/eblocki/user-facing-copy";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
 const EVIDENCE_STRENGTHS: EvidenceStrength[] = ["weak", "moderate", "strong", "elite"];
 
@@ -234,13 +234,16 @@ export default function Dashboard() {
       />
       <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-5">
         <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">
-          <div className="min-w-0">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Today
-            </span>
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1">
-              Today
-            </h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <EblockiLogo variant="mark" size="md" />
+            <div className="min-w-0">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                Today
+              </span>
+              <h1 className="text-2xl md:text-3xl font-semibold mt-1">
+                Today
+              </h1>
+            </div>
           </div>
           {!isMobile && (
             <div className="flex gap-2 flex-wrap">
@@ -421,28 +424,9 @@ export default function Dashboard() {
                           <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
                         </div>
                       </Card>
-                    </>
-                  }
-                  auditSlot={
-                    <>
-                      <TemporalIntelligencePanel />
-                      <TemporalModelAuditPanel />
-                      <div className="space-y-3">
-                        <ProductMatchPanel
-                          artifacts={allArtifacts}
-                          temporal={temporalResult}
-                          accessLevel="free"
-                          operatingProfile={{
-                            primaryDomain: activeDomains[0] ?? null,
-                            recommendationsAllowed: true,
-                            trustPreference: "neutral",
-                          }}
-                        />
-                        <InterestSignalCard />
-                      </div>
-                    </>
-                  }
-                />
+                    </div>
+                  </Card>
+                </>
               </div>
             </MobileCollapse>
           ) : (
@@ -464,7 +448,7 @@ export default function Dashboard() {
                     <TemporalCommandCard result={temporalResult} />
                   ) : (
                     <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
-                  )}
+                </>
                   <TemporalFeedbackPanel />
                   <InterventionCard state={(currentState as BehaviouralState) ?? state} />
                 </>
@@ -579,7 +563,7 @@ export function CommandHero({
           label="Latest verdict"
           value={view.commandLayer.latestCourtSignal}
           hint={identityImpact?.headline}
-        />
+        </div>
       </div>
     </Card>
   );
@@ -616,16 +600,18 @@ function EvidenceCommandPanel({
           <EvidenceBlock icon={<FileText />} label="Next proof" action="Submit" href="/proof">
             {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open coach to forge one."}
           </EvidenceBlock>
-          <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3`}>
+          <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3">
             <EvidenceBlock icon={<Gavel />} label="Last verdict" action="Open" href="/proof">
               {latestArtifact
                 ? `${latestArtifact.title} - ${plainEvidenceStrength(latestArtifact.evidence_strength)}`
                 : "No proof yet. Submit one artifact to start the verdict loop."}
+              : "No proof yet. Submit one artifact to start the record."}
             </EvidenceBlock>
             <EvidenceBlock icon={<CircleDot />} label="Weak spot" action="Modes" href="/modes">
               {view.evidenceSummary.strongestDomain
                 ? `Strongest: ${view.evidenceSummary.strongestDomain}. Weakest: ${view.evidenceSummary.weakestDomain ?? "none flagged"}.`
                 : "No weekly mode signal yet."}
+              : "No weekly mode signal yet."}
             </EvidenceBlock>
           </div>
           <button
@@ -694,7 +680,6 @@ function QuickCheckInCard({
   return (
     <Card className="panel p-4 border-border/80 bg-card/50">
       <div className="flex items-center gap-2">
-        <Crosshair className="h-4 w-4 text-primary" />
         <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Quick check-in</span>
       </div>
       <Textarea
@@ -729,7 +714,8 @@ function SectionHeader({ eyebrow, title, detail }: { eyebrow: string; title: str
         <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{eyebrow}</div>
         <h2 className="text-sm font-semibold mt-0.5">{title}</h2>
       </div>
-      {detail && <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{detail}</span>}
+      {detail && <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{detail}</span>
+      )}
     </div>
   );
 }
