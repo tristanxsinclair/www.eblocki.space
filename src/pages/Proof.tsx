@@ -1303,13 +1303,6 @@ export default function Proof() {
             )}
 
             {!firstProofMode && shouldShowLiveStudyHint && content.trim().length >= 12 && (
-            {!firstProofMode && content.trim().length >= 12 && isStudyDomain(
-              selectedMode?.mode_id,
-              selectedMode?.display_name,
-              linkedContract?.domain,
-              linkedContract?.mode,
-              artifactType,
-            ) && (
               <StudyVerdictHint
                 classification={liveStudyClassification}
                 label="Fake study detector"
