@@ -141,6 +141,33 @@ function buildVerdictExtras(
   return { why, missingStandard, eliteVersion: preview.eliteVersion };
 }
 
+function isStudyDomainSignal(...values: Array<string | null | undefined>): boolean {
+  const text = values.filter(Boolean).join(" ").toLowerCase();
+  if (!text.trim()) return false;
+  return /\b(study|learn|learning|law|legal|psych|psychology|academic|blaw|laws|exam|irac|source-bank|source bank|essay|tutorial|lecture|assignment)\b/.test(text);
+}
+
+function countStatus(verdict: Verdict): string {
+  if (verdict.evidenceStrength === "elite") return "Counted as Elite Proof.";
+  if (verdict.evidenceStrength === "strong") return "Counted as Strong Proof.";
+  if (verdict.evidenceStrength === "moderate") return "Counted as Useful Proof.";
+  return "Did not count yet.";
+}
+
+function todayStatus(verdict: Verdict): string {
+  if (verdict.evidenceStrength === "strong" || verdict.evidenceStrength === "elite") {
+    return "Strong enough to close today.";
+  }
+  if (verdict.evidenceStrength === "moderate") {
+    return "Not strong enough to close today fully.";
+  }
+  return "Today stays open until the proof shows a real artifact.";
+}
+
+function shouldImproveProof(verdict: Verdict): boolean {
+  return verdict.evidenceStrength === "weak" || verdict.evidenceStrength === "moderate";
+}
+
 function VerdictFeedback({ artifactId }: { artifactId: string }) {
   const { user } = useAuth();
   const [choice, setChoice] = useState<"yes" | "kind_of" | "no" | null>(null);
@@ -340,6 +367,19 @@ export default function Proof() {
   const liveStudyClassification = useMemo(
     () => classifyStudyActivity({ content, title, artifactType }),
     [content, title, artifactType],
+  );
+  const shouldShowLiveStudyHint = useMemo(
+    () => isStudyDomainSignal(
+      selectedMode?.mode_id,
+      selectedMode?.display_name,
+      linkedContract?.domain,
+      linkedContract?.mode,
+      linkedContract?.title,
+      linkedContract?.required_artifact,
+      artifactType,
+      title,
+    ),
+    [artifactType, linkedContract, selectedMode, title],
   );
   // Frozen (post-submit) classification of the artifact that produced the verdict.
   const [submittedStudyClassification, setSubmittedStudyClassification] = useState<
@@ -549,7 +589,18 @@ export default function Proof() {
       // post-submit hint reflects the artifact the user actually shipped, not
       // whatever they type next.
       setSubmittedStudyClassification(
-        classifyStudyActivity({ content, title, artifactType }),
+        isStudyDomainSignal(
+          selectedMode?.mode_id,
+          selectedMode?.display_name,
+          linkedContract?.domain,
+          linkedContract?.mode,
+          linkedContract?.title,
+          linkedContract?.required_artifact,
+          effectiveArtifactType,
+          title,
+        )
+          ? classifyStudyActivity({ content, title, artifactType: effectiveArtifactType })
+          : null,
       );
 
       toast.success(
@@ -1076,7 +1127,7 @@ export default function Proof() {
               )
             )}
 
-            {!firstProofMode && content.trim().length >= 12 && (
+            {!firstProofMode && shouldShowLiveStudyHint && content.trim().length >= 12 && (
               <StudyVerdictHint
                 classification={liveStudyClassification}
                 label="Fake study detector"
@@ -1422,98 +1473,11 @@ export default function Proof() {
 
         {verdict && (
           <Card className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden" id="feedback">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2 min-w-0">
-                <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                  {isMobile || firstProofMode ? "Proof submitted" : "Proof Receipt"}
-                </span>
-              </div>
-              {isMobile || firstProofMode ? (
-                <span className="text-sm font-semibold text-primary shrink-0">
-                  {plainVerdictLabel(verdict.evidenceStrength, verdict.qualityScore)}
-                </span>
-              ) : (
-                <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
-              )}
-            </div>
-            {(() => {
-              const impact = verdictIdentityImpact(verdict.evidenceStrength);
-              const toneClass =
-                impact.tone === "warn"
-                  ? "border-amber-500/40 bg-amber-500/5 text-amber-200"
-                  : impact.tone === "good"
-                    ? "border-primary/40 bg-primary/5 text-primary"
-                    : impact.tone === "elite"
-                      ? "border-primary/60 bg-primary/10 text-primary"
-                      : "border-border bg-muted/30 text-foreground";
-              return (
-                <div
-                  className={`mt-3 rounded-sm border p-3 text-sm ${toneClass}`}
-                  data-testid="verdict-identity-impact"
-                >
-                  <div className="font-medium">{impact.headline}</div>
-                  <div className="mt-1 text-xs opacity-90">{impact.subtext}</div>
-                </div>
-              );
-            })()}
-            {firstProofMode ? (
-              <>
-                <div className="mt-3 grid gap-3 text-sm">
-                  <VerdictRow label="What counted" value={verdict.feedback} />
-                  <VerdictRow
-                    label="What was weak or missing"
-                    value={
-                      verdict.evidenceStrength === "elite"
-                        ? "Nothing major — this is a strong first proof."
-                        : verdict.missingStandard
-                    }
-                  />
-                  <VerdictRow label="One next action" value={verdict.nextUpgrade} />
-                </div>
-                <div className="mt-3 rounded-sm border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
-                  Next: open Today for your updated command, then come back tomorrow with the next proof.
-                </div>
-              </>
-            ) : isMobile ? (
-              <>
-                <div className="mt-3 grid gap-3 text-sm">
-                  <VerdictRow label="What counted" value={verdict.feedback} />
-                  <VerdictRow label="Next command" value={verdict.nextUpgrade} />
-                </div>
-                <MobileCollapse eyebrow="Verdict" label="Full verdict details" trackId="proof_verdict_details">
-                  <div className="grid gap-3 text-sm">
-                    <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
-                    <VerdictRow label="Missing standard" value={verdict.missingStandard} />
-                    <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
-                    <VerdictRow label="Why it scored that way" value={verdict.why} />
-                    <VerdictRow label="Elite version" value={verdict.eliteVersion} />
-                    <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
-                    <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
-                    <VerdictRow
-                      label="Standard raised"
-                      value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
-                    />
-                  </div>
-                </MobileCollapse>
-              </>
-            ) : (
-              <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
-                <VerdictRow label="What counted" value={verdict.feedback} />
-                <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
-                <VerdictRow label="Missing standard" value={verdict.missingStandard} />
-                <VerdictRow label="Next command" value={verdict.nextUpgrade} />
-                <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
-                <VerdictRow label="Why it scored that way" value={verdict.why} />
-                <VerdictRow label="Elite version" value={verdict.eliteVersion} />
-                <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
-                <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
-                <VerdictRow
-                  label="Identity escalation"
-                  value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
-                />
-              </div>
-            )}
+            <ProofVerdictSummaryCard
+              verdict={verdict}
+              firstProofMode={firstProofMode}
+              onImprove={() => { setVerdict(null); setSubmittedStudyClassification(null); setDetailOpen(false); }}
+            />
             {verdict.attachmentUrl && (
               <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
                 <Paperclip className="h-3 w-3 text-primary" />
@@ -1523,41 +1487,11 @@ export default function Proof() {
                 </a>
               </div>
             )}
-            {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
-            {submittedStudyClassification && !firstProofMode && (
-              <div className="mt-4">
-                <StudyVerdictHint
-                  classification={submittedStudyClassification}
-                  label="Fake study detector"
-                />
-              </div>
-            )}
-            <div className="mt-4 flex flex-col sm:flex-row gap-2">
-              <Link to="/dashboard" className="w-full sm:w-auto">
-                <Button
-                  size="sm"
-                  className="w-full sm:w-auto min-h-[44px] native-tap"
-                  onClick={() => {
-                    void logEvent(firstProofMode ? "activation_verdict_cta_clicked" : "proof_verdict_cta_clicked", {
-                      route: "/proof",
-                      source: firstProofMode ? "first_proof" : "proof",
-                      ctaName: "back_to_today",
-                      destination: "/dashboard",
-                    });
-                  }}
-                >
-                  {firstProofMode ? "See my next step" : "Back to Today"}
-                </Button>
-              </Link>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full sm:w-auto min-h-[44px] native-tap"
-                onClick={() => { setVerdict(null); setSubmittedStudyClassification(null); setDetailOpen(false); }}
-              >
-                Submit another proof
-              </Button>
-            </div>
+            <ProofVerdictDetails
+              verdict={verdict}
+              firstProofMode={firstProofMode}
+              submittedStudyClassification={submittedStudyClassification}
+            />
           </Card>
         )}
 
@@ -1702,6 +1636,125 @@ function VerdictRow({ label, value }: { label: string; value: string }) {
       <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
       <p className="mt-1 text-sm break-words whitespace-pre-wrap">{value}</p>
     </div>
+  );
+}
+
+function ProofVerdictSummaryCard({
+  verdict,
+  firstProofMode,
+  onImprove,
+}: {
+  verdict: Verdict;
+  firstProofMode: boolean;
+  onImprove: () => void;
+}) {
+  const improve = shouldImproveProof(verdict);
+  return (
+    <div className="rounded-sm border border-primary/35 bg-primary/5 p-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 min-w-0">
+          <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof saved.</span>
+        </div>
+        <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
+      </div>
+      <div className="mt-3 grid gap-3 text-sm">
+        <VerdictRow label="Count status" value={countStatus(verdict)} />
+        <VerdictRow label="Today status" value={todayStatus(verdict)} />
+        <VerdictRow label="One next command" value={verdict.nextUpgrade} />
+      </div>
+      <div className="mt-4 flex flex-col sm:flex-row gap-2">
+        {improve ? (
+          <Button size="sm" className="w-full sm:w-auto min-h-[44px] native-tap" onClick={onImprove}>
+            Improve proof
+          </Button>
+        ) : (
+          <Link to="/dashboard" className="w-full sm:w-auto">
+            <Button
+              size="sm"
+              className="w-full sm:w-auto min-h-[44px] native-tap"
+              onClick={() => {
+                void logEvent(firstProofMode ? "activation_verdict_cta_clicked" : "proof_verdict_cta_clicked", {
+                  route: "/proof",
+                  source: firstProofMode ? "first_proof" : "proof",
+                  ctaName: "back_to_today",
+                  destination: "/dashboard",
+                });
+              }}
+            >
+              {firstProofMode ? "See my next step" : "Back to Today"}
+            </Button>
+          </Link>
+        )}
+        <Button
+          size="sm"
+          variant="outline"
+          className="w-full sm:w-auto min-h-[44px] native-tap"
+          onClick={onImprove}
+        >
+          Submit another proof
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ProofVerdictDetails({
+  verdict,
+  firstProofMode,
+  submittedStudyClassification,
+}: {
+  verdict: Verdict;
+  firstProofMode: boolean;
+  submittedStudyClassification: ReturnType<typeof classifyStudyActivity> | null;
+}) {
+  const impact = verdictIdentityImpact(verdict.evidenceStrength);
+  const toneClass =
+    impact.tone === "warn"
+      ? "border-amber-500/40 bg-amber-500/5 text-amber-200"
+      : impact.tone === "good"
+        ? "border-primary/40 bg-primary/5 text-primary"
+        : impact.tone === "elite"
+          ? "border-primary/60 bg-primary/10 text-primary"
+          : "border-border bg-muted/30 text-foreground";
+
+  return (
+    <details className="group mt-4 rounded-sm border border-border bg-card/50 p-4 max-w-full overflow-hidden">
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Verdict details</span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="mt-3 grid gap-3 text-sm">
+        <VerdictRow label="Why it scored that way" value={verdict.why} />
+        <VerdictRow label="What counted" value={verdict.feedback} />
+        <VerdictRow
+          label={firstProofMode ? "What was weak or missing" : "Missing standard"}
+          value={verdict.evidenceStrength === "elite" ? "Nothing major - this meets the selected standard." : verdict.missingStandard}
+        />
+        <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
+        <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
+        <VerdictRow label="Elite version" value={verdict.eliteVersion} />
+        <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
+        <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
+        <div
+          className={`rounded-sm border p-3 text-sm ${toneClass}`}
+          data-testid="verdict-identity-impact"
+        >
+          <div className="font-medium">{impact.headline}</div>
+          <div className="mt-1 text-xs opacity-90">{impact.subtext}</div>
+          <div className="mt-2 text-xs opacity-90">
+            {verdict.identityEscalationAllowed ? "Standard raised" : "Standard not raised"}: {verdict.identityEscalationReason}
+          </div>
+        </div>
+        {submittedStudyClassification && !firstProofMode && (
+          <StudyVerdictHint
+            classification={submittedStudyClassification}
+            label="Fake study detector"
+          />
+        )}
+        {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
+      </div>
+    </details>
   );
 }
 
