@@ -30,7 +30,7 @@ export function humaniseModeId(
   if (upper in MODE_LABELS) return (MODE_LABELS as Record<string, string>)[upper];
   // Fallback: SNAKE_CASE / snake_case → Title Case
   return id
-    .replace(/[_\-]+/g, " ")
+    .replace(/[_-]+/g, " ")
     .toLowerCase()
     .split(" ")
     .filter(Boolean)
