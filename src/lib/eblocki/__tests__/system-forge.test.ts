@@ -89,6 +89,20 @@ describe("System Forge generator", () => {
     expect(isArtifactProducingCommand(draft.firstCommand)).toBe(true);
   });
 
+  it("keeps the bottleneck out of skill chips", () => {
+    const bottleneck = "You already have the workbook and cockpit. The bottleneck is avoiding timed application.";
+    const draft = generateSystemForgeDraft({
+      ...baseInput,
+      domain: "law",
+      currentBottleneck: bottleneck,
+    });
+
+    expect(draft.bottleneck).toBe(bottleneck);
+    expect(draft.skills).toContain("bottleneck diagnosis");
+    expect(draft.skills).not.toContain(`${bottleneck} diagnosis`);
+    expect(draft.skills.every((skill) => skill.length < 40)).toBe(true);
+  });
+
   it("evaluates submitted reps without identity escalation", () => {
     const draft = generateSystemForgeDraft({
       ...baseInput,
@@ -106,5 +120,27 @@ describe("System Forge generator", () => {
     expect(verdict.weakness).toBeTruthy();
     expect(verdict.nextUpgrade).toBeTruthy();
   });
-});
 
+  it("does not show a default weakness for elite reps", () => {
+    const draft = generateSystemForgeDraft({
+      ...baseInput,
+      domain: "law",
+    });
+
+    const verdict = evaluateSystemForgeRep({
+      system: draft,
+      proofContent: [
+        "Issue: whether the statute applies on these facts.",
+        "Rule: section 18 requires authority, context, and purpose.",
+        "Authority: one case and one statutory provision are applied.",
+        "Application: the facts satisfy the provision because the timing, jurisdiction, and conduct match the rule.",
+        "Conclusion: the stronger answer is available, but the weakness was insufficient counterargument.",
+        "Correction: next time I will add the opposing interpretation and score the answer against the rubric.",
+      ].join(" "),
+      selfScore: 10,
+    });
+
+    expect(verdict.verdict).toBe("elite");
+    expect(verdict.weakness).toMatch(/No major weakness|Preserve the standard/i);
+  });
+});

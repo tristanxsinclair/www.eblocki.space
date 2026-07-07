@@ -254,7 +254,7 @@ export function generateSystemForgeDraft(input: SystemForgeInput): SystemForgeDr
   const outcome = clean(input.desiredOutcome) || "Produce better proof each week";
   const bottleneck = clean(input.currentBottleneck) || "Avoiding the artifact-producing rep";
   const firstCommand = firstCommandFor(preset, availableMinutesPerDay);
-  const bottleneckSkill = bottleneck.length > 3 ? `${bottleneck} diagnosis` : "bottleneck diagnosis";
+  const bottleneckSkill = "bottleneck diagnosis";
 
   return {
     name: `${preset.label} Proof System`,
@@ -311,6 +311,10 @@ export function evaluateSystemForgeRep(input: {
     weakness = "The proof does not name the weakness or correction, so the next rep cannot improve cleanly.";
   } else if (input.selfScore && input.selfScore >= 9 && score.qualityScore <= 6) {
     weakness = "Self-score is ahead of the evidence. Lower confidence and add concrete artifact detail.";
+  } else if (score.evidenceStrength === "elite") {
+    weakness = "No major weakness in this rep. Preserve the standard and repeat it under a fresh constraint.";
+  } else if (score.evidenceStrength === "strong") {
+    weakness = "Strong proof. The next upgrade is to repeat the standard under a tighter constraint.";
   }
 
   return {
