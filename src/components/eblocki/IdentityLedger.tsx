@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, XCircle, ArrowUpRight } from "lucide-react";
+import { plainCourtVerdict, plainLedgerText } from "@/lib/eblocki/user-facing-copy";
 
 interface LedgerRow {
   id: string;
@@ -55,10 +56,11 @@ export function IdentityLedger({ userId, limit = 25 }: { userId: string; limit?:
             : r.kind === "escalation"
               ? "text-primary border-primary/30"
               : "text-accent border-accent/30";
-        const verdictLabel = (r.verdict ?? "").replace(/_/g, " ");
-        const isLong = (r.summary ?? "").length > 180;
+        const verdictLabel = r.verdict ? plainCourtVerdict(r.verdict) : "";
+        const rawSummary = plainLedgerText(r.summary ?? "");
+        const isLong = rawSummary.length > 180;
         const isOpen = !!expanded[r.id];
-        const summaryText = !isLong || isOpen ? r.summary : r.summary.slice(0, 180).trimEnd() + "…";
+        const summaryText = !isLong || isOpen ? rawSummary : rawSummary.slice(0, 180).trimEnd() + "…";
         return (
           <li
             key={r.id}

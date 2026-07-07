@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "eblocki-mcp",
+      "version": "0.1.0",
+      "title": "Eblocki"
+    },
+    "tools": [
+      {
+        "name": "check_proof_artifact",
+        "title": "Check proof artifact",
+        "description": "Judge pasted proof artifact text against Eblocki's rubric. Read-only. Does not access account data or verify external facts.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "artifact_text": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Pasted artifact text only. No files, links, or secrets."
+            },
+            "goal": {
+              "type": "string",
+              "description": "Optional claimed goal or completion statement."
+            },
+            "domain_hint": {
+              "type": "string",
+              "description": "Optional domain hint such as law, product, psychology, or general."
+            }
+          },
+          "required": [
+            "artifact_text"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_proof_standard",
+        "title": "Get proof standard",
+        "description": "Return Eblocki's rubric for a given goal/domain. Read-only. Does not access account data or persist anything.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "goal": {
+              "type": "string",
+              "description": "Optional task or goal description."
+            },
+            "domain_hint": {
+              "type": "string",
+              "description": "Optional domain hint such as law, product, psychology, or general."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "suggest_next_command",
+        "title": "Suggest next command",
+        "description": "Return the next Eblocki proof command from supplied artifact text. Read-only. Does not access account history or write results.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "artifact_text": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Pasted artifact text only."
+            },
+            "goal": {
+              "type": "string",
+              "description": "Optional goal or claimed completion statement."
+            },
+            "domain_hint": {
+              "type": "string",
+              "description": "Optional domain hint."
+            }
+          },
+          "required": [
+            "artifact_text"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
