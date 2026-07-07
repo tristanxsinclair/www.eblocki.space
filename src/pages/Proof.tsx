@@ -44,6 +44,8 @@ import {
   FIRST_PROOF_EXAMPLES,
   FIRST_PROOF_STANDARD_PREVIEW,
   isFirstProofMode,
+  isUglyStartMode,
+  UGLY_START_COPY,
 } from "@/lib/eblocki/first-proof";
 import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
 
@@ -200,6 +202,7 @@ export default function Proof() {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const firstProofMode = isFirstProofMode(params);
+  const uglyStartMode = isUglyStartMode(params);
   const temporalBrief = useMemo(() => parseTemporalProofParams(params), [params]);
   const [firstProofSubmitted, setFirstProofSubmitted] = useState(false);
 
@@ -888,6 +891,33 @@ export default function Proof() {
               <li>• one shipped change</li>
               <li>• one closed loop</li>
             </ul>
+          </Card>
+        )}
+
+        {uglyStartMode && !verdict && (
+          <Card className="panel p-4 border-primary/40 bg-primary/5 max-w-full overflow-hidden">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                  Ugly Start
+                </span>
+                <h2 className="mt-1 text-base font-semibold break-words">
+                  {UGLY_START_COPY.title}
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground break-words">
+                  {UGLY_START_COPY.subtitle}
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                  <MiniPrompt label="Timebox" value="2 minutes" />
+                  <MiniPrompt label="Counts now" value="One rough sentence or one visible artifact." />
+                  <MiniPrompt label="Judgment" value="Quality is not judged until the artifact exists." />
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground break-words">
+                  {UGLY_START_COPY.support}
+                </p>
+              </div>
+            </div>
           </Card>
         )}
 
@@ -1581,6 +1611,15 @@ export default function Proof() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+function MiniPrompt({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-sm border border-primary/20 bg-background/40 p-3 min-w-0">
+      <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm break-words">{value}</div>
+    </div>
   );
 }
 

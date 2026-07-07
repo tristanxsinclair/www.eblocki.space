@@ -31,6 +31,7 @@ describe("dashboard view model", () => {
     const view = buildDashboardViewModel({});
     expect(view.dashboardStatus).toBe("new_user");
     expect(view.emptyStateMessage).toBe("No proof yet. Submit one measurable artifact to activate the command layer.");
+    expect(view.evidenceSummary.proofsTodayCount).toBe(0);
   });
 
   it("handles legacy proof rows", () => {
@@ -78,7 +79,9 @@ describe("dashboard view model", () => {
     expect(view.commandLayer.selectedStandard).toBe("Law Source Bank Standard");
     expect(view.commandLayer.proofContract).toContain("One artifact");
     expect(view.commandLayer.proofContract).toContain("Law Source Bank Standard");
+    expect(view.commandLayer.timebox).toBe("35 minutes");
     expect(view.commandLayer.requiredEvidence).toContain("authority level");
+    expect(view.commandLayer.whatDoesNotCount).toContain("Planning the answer instead of producing the artifact.");
     expect(view.commandSummary.proofRequired).toContain("One artifact");
   });
 
@@ -91,5 +94,48 @@ describe("dashboard view model", () => {
 
     expect(view.commandLayer.latestCourtSignal).toContain("8/10");
     expect(view.commandLayer.latestCourtSignal).toContain("identity escalation blocked");
+  });
+
+  it("counts proofs filed today separately from older proof history", () => {
+    const todayProof = proof({ created_at: new Date().toISOString() });
+    const yesterdayProof = proof({ created_at: daysAgo(1) });
+    const view = buildDashboardViewModel({
+      recentProofs: [todayProof, yesterdayProof],
+      allArtifacts: [todayProof, yesterdayProof],
+    });
+
+    expect(view.evidenceSummary.proofsTodayCount).toBe(1);
+  });
+
+  it("keeps proof-yesterday-only users blocked today", () => {
+    const view = buildDashboardViewModel({
+      now: "2026-07-05T12:00:00.000Z",
+      allArtifacts: [proof({ created_at: "2026-07-04T12:00:00.000Z" })],
+    });
+
+    expect(view.evidenceSummary.proofsTodayCount).toBe(0);
+    expect(view.dashboardStatus).toBe("active");
+  });
+
+  it("unlocks proof-today state when a proof exists on the local day", () => {
+    const view = buildDashboardViewModel({
+      now: "2026-07-05T12:00:00.000Z",
+      allArtifacts: [proof({ created_at: "2026-07-05T09:00:00.000Z" })],
+    });
+
+    expect(view.evidenceSummary.proofsTodayCount).toBe(1);
+  });
+
+  it("uses local day boundaries for proof-today detection in Australia/Perth", () => {
+    const view = buildDashboardViewModel({
+      now: "2026-07-04T16:30:00.000Z", // 2026-07-05 00:30 AWST
+      timeZone: "Australia/Perth",
+      allArtifacts: [
+        proof({ id: "perth-yesterday", created_at: "2026-07-04T01:00:00.000Z" }),
+        proof({ id: "perth-today", created_at: "2026-07-04T17:00:00.000Z" }),
+      ],
+    });
+
+    expect(view.evidenceSummary.proofsTodayCount).toBe(1);
   });
 });
