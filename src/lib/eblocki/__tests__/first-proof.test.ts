@@ -103,7 +103,7 @@ describe("first-proof copy", () => {
   it("keeps the simplified activation copy stable", () => {
     expect(FIRST_PROOF_COPY).toMatchObject({
       title: "Submit your first proof.",
-      helperHeader: "What counts?",
+      helperHeader: "What counts as proof?",
       successTitle: "First proof submitted.",
       successCta: "See my next step",
     });

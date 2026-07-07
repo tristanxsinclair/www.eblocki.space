@@ -51,7 +51,6 @@ export function assertIntegrity(rule: IntegrityRule, condition: boolean, context
   if (INTEGRITY_RULES[rule] && !condition) {
     const msg = `[INTEGRITY VIOLATION] ${rule}${context ? ` — ${context}` : ""}`;
     if (import.meta.env.DEV) throw new Error(msg);
-    // eslint-disable-next-line no-console
     console.warn(msg);
   }
 }
