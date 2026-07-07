@@ -42,6 +42,9 @@ export function ProofWeekPanel({ artifactDates }: { artifactDates: string[] }) {
   }, [user, artifactDates]);
 
   const status = computeProofWeek({ joinedAt, artifactDates });
+  const closedLabel = status.daysWithProof >= 7
+    ? "Proof Week complete - 7/7"
+    : `Proof Week closed - ${status.daysWithProof}/7 days logged`;
 
   const join = async () => {
     if (!user) return;
@@ -78,16 +81,25 @@ export function ProofWeekPanel({ artifactDates }: { artifactDates: string[] }) {
   }
 
   if (status.completed) {
+    const fullyLogged = status.daysWithProof >= 7;
+    const headerLabel = fullyLogged
+      ? "Proof Week complete — 7/7"
+      : `Proof Week closed — ${status.daysWithProof}/7 days logged`;
     return (
       <Card className="panel p-4 md:p-5 border-primary/40 mobile-safe-card text-wrap-safe">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-primary" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Week complete</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">{closedLabel}</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">{headerLabel}</span>
         </div>
         <p className="mt-2 text-sm">
           You logged proof on <span className="text-foreground font-medium">{status.daysWithProof}/7 days</span> ({status.artifactsThisWeek} artifacts).
         </p>
-        <p className="mt-1 text-sm text-muted-foreground">Verdict time. Share feedback and tell us if this is worth paying for.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {status.daysWithProof >= 7
+            ? "Verdict time. Share feedback and tell us if this is worth paying for."
+            : "The 7-day window is closed. Keep logging proof, but do not call this a completed Proof Week."}
+        </p>
         <div className="mt-3 flex gap-2">
           <Link to="/proof#feedback"><Button size="sm"><MessageSquare className="h-3 w-3 mr-1.5" />Give verdict</Button></Link>
         </div>

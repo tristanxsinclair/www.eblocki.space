@@ -1,7 +1,8 @@
 # Mobile Proof Closure Gate
 
-**Last run:** 2026-07-06 (semantic integrity pass)  
-**Branch:** `grok/mobile-proof-closure-20260706-0037`  
+**Last run:** 2026-07-06 (audit + fit pass)  
+**Branch:** `grok/mobile-proof-audit-fit-20260706-0100`  
+**Audit doc:** `docs/release/mobile-proof-fit-audit.md`  
 **Final status:** **READY WITH MINOR RISKS**
 
 ---
@@ -41,6 +42,21 @@ Primary mobile answer: **Submit one proof from today.**
 | **Coach** | Mobile subtitle simplified; GameForge moved below input / “after diagnosis” |
 | **Modes** | Mobile copy **Areas**; card containment (`min-w-0`, stacked metrics, bottom padding) |
 | **Operator** | Mobile-safe container; stacked stat grid |
+
+---
+
+## Pass 3 — Audit + remaining fit fixes
+
+| Area | Change |
+|------|--------|
+| **Audit** | Full why/why-not/who/who-not for 12 issues in `mobile-proof-fit-audit.md` |
+| **Coach mobile** | Focus chips collapsed; `internalPromptSummary` hidden on mobile; “Response style” not “Mode” |
+| **More nav** | “Modes” → **Areas** in mobile More drawer |
+| **GameForge** | Mobile-safe container + bottom padding above nav |
+
+**Product target documented:** ambitious inconsistent proof-driven users — not casual habit trackers.
+
+**Advanced systems not removed:** Operator, GameForge, forecast, temporal — behind More or disclosure by design.
 
 ---
 
@@ -108,7 +124,7 @@ Verdict trichotomy: **Counted** / **Needs upgrade** / **Did not count yet**.
 | Command | Result | Notes |
 |---------|--------|-------|
 | `npm run build` | **PASS** | ~4s |
-| `npm run test -- --run` | **PASS** | **271/271** tests (includes closure semantics tests) |
+| `npm run test -- --run` | **PASS** | **271/271** tests (includes closure semantics + audit pass) |
 | `npm run lint` | **FAIL** | 69 pre-existing repo-wide issues |
 | `npm run lint:eblocki` | **PASS** | |
 

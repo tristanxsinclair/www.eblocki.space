@@ -360,7 +360,7 @@ export function GameForgeShell() {
     : "";
 
   return (
-    <div className="px-4 md:px-8 py-6 max-w-6xl mx-auto space-y-5">
+    <div className="mobile-safe-page px-4 md:px-8 py-6 max-w-6xl mx-auto space-y-5 min-w-0 max-w-full pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-6">
       <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">GameForge // Practice Engine</div>
