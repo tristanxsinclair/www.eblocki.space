@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard.tsx";
 import Coach from "./pages/Coach.tsx";
 import Sheet from "./pages/Sheet.tsx";
 import Proof from "./pages/Proof.tsx";
+import Systems from "./pages/Systems.tsx";
 import Modes from "./pages/Modes.tsx";
 import ModeDetail from "./pages/ModeDetail.tsx";
 import Settings from "./pages/Settings.tsx";
@@ -77,6 +78,7 @@ const App = () => (
             <Route path="/start" element={<Protected><StartToday /></Protected>} />
             <Route path="/start-today" element={<Protected><StartToday /></Protected>} />
             <Route path="/proof" element={<Protected><Proof /></Protected>} />
+            <Route path="/systems" element={<Protected><Systems /></Protected>} />
             <Route path="/proof-week" element={<Protected><ProofWeek /></Protected>} />
             <Route path="/modes" element={<Protected><Modes /></Protected>} />
             <Route path="/modes/:modeId" element={<Protected><ModeDetail /></Protected>} />

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
@@ -8,9 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Seo } from "@/components/Seo";
+import { buildDashboardViewModel } from "@/lib/eblocki/dashboard-view-model";
+import { buildProofEntryHref, UGLY_START_COPY } from "@/lib/eblocki/first-proof";
+import { localDayKey } from "@/lib/eblocki/local-day";
 import { ArrowRight, CheckCircle2, Crosshair, Gavel, Loader2, MessageSquare, Sparkles } from "lucide-react";
 
 type UserMode = { mode_id: string; display_name: string };
+type DailyControlSheetRow = Pick<Tables<"daily_control_sheets">, "prime_objective" | "avoidance_signal" | "next_best_action" | "state">;
+type ProofCommitmentRow = Tables<"proof_commitments">;
+type ProofArtifactRow = Pick<
+  Tables<"proof_artifacts">,
+  "id" | "domain" | "title" | "artifact_type" | "evidence_strength" | "quality_score" | "transfer_flag" | "pressure_flag" | "created_at" | "next_upgrade" | "temporal_snapshot"
+>;
 
 const STEPS = [
   {
@@ -50,7 +60,7 @@ export default function StartToday() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const planMode = searchParams.get("plan") === "1";
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const today = useMemo(() => localDayKey(), []);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Record<string, string>>({
     prime_objective: "",
@@ -61,6 +71,10 @@ export default function StartToday() {
   });
   const [modes, setModes] = useState<UserMode[]>([]);
   const [loadingModes, setLoadingModes] = useState(true);
+  const [gateError, setGateError] = useState<string | null>(null);
+  const [todaySheet, setTodaySheet] = useState<DailyControlSheetRow | null>(null);
+  const [pendingContracts, setPendingContracts] = useState<ProofCommitmentRow[]>([]);
+  const [allArtifacts, setAllArtifacts] = useState<ProofArtifactRow[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ contractId: string | null } | null>(null);
@@ -73,34 +87,93 @@ export default function StartToday() {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_modes")
-      .select("mode_id, display_name")
-      .eq("user_id", user.id)
-      .eq("is_active", true)
-      .order("display_name")
-      .then(({ data }) => {
-        setModes((data as UserMode[]) ?? []);
-        setLoadingModes(false);
-      });
-    supabase
-      .from("daily_control_sheets")
-      .select("prime_objective,avoidance_signal,next_best_action")
-      .eq("user_id", user.id)
-      .eq("sheet_date", today)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!data) return;
-        setForm((f) => ({
-          ...f,
-          prime_objective: data.prime_objective ?? f.prime_objective,
-          avoidance_signal: data.avoidance_signal ?? f.avoidance_signal,
-          next_best_action: data.next_best_action ?? f.next_best_action,
-        }));
-      });
+    let cancelled = false;
+    (async () => {
+      setLoadingModes(true);
+      setGateError(null);
+      try {
+        const [modesRes, sheetRes, pendingRes, artifactsRes] = await Promise.all([
+          supabase
+            .from("user_modes")
+            .select("mode_id, display_name")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .order("display_name"),
+          supabase
+            .from("daily_control_sheets")
+            .select("prime_objective,avoidance_signal,next_best_action,state")
+            .eq("user_id", user.id)
+            .eq("sheet_date", today)
+            .maybeSingle(),
+          supabase
+            .from("proof_commitments")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("status", "pending")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("proof_artifacts")
+            .select("id,domain,title,artifact_type,evidence_strength,quality_score,transfer_flag,pressure_flag,created_at,next_upgrade,temporal_snapshot")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(200),
+        ]);
+
+        if (modesRes.error) throw modesRes.error;
+        if (sheetRes.error) throw sheetRes.error;
+        if (pendingRes.error) throw pendingRes.error;
+        if (artifactsRes.error) throw artifactsRes.error;
+        if (cancelled) return;
+
+        const seededSheet = (sheetRes.data as DailyControlSheetRow | null) ?? null;
+        setModes((modesRes.data as UserMode[]) ?? []);
+        setTodaySheet(seededSheet);
+        setPendingContracts((pendingRes.data as ProofCommitmentRow[]) ?? []);
+        setAllArtifacts((artifactsRes.data as ProofArtifactRow[]) ?? []);
+        if (seededSheet) {
+          setForm((f) => ({
+            ...f,
+            prime_objective: seededSheet.prime_objective ?? f.prime_objective,
+            avoidance_signal: seededSheet.avoidance_signal ?? f.avoidance_signal,
+            next_best_action: seededSheet.next_best_action ?? f.next_best_action,
+          }));
+        }
+      } catch (fetchError) {
+        if (!cancelled) {
+          const message = fetchError instanceof Error ? fetchError.message : "Could not load today's command.";
+          setGateError(message);
+        }
+      } finally {
+        if (!cancelled) setLoadingModes(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, today]);
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const recentProofs = useMemo(() => allArtifacts.slice(0, 5), [allArtifacts]);
+  const view = useMemo(
+    () =>
+      buildDashboardViewModel({
+        today: todaySheet,
+        pending: pendingContracts,
+        recentProofs,
+        allArtifacts,
+        modesCount: modes.length,
+      }),
+    [todaySheet, pendingContracts, recentProofs, allArtifacts, modes.length],
+  );
+  const hasProofToday = view.evidenceSummary.proofsTodayCount > 0;
+  const submitProofHref = buildProofEntryHref({
+    firstProof: allArtifacts.length === 0,
+    uglyStart: !hasProofToday,
+  });
+  const stateLabel = typeof todaySheet?.state === "string" && todaySheet.state.trim()
+    ? todaySheet.state.replace(/_/g, " ")
+    : null;
 
   const current = STEPS[step];
   const canAdvance =
@@ -147,8 +220,11 @@ export default function StartToday() {
       if (pcErr) throw pcErr;
 
       setDone({ contractId: pc?.id ?? null });
-    } catch (e: any) {
-      setError(e?.message || "Could not save Start Today. Your inputs are preserved — try again.");
+    } catch (submitError: unknown) {
+      const message = submitError instanceof Error
+        ? submitError.message
+        : "Could not save Start Today. Your inputs are preserved — try again.";
+      setError(message);
     } finally {
       setSubmitting(false);
     }
@@ -165,36 +241,154 @@ export default function StartToday() {
         <header>
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Start Today</span>
           <h1 className="text-2xl md:text-3xl font-semibold mt-1">
-            {planMode ? "Plan today" : "Start with one proof."}
+            {planMode ? (hasProofToday ? "Plan today" : "Command gate") : "Command gate"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {planMode
-              ? "Define the next proof artifact. One objective. One artifact."
-              : "Submit one piece of real work and Eblocki will tell you if it counted and what to do next."}
+            {hasProofToday
+              ? (planMode
+                ? "Define the next proof artifact. One objective. One artifact."
+                : "Today's proof exists. Planning is unlocked if you need it.")
+              : "Open the real task. Produce one measurable artifact. Planning stays blocked until proof exists."}
           </p>
         </header>
 
-        {!planMode && !done && (
-          <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 space-y-4">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Fastest path</div>
-            <p className="text-sm text-muted-foreground">
-              Skip the planner for now. Submit one piece of real work first, then use the verdict and next step to decide what to plan.
+        {loadingModes && !done && (
+          <Card className="panel p-4 md:p-5 border-border/80 bg-card/50">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading today&apos;s command…
+            </div>
+          </Card>
+        )}
+
+        {gateError && !done && (
+          <Card className="panel p-4 md:p-5 border-destructive/40 bg-destructive/5 text-sm text-destructive">
+            Supabase load error: {gateError}
+          </Card>
+        )}
+
+        {gateError && !done && !loadingModes && (
+          <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 mobile-safe-card">
+            <p className="text-sm text-muted-foreground text-wrap-safe">
+              Proof submission is still available. State gating is paused until today&apos;s data loads again.
+            </p>
+            <Link to="/proof" className="mt-3 inline-flex w-full sm:w-auto">
+              <Button size="sm" className="w-full sm:w-auto">
+                Open proof
+                <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+              </Button>
+            </Link>
+          </Card>
+        )}
+
+        {!done && !loadingModes && !gateError && !hasProofToday && (
+          <>
+            <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 space-y-4 mobile-safe-card">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Command Gate</span>
+                    <GatePill label={`route ${view.commandLayer.activeRoute.replace(/_/g, " ")}`} />
+                    {stateLabel && <GatePill label={`state ${stateLabel}`} />}
+                  </div>
+                  <h2 className="mt-2 text-xl font-semibold leading-tight text-wrap-safe">
+                    {allArtifacts.length === 0
+                      ? "No proof yet. Submit one measurable artifact to activate the command layer."
+                      : "No proof yet today. Submit one measurable artifact to activate the command layer."}
+                  </h2>
+                  <p className="mt-2 text-sm text-muted-foreground text-wrap-safe">
+                    Planning is blocked until proof exists.
+                  </p>
+                </div>
+              </div>
+
+              <GateSection label="One command" value={view.commandLayer.todayCommand} />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <GateSection label="Proof required" value={view.commandLayer.proofContract} />
+                <GateSection label="Timebox" value={view.commandLayer.timebox} />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <GateList
+                  label="What counts"
+                  items={view.commandLayer.requiredEvidence}
+                />
+                <GateList
+                  label="What does not count"
+                  items={view.commandLayer.whatDoesNotCount}
+                />
+              </div>
+
+              {!modes.length && (
+                <p className="text-xs text-muted-foreground text-wrap-safe">
+                  No active mode is configured yet. The general proof standard applies until you set one up after today&apos;s proof.
+                </p>
+              )}
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <Link to={submitProofHref} className="w-full sm:w-auto">
+                  <Button size="sm" className="w-full sm:w-auto">
+                    Submit Proof
+                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                  </Button>
+                </Link>
+                <p className="text-xs text-muted-foreground text-wrap-safe">
+                  One artifact. One standard. One verdict.
+                </p>
+              </div>
+            </Card>
+
+            <Card className="panel p-4 md:p-5 border-primary/30 space-y-3 mobile-safe-card">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Ugly Start</div>
+              <h2 className="text-base font-semibold text-wrap-safe">{UGLY_START_COPY.title}</h2>
+              <p className="text-sm text-muted-foreground text-wrap-safe">{UGLY_START_COPY.subtitle}</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <GateSection label="Timebox" value="2 minutes" />
+                <GateSection label="Counts now" value="One rough sentence or one visible artifact." />
+                <GateSection label="Judgment" value="Quality is not judged until the artifact exists." />
+              </div>
+            </Card>
+
+            {planMode && (
+              <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 mobile-safe-card">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Planner locked</div>
+                <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
+                  Planning is blocked until proof exists. File one artifact first, then come back to forge the next contract.
+                </p>
+                <Link to={submitProofHref} className="mt-3 inline-flex w-full sm:w-auto">
+                  <Button size="sm" className="w-full sm:w-auto">
+                    Submit Proof
+                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                  </Button>
+                </Link>
+              </Card>
+            )}
+          </>
+        )}
+
+        {!done && !loadingModes && !gateError && hasProofToday && !planMode && (
+          <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 space-y-4 mobile-safe-card">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Command layer active</div>
+            <h2 className="text-xl font-semibold text-wrap-safe">Today&apos;s proof exists. Planning is unlocked.</h2>
+            <p className="text-sm text-muted-foreground text-wrap-safe">
+              Submit another artifact or open the planner if you need to set the next proof contract.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
-              <Link to="/proof?first=1" className="w-full sm:w-auto">
+              <Link to="/proof" className="w-full sm:w-auto">
                 <Button size="sm" className="w-full sm:w-auto">
-                  Submit first proof
+                  Submit another proof
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               </Link>
               <Button size="sm" variant="outline" onClick={openPlanner} className="w-full sm:w-auto">
-                Use planner instead
+                Open planner
               </Button>
             </div>
           </Card>
         )}
 
-        {planMode && !done && (
+        {planMode && !done && hasProofToday && !loadingModes && !gateError && (
           <Card className="panel p-4 md:p-5 space-y-4">
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
@@ -342,6 +536,38 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="rounded-sm border border-border p-2.5">
       <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
       <div className="mt-0.5">{value || <span className="text-muted-foreground italic">—</span>}</div>
+    </div>
+  );
+}
+
+function GatePill({ label }: { label: string }) {
+  return (
+    <span className="rounded-sm border border-border bg-background/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+      {label}
+    </span>
+  );
+}
+
+function GateSection({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-sm border border-primary/20 bg-background/40 p-3 min-w-0">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-primary">{label}</div>
+      <div className="mt-1 text-sm text-wrap-safe">{value}</div>
+    </div>
+  );
+}
+
+function GateList({ label, items }: { label: string; items: string[] }) {
+  return (
+    <div className="rounded-sm border border-primary/20 bg-background/40 p-3 min-w-0">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-primary">{label}</div>
+      <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+        {items.map((item) => (
+          <li key={item} className="break-words">
+            • {item}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
