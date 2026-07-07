@@ -8,14 +8,16 @@ interface EblockiLogoProps {
   alt?: string;
   /**
    * Base path without extension.
-   * The component expects both WebP and PNG versions for best performance.
-   *
-   * Recommended files in public/brand/:
-   *   eblocki-logo-circular.webp          (master)
+   * Recommended modern asset stack in public/brand/:
+   *   eblocki-logo-circular.avif          (best compression)
+   *   eblocki-logo-circular-64.avif
+   *   eblocki-logo-circular-128.avif
+   *   eblocki-logo-circular-256.avif
+   *   eblocki-logo-circular.webp          (excellent fallback)
    *   eblocki-logo-circular-64.webp
    *   eblocki-logo-circular-128.webp
    *   eblocki-logo-circular-256.webp
-   *   eblocki-logo-circular.png          (fallback)
+   *   eblocki-logo-circular.png          (universal fallback)
    *   eblocki-logo-circular-64.png
    *   eblocki-logo-circular-128.png
    *   eblocki-logo-circular-256.png
@@ -24,11 +26,10 @@ interface EblockiLogoProps {
 }
 
 /**
- * Reusable Eblocki brand logo with modern image optimization.
- * - Uses <picture> for WebP + PNG fallback
- * - Responsive srcset on both formats
- * - Critical nav logos: eager + high fetchpriority
- * - Clean on-brand fallback if images fail to load
+ * Reusable Eblocki brand logo with best-in-class image optimization.
+ * Priority order: AVIF → WebP → PNG
+ * Uses <picture> for progressive enhancement.
+ * Critical nav logos get eager loading + high fetch priority.
  */
 export function EblockiLogo({
   variant = "full",
@@ -55,7 +56,15 @@ export function EblockiLogo({
   const isIconOnly = variant === "mark" || variant === "appIcon";
   const isCritical = variant === "compact" || variant === "mark"; // nav + headers
 
-  // WebP srcset (preferred)
+  // AVIF srcset (best compression)
+  const avifSrcSet = [
+    `${src}-64.avif 64w`,
+    `${src}-128.avif 128w`,
+    `${src}-256.avif 256w`,
+    `${src}.avif 512w`,
+  ].join(", ");
+
+  // WebP srcset (strong fallback)
   const webpSrcSet = [
     `${src}-64.webp 64w`,
     `${src}-128.webp 128w`,
@@ -63,7 +72,7 @@ export function EblockiLogo({
     `${src}.webp 512w`,
   ].join(", ");
 
-  // PNG srcset (fallback)
+  // PNG srcset (universal fallback)
   const pngSrcSet = [
     `${src}-64.png 64w`,
     `${src}-128.png 128w`,
@@ -83,13 +92,19 @@ export function EblockiLogo({
       aria-hidden={isIconOnly}
     >
       <picture>
-        {/* WebP sources (modern browsers) */}
+        {/* AVIF - best compression (modern browsers) */}
+        <source
+          type="image/avif"
+          srcSet={avifSrcSet}
+          sizes={sizes}
+        />
+        {/* WebP - excellent fallback */}
         <source
           type="image/webp"
           srcSet={webpSrcSet}
           sizes={sizes}
         />
-        {/* PNG fallback (older browsers + guaranteed support) */}
+        {/* PNG - universal fallback */}
         <img
           src={`${src}.png`}
           srcSet={pngSrcSet}
@@ -107,7 +122,7 @@ export function EblockiLogo({
         />
       </picture>
 
-      {/* Elegant fallback (only shows if all images fail) */}
+      {/* Elegant fallback (only shows if all image formats fail) */}
       <div
         className="logo-fallback absolute inset-0 hidden items-center justify-center bg-black"
         aria-hidden
