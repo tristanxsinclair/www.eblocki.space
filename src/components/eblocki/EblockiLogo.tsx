@@ -6,29 +6,20 @@ interface EblockiLogoProps {
   className?: string;
   showTagline?: boolean;
   alt?: string;
-  /**
-   * Optional custom src for the circular mark.
-   * Default: "/brand/eblocki-logo-circular.png" (add the approved asset here).
-   */
   src?: string;
 }
 
 /**
- * Reusable Eblocki brand logo component.
- * Source of truth: the approved circular neon-green-on-black logo.
- * Doctrine: Proof over Intention. Clean. Disciplined. High-trust. No clutter.
- * 
- * Usage:
- *   <EblockiLogo variant="compact" size="md" />
- *   <EblockiLogo variant="full" showTagline />
- *   <EblockiLogo variant="mark" size="lg" /> // for app icon contexts
+ * Reusable Eblocki brand logo.
+ * Source of truth = approved circular logo at /brand/eblocki-logo-circular.png
+ * Doctrine: Proof over Intention. Clean. Premium. Disciplined.
  */
 export function EblockiLogo({
   variant = "full",
   size = "md",
   className,
   showTagline = false,
-  alt = "Eblocki — Proof over Intention",
+  alt = "Eblocki - Proof over Intention",
   src = "/brand/eblocki-logo-circular.png",
 }: EblockiLogoProps) {
   const sizeClasses = {
@@ -47,44 +38,39 @@ export function EblockiLogo({
 
   const isIconOnly = variant === "mark" || variant === "appIcon";
 
-  const LogoMark = () => {
-    // When the real approved circular logo asset exists at /brand/eblocki-logo-circular.png
-    // this will render the premium mark. Until then it shows a clean, matching fallback.
-    return (
+  const LogoMark = () => (
+    <div
+      className={cn(
+        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-black border border-white/10",
+        "shadow-[0_0_0_1px_hsl(78_95%_56%_/_0.25)]",
+        sizeClasses[size]
+      )}
+      aria-hidden={isIconOnly}
+    >
+      <img
+        src={src}
+        alt={alt}
+        className="h-full w-full object-contain"
+        loading="lazy"
+        onError={(e) => {
+          const img = e.currentTarget;
+          img.style.display = "none";
+          const fallback = img.parentElement?.querySelector(".logo-fallback") as HTMLElement | null;
+          if (fallback) fallback.style.display = "flex";
+        }}
+      />
+      {/* Elegant fallback (only shows if real image fails to load) */}
       <div
-        className={cn(
-          "relative flex items-center justify-center shrink-0 overflow-hidden rounded-full",
-          "bg-black border border-white/10",
-          "shadow-[0_0_0_1px_hsl(78_95%_56%_/_0.25)]", // subtle green ring to echo logo
-          sizeClasses[size]
-        )}
-        aria-hidden={isIconOnly}
+        className="logo-fallback absolute inset-0 hidden items-center justify-center bg-black"
+        aria-hidden
       >
-        <img
-          src={src}
-          alt={alt}
-          className="h-full w-full object-contain"
-          onError={(e) => {
-            // Elegant fallback if image not yet added — keeps brand feel
-            const target = e.currentTarget as HTMLImageElement;
-            target.style.display = "none";
-            const fallback = target.parentElement?.querySelector(".logo-fallback");
-            if (fallback) (fallback as HTMLElement).style.display = "flex";
-          }}
-        />
-        {/* Clean fallback (visible only if image fails to load) */}
-        <div
-          className="logo-fallback absolute inset-0 hidden items-center justify-center bg-black"
-          aria-hidden
-        >
-          <div className="relative flex h-[68%] w-[68%] items-center justify-center">
-            <div className="text-[hsl(78_95%_56%)] text-[115%] font-bold leading-none select-none">E</div>
-            <div className="absolute inset-0 rounded-full border-[1.5px] border-white/35" />
-          </div>
+        <div className="relative flex h-[68%] w-[68%] items-center justify-center">
+          <div className="text-[hsl(78_95%_56%)] text-[115%] font-bold leading-none select-none">E</div>
+          <div className="absolute inset-0 rounded-full border-[1.5px] border-white/35" />
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
   if (variant === "mark" || variant === "appIcon") {
     return <LogoMark />;
@@ -101,7 +87,6 @@ export function EblockiLogo({
     );
   }
 
-  // full variant
   return (
     <div className={cn("flex flex-col items-start gap-0.5 min-w-0", className)}>
       <div className="flex items-center gap-2.5">
