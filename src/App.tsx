@@ -31,9 +31,15 @@ import Privacy from "./pages/legal/Privacy.tsx";
 import Terms from "./pages/legal/Terms.tsx";
 import DataHandling from "./pages/legal/DataHandling.tsx";
 import AIDisclosure from "./pages/legal/AIDisclosure.tsx";
+<<<<<<< HEAD
+import { PageTransition } from "@/components/eblocki/PageTransition";
+import { AppSkeleton } from "@/components/eblocki/AppSkeleton";
+import { NetworkBanner } from "@/components/eblocki/NetworkBanner";
+=======
 import OAuthConsent from "./pages/OAuthConsent.tsx";
 import Pricing from "./pages/Pricing.tsx";
 import CheckoutReturn from "./pages/CheckoutReturn.tsx";
+>>>>>>> origin/main
 
 const queryClient = new QueryClient();
 
@@ -41,7 +47,7 @@ function Protected({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
   const location = useLocation();
   useTimezoneSync();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground font-mono text-xs">Loading…</div>;
+  if (loading) return <AppSkeleton />;
   if (!user) {
     return (
       <Navigate
@@ -61,6 +67,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <NetworkBanner />
+          <PageTransition>
           <Routes>
             <Route path="/onboarding" element={<Protected><Onboarding /></Protected>} />
             <Route path="/" element={<Landing />} />
@@ -93,6 +101,7 @@ const App = () => (
             <Route path="/dev/beta" element={<Protected><BetaAdmin /></Protected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </PageTransition>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
