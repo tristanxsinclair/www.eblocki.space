@@ -15,18 +15,27 @@ import { toast } from "sonner";
 import {
   AlertCircle,
   ArrowRight,
-  BrainCircuit,
+  BookOpen,
+  Brain,
+  Briefcase,
   ChevronDown,
   ClipboardCopy,
+  Compass,
+  Dumbbell,
   Gamepad2,
+  Gavel,
   Info,
   Loader2,
+  Lock,
   MessageSquare,
+  Package,
   Radar,
+  Scale,
   Send,
   ShieldCheck,
   Sparkles,
   Target,
+  TrendingUp,
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { logEvent } from "@/lib/eblocki/analytics";
@@ -45,16 +54,20 @@ import {
   MotionNextStep,
 } from "@/components/eblocki/motion";
 
-const MODE_CHIPS: Array<{ label: string; value: CoachResponseMode | "auto" }> = [
-  { label: "Auto", value: "auto" },
-  { label: "Study", value: "study_coach" },
-  { label: "Law", value: "law_reasoning" },
-  { label: "Psychology", value: "psychology_reasoning" },
-  { label: "Sales", value: "sales_coach" },
-  { label: "Sport", value: "sport_coach" },
-  { label: "Product", value: "product_builder" },
-  { label: "Life", value: "life_strategy" },
-  { label: "Execution Lock", value: "execution_lock" },
+const MODE_CHIPS: Array<{
+  label: string;
+  value: CoachResponseMode | "auto";
+  icon: ReactNode;
+}> = [
+  { label: "Auto", value: "auto", icon: <Sparkles className="h-3.5 w-3.5" /> },
+  { label: "Study", value: "study_coach", icon: <BookOpen className="h-3.5 w-3.5" /> },
+  { label: "Law", value: "law_reasoning", icon: <Scale className="h-3.5 w-3.5" /> },
+  { label: "Psychology", value: "psychology_reasoning", icon: <Brain className="h-3.5 w-3.5" /> },
+  { label: "Sales", value: "sales_coach", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+  { label: "Sport", value: "sport_coach", icon: <Dumbbell className="h-3.5 w-3.5" /> },
+  { label: "Product", value: "product_builder", icon: <Package className="h-3.5 w-3.5" /> },
+  { label: "Life", value: "life_strategy", icon: <Compass className="h-3.5 w-3.5" /> },
+  { label: "Execution Lock", value: "execution_lock", icon: <Lock className="h-3.5 w-3.5" /> },
 ];
 
 const QUICK_PROMPTS = [
@@ -350,10 +363,11 @@ export default function Coach() {
                       type="button"
                       onClick={() => setSelectedMode(chip.value)}
                       className={cn(
-                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors min-h-[44px]",
+                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors min-h-[44px] flex items-center gap-1.5",
                         selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
                       )}
                     >
+                      {chip.icon}
                       {chip.label}
                     </button>
                   ))}
@@ -369,10 +383,11 @@ export default function Coach() {
                       type="button"
                       onClick={() => setSelectedMode(chip.value)}
                       className={cn(
-                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors",
+                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors flex items-center gap-1.5",
                         selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
                       )}
                     >
+                      {chip.icon}
                       {chip.label}
                     </button>
                   ))}
