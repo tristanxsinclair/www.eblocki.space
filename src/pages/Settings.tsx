@@ -17,6 +17,7 @@ import { track, reset as resetAnalytics, EVENTS } from "@/lib/analytics";
 import { BetaFeedback } from "@/components/eblocki/BetaFeedback";
 import { NotificationPreferences } from "@/components/eblocki/NotificationPreferences";
 import { PasswordSecurity } from "@/components/eblocki/PasswordSecurity";
+import { BillingCard } from "@/components/eblocki/BillingCard";
 
 const MODELS = [
   "google/gemini-3-flash-preview",
@@ -400,6 +401,7 @@ export default function Settings() {
 
         <NotificationPreferences />
         <PasswordSecurity />
+        <BillingCard />
         <BetaFeedback />
       </div>
     </AppShell>
