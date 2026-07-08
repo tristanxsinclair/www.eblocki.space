@@ -372,6 +372,16 @@ export default function Coach() {
           </div>
         </Card>
 
+        {/* Calm processing state while Coach is thinking */}
+        {loading && (
+          <div className="flex justify-center py-2">
+            <div className="motion-calm flex items-center gap-2 text-muted-foreground">
+              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+              Coach is diagnosing...
+            </div>
+          </div>
+        )}
+
         {!engineResult && !loading && (
           <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 max-w-full overflow-hidden">
             <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Start here</div>
