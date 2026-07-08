@@ -81,6 +81,26 @@ function coerceMode(value: string | null | undefined): CoachResponseMode | "auto
   return match?.value ?? "auto";
 }
 
+function getCoachProcessingText(mode: CoachResponseMode | "auto"): string {
+  if (mode === "auto") {
+    return "Coach is diagnosing...";
+  }
+
+  const modeMap: Record<string, string> = {
+    study_coach: "Study",
+    law_reasoning: "Law",
+    psychology_reasoning: "Psychology",
+    sales_coach: "Sales",
+    sport_coach: "Sport",
+    product_builder: "Product",
+    life_strategy: "Life",
+    execution_lock: "Execution",
+  };
+
+  const label = modeMap[mode] ?? "Coach";
+  return `Coach is reasoning in ${label} mode...`;
+}
+
 function splitRemoteResponse(text: string): string {
   return text.replace(/^##\s*/gm, "").trim();
 }
@@ -377,7 +397,7 @@ export default function Coach() {
           <div className="flex justify-center py-2">
             <div className="motion-calm flex items-center gap-2 text-muted-foreground">
               <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-              Coach is diagnosing...
+              {getCoachProcessingText(selectedMode)}
             </div>
           </div>
         )}
