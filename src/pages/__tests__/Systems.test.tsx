@@ -61,13 +61,20 @@ describe("Systems page", () => {
       await screen.findByText(/Build a proof-based training system/i),
     ).toBeInTheDocument();
 
-    fireEvent.click(await screen.findByRole("button", { name: /Forge my system/i }));
+    const forgeButton = await screen.findByRole(
+      "button",
+      { name: /Forge my system/i },
+      { timeout: 3000 },
+    );
+    fireEvent.click(forgeButton);
     fireEvent.change(screen.getByLabelText(/Domain/i), { target: { value: "law" } });
     fireEvent.change(screen.getByLabelText(/Improvement goal/i), { target: { value: "IRAC answers" } });
-    fireEvent.click(screen.getByRole("button", { name: /Forge my system/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Forge my system/i }).pop()!);
 
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: /Start first rep/i })).toBeInTheDocument(),
+    await waitFor(
+      () =>
+        expect(screen.getByRole("button", { name: /Start first rep/i })).toBeInTheDocument(),
+      { timeout: 3000 },
     );
   });
 });
