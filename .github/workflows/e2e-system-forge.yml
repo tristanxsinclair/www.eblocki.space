@@ -69,11 +69,13 @@ jobs:
       - name: Run Playwright E2E
         env:
           E2E_BASE_URL: http://localhost:8080
+          CI: 'true'
           # Supabase session env vars (LOVABLE_BROWSER_SUPABASE_*) are not set in CI.
           # The auth fixture self-skips authenticated specs so the job stays green
           # until a signed-in session is wired in. Add them as GitHub Actions
           # secrets to enable full E2E coverage on PRs.
-        run: npx playwright test --reporter=list,html
+        # Reporters and retries are configured in playwright.config.ts based on CI env.
+        run: npx playwright test
 
       - name: Stop preview server
         if: always()
