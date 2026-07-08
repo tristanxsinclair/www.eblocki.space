@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               <n.icon className="h-3.5 w-3.5" />
               {n.label}
-            </navLink>
+            </NavLink>
           ))}
         </nav>
         <div className="hidden md:block p-3 border-t border-border">
