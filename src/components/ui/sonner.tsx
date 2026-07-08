@@ -23,8 +23,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
           actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
-        onAutoClose: () => haptics.light(),
       }}
+      onAutoClose={(() => haptics.light()) as any}
       {...props}
     />
   );
