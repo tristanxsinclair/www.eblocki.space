@@ -38,6 +38,12 @@ import {
   type CoachResponseMode,
 } from "@/lib/eblocki/coach-engine";
 import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
+import {
+  ProofSubmitButton,
+  MotionVerdictCard,
+  MotionLockIn,
+  MotionNextStep,
+} from "@/components/eblocki/motion";
 
 const MODE_CHIPS: Array<{ label: string; value: CoachResponseMode | "auto" }> = [
   { label: "Auto", value: "auto" },
@@ -355,9 +361,13 @@ export default function Coach() {
             )}
             <div className="flex items-center justify-between gap-3 flex-wrap border-t border-border pt-4">
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{input.length}/5000</div>
-              <Button onClick={send} disabled={loading} className="gap-2 w-full sm:w-auto">
+              <ProofSubmitButton
+                onClick={send}
+                disabled={loading}
+                className="gap-2 w-full sm:w-auto"
+              >
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Diagnosing</> : <><Send className="h-4 w-4" /> Diagnose</>}
-              </Button>
+              </ProofSubmitButton>
             </div>
           </div>
         </Card>
@@ -406,13 +416,15 @@ export default function Coach() {
 
         {engineResult && (
           <div className="space-y-4">
-            <CoachResultSummaryCard
-              engineResult={engineResult}
-              remoteResult={remoteResult}
-              committedId={committedId}
-              committing={committing}
-              onCommit={commit}
-            />
+            <MotionVerdictCard className="max-w-full overflow-hidden">
+              <CoachResultSummaryCard
+                engineResult={engineResult}
+                remoteResult={remoteResult}
+                committedId={committedId}
+                committing={committing}
+                onCommit={commit}
+              />
+            </MotionVerdictCard>
 
             {engineResult.warning && (
               <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
@@ -471,7 +483,7 @@ export default function Coach() {
             )}
 
             {committedId && (
-              <Card className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3 max-w-full overflow-hidden">
+              <MotionLockIn active={!!committedId} className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3 max-w-full overflow-hidden">
                 <div className="min-w-0">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Next step</span>
                   <p className="text-sm mt-1 break-words">Contract saved. Submit the proof artifact in the Proof Check.</p>
@@ -493,7 +505,7 @@ export default function Coach() {
                 key={prompt}
                 size="sm"
                 variant="outline"
-                className="text-xs whitespace-normal text-left h-auto py-2"
+                className="text-xs whitespace-normal text-left h-auto py-2 motion-micro"
                 onClick={() => setInput((prev) => (prev.trim() ? `${prev.trim()}\n\n${prompt}` : prompt))}
               >
                 {prompt}
