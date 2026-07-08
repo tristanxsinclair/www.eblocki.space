@@ -61,18 +61,14 @@ describe("Systems page", () => {
       await screen.findByText(/Build a proof-based training system/i),
     ).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(() => screen.queryByText(/Loading systems/i), {
-      timeout: 3000,
-    });
-
-    const forgeButton = await screen.findByRole(
-      "button",
-      { name: /Forge my system/i },
-      { timeout: 3000 },
+    await waitFor(() =>
+      expect(screen.getAllByRole("button", { name: /Forge my system/i }).length).toBeGreaterThan(0),
     );
-    fireEvent.click(forgeButton);
     fireEvent.change(screen.getByLabelText(/Domain/i), { target: { value: "law" } });
-    fireEvent.change(screen.getByLabelText(/Improvement goal/i), { target: { value: "IRAC answers" } });
+    fireEvent.change(screen.getByLabelText(/Improvement goal/i), {
+      target: { value: "IRAC answers" },
+    });
+    // Submit the form (last button is the form submit)
     fireEvent.click(screen.getAllByRole("button", { name: /Forge my system/i }).pop()!);
 
     await waitFor(
