@@ -553,18 +553,16 @@ function EvidenceCommandPanel({
           <EvidenceBlock icon={<FileText />} label="Next proof" action="Submit" href="/proof">
             {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open coach to forge one."}
           </EvidenceBlock>
-          <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3">
+          <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3`}>
             <EvidenceBlock icon={<Gavel />} label="Last verdict" action="Open" href="/proof">
               {latestArtifact
                 ? `${latestArtifact.title} - ${plainEvidenceStrength(latestArtifact.evidence_strength)}`
                 : "No proof yet. Submit one artifact to start the verdict loop."}
-              : "No proof yet. Submit one artifact to start the record."}
             </EvidenceBlock>
             <EvidenceBlock icon={<CircleDot />} label="Weak spot" action="Modes" href="/modes">
               {view.evidenceSummary.strongestDomain
                 ? `Strongest: ${view.evidenceSummary.strongestDomain}. Weakest: ${view.evidenceSummary.weakestDomain ?? "none flagged"}.`
                 : "No weekly mode signal yet."}
-              : "No weekly mode signal yet."}
             </EvidenceBlock>
           </div>
           <button
