@@ -3,7 +3,7 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
 
 // src/lib/mcp/tools/check-proof-artifact.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.0";
@@ -1400,11 +1400,16 @@ var suggest_next_command_default = defineTool3({
 });
 
 // src/lib/mcp/index.ts
+var projectRef = "imeghpjrqlmifkltuqdx";
 var mcp_default = defineMcp({
   name: "eblocki-mcp",
   title: "Eblocki",
   version: "0.1.0",
   instructions: "Eblocki proof tools. Read-only. Judge pasted artifact text against Eblocki's evidence rubric; return proof standards and next commands. Never implies external verification, saved account access, or write actions.",
+  auth: auth.oauth.issuer({
+    issuer: `https://${projectRef}.supabase.co/auth/v1`,
+    acceptedAudiences: "authenticated"
+  }),
   tools: [check_proof_artifact_default, get_proof_standard_default, suggest_next_command_default]
 });
 
