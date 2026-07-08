@@ -20,6 +20,23 @@ export default defineConfig({
   reporter: isCI
     ? [["list"], ["html", { open: "never" }], ["github"]]
     : [["list"]],
+  // Visual regression baselines live next to the spec, per project (OS +
+  // browser). Keeping them in-repo lets PRs diff both the pixels and the
+  // updated baselines in one review.
+  snapshotPathTemplate: "{testDir}/__snapshots__/{testFilePath}/{arg}-{projectName}{ext}",
+  expect: {
+    timeout: isCI ? 15_000 : 10_000,
+    toHaveScreenshot: {
+      // Allow tiny sub-pixel/anti-alias drift between runs without hiding
+      // real layout regressions.
+      maxDiffPixelRatio: 0.01,
+      threshold: 0.2,
+      animations: "disabled",
+      caret: "hide",
+    },
+  },
+  // NOTE: `expect.timeout` above supersedes the earlier `expect: { timeout }`
+  // block; keep only this one.
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:8080",
     viewport: { width: 390, height: 844 },
