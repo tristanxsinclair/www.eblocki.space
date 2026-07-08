@@ -2,75 +2,85 @@
                 <Label id="proof-expected-strength-label" htmlFor="proof-expected-strength">
                   How strong do you think this proof is? (optional)
                 </Label>
-                <div
-                  role="radiogroup"
-                  aria-labelledby="proof-expected-strength-label"
-                  className="mt-2 flex flex-wrap gap-2"
-                  onTouchStart={(e) => {
-                    (e.currentTarget as any)._touchStartX = e.touches[0].clientX;
-                  }}
-                  onTouchEnd={(e) => {
-                    const startX = (e.currentTarget as any)._touchStartX;
-                    if (!startX) return;
-                    const endX = e.changedTouches[0].clientX;
-                    const diff = endX - startX;
+                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                  <div
+                    role="radiogroup"
+                    aria-labelledby="proof-expected-strength-label"
+                    className="flex flex-wrap gap-2"
+                    onTouchStart={(e) => {
+                      (e.currentTarget as any)._touchStartX = e.touches[0].clientX;
+                    }}
+                    onTouchEnd={(e) => {
+                      const startX = (e.currentTarget as any)._touchStartX;
+                      if (!startX) return;
+                      const endX = e.changedTouches[0].clientX;
+                      const diff = endX - startX;
 
-                    const currentIndex = ["weak", "moderate", "strong", "elite"].indexOf(expectedStrength || "moderate");
-                    let newIndex = currentIndex;
+                      const currentIndex = ["weak", "moderate", "strong", "elite"].indexOf(expectedStrength || "moderate");
+                      let newIndex = currentIndex;
 
-                    if (Math.abs(diff) > 40) { // minimum swipe distance
-                      if (diff > 0) {
-                        // swipe right → previous
-                        newIndex = (currentIndex - 1 + 4) % 4;
-                      } else {
-                        // swipe left → next
-                        newIndex = (currentIndex + 1) % 4;
+                      if (Math.abs(diff) > 40) {
+                        if (diff > 0) {
+                          newIndex = (currentIndex - 1 + 4) % 4;
+                        } else {
+                          newIndex = (currentIndex + 1) % 4;
+                        }
+                        const levels = ["weak", "moderate", "strong", "elite"] as const;
+                        setExpectedStrength(levels[newIndex]);
                       }
-                      const levels = ["weak", "moderate", "strong", "elite"] as const;
-                      setExpectedStrength(levels[newIndex]);
-                    }
-                  }}
-                >
-                  {(["weak", "moderate", "strong", "elite"] as const).map((level, index, arr) => {
-                    const isSelected = expectedStrength === level;
-                    const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-                      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                        e.preventDefault();
-                        const nextIndex = (index + 1) % arr.length;
-                        const nextLevel = arr[nextIndex];
-                        setExpectedStrength(nextLevel);
-                        const buttons = (e.currentTarget.parentElement?.querySelectorAll('button[role="radio"]') || []) as NodeListOf<HTMLButtonElement>;
-                        buttons[nextIndex]?.focus();
-                      }
-                      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                        e.preventDefault();
-                        const prevIndex = (index - 1 + arr.length) % arr.length;
-                        const prevLevel = arr[prevIndex];
-                        setExpectedStrength(prevLevel);
-                        const buttons = (e.currentTarget.parentElement?.querySelectorAll('button[role="radio"]') || []) as NodeListOf<HTMLButtonElement>;
-                        buttons[prevIndex]?.focus();
-                      }
-                    };
+                    }}
+                  >
+                    {(["weak", "moderate", "strong", "elite"] as const).map((level, index, arr) => {
+                      const isSelected = expectedStrength === level;
+                      const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+                        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                          e.preventDefault();
+                          const nextIndex = (index + 1) % arr.length;
+                          const nextLevel = arr[nextIndex];
+                          setExpectedStrength(nextLevel);
+                          const buttons = (e.currentTarget.parentElement?.querySelectorAll('button[role="radio"]') || []) as NodeListOf<HTMLButtonElement>;
+                          buttons[nextIndex]?.focus();
+                        }
+                        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                          e.preventDefault();
+                          const prevIndex = (index - 1 + arr.length) % arr.length;
+                          const prevLevel = arr[prevIndex];
+                          setExpectedStrength(prevLevel);
+                          const buttons = (e.currentTarget.parentElement?.querySelectorAll('button[role="radio"]') || []) as NodeListOf<HTMLButtonElement>;
+                          buttons[prevIndex]?.focus();
+                        }
+                      };
 
-                    return (
-                      <button
-                        key={level}
-                        type="button"
-                        role="radio"
-                        aria-checked={isSelected}
-                        tabIndex={isSelected ? 0 : -1}
-                        onClick={() => setExpectedStrength(level)}
-                        onKeyDown={handleKeyDown}
-                        className={cn(
-                          "rounded-sm border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary/50",
-                          isSelected
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                        )}
-                      >
-                        {level.charAt(0).toUpperCase() + level.slice(1)}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={level}
+                          type="button"
+                          role="radio"
+                          aria-checked={isSelected}
+                          tabIndex={isSelected ? 0 : -1}
+                          onClick={() => setExpectedStrength(level)}
+                          onKeyDown={handleKeyDown}
+                          className={cn(
+                            "rounded-sm border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary/50",
+                            isSelected
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                          )}
+                        >
+                          {level.charAt(0).toUpperCase() + level.slice(1)}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {expectedStrength && (
+                    <button
+                      type="button"
+                      onClick={() => setExpectedStrength("")}
+                      className="ml-1 text-xs text-muted-foreground hover:text-foreground underline"
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
               </div>
