@@ -1,24 +1,18 @@
-      const { data: artifact, error } = await supabase
-        .from("proof_artifacts")
-        .insert({
-          user_id: user.id,
-          domain: domainValue,
-          title: title.trim(),
-          artifact_type: effectiveArtifactType,
-          content,
-          quality_score: score.qualityScore,
-          evidence_strength: score.evidenceStrength,
-          feedback: composedFeedback,
-          next_upgrade: nextUpgrade.trim() || score.nextUpgrade,
-          attachment_path: attachmentPath,
-          attachment_url: attachmentUrl,
-          attachment_type: attachment?.type ?? null,
-          attachment_name: attachment?.name ?? null,
-          attachment_size: attachment?.size ?? null,
-          pressure_flag: pressureFlag,
-          transfer_flag: transferFlag,
-          expected_strength: expectedStrength || null,
-          calibration_result: calibrationResult || null,
-        })
-        .select()
-        .single();
+            {/* Judgment + Calibration feedback */}
+            <div className="mt-3 rounded-sm border border-border bg-background/40 p-3 text-sm">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                Your judgment
+              </div>
+              <div>
+                You expected: <span className="font-medium">{expectedStrength ? expectedStrength.charAt(0).toUpperCase() + expectedStrength.slice(1) : "—"}</span><br />
+                Actual result: <span className="font-medium">{verdict.evidenceStrength.charAt(0).toUpperCase() + verdict.evidenceStrength.slice(1)}</span>
+              </div>
+
+              {calibrationResult && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  {calibrationResult === "accurate" && "Accurate calibration. Your estimate matched the accepted evidence."}
+                  {calibrationResult === "overestimated" && "Calibration gap detected. Your estimate was higher than the accepted evidence."}
+                  {calibrationResult === "underestimated" && "Calibration gap detected. Your estimate was lower than the accepted evidence."}
+                </div>
+              )}
+            </div>
