@@ -6,6 +6,30 @@
                   role="radiogroup"
                   aria-labelledby="proof-expected-strength-label"
                   className="mt-2 flex flex-wrap gap-2"
+                  onTouchStart={(e) => {
+                    (e.currentTarget as any)._touchStartX = e.touches[0].clientX;
+                  }}
+                  onTouchEnd={(e) => {
+                    const startX = (e.currentTarget as any)._touchStartX;
+                    if (!startX) return;
+                    const endX = e.changedTouches[0].clientX;
+                    const diff = endX - startX;
+
+                    const currentIndex = ["weak", "moderate", "strong", "elite"].indexOf(expectedStrength || "moderate");
+                    let newIndex = currentIndex;
+
+                    if (Math.abs(diff) > 40) { // minimum swipe distance
+                      if (diff > 0) {
+                        // swipe right → previous
+                        newIndex = (currentIndex - 1 + 4) % 4;
+                      } else {
+                        // swipe left → next
+                        newIndex = (currentIndex + 1) % 4;
+                      }
+                      const levels = ["weak", "moderate", "strong", "elite"] as const;
+                      setExpectedStrength(levels[newIndex]);
+                    }
+                  }}
                 >
                   {(["weak", "moderate", "strong", "elite"] as const).map((level, index, arr) => {
                     const isSelected = expectedStrength === level;
@@ -15,7 +39,6 @@
                         const nextIndex = (index + 1) % arr.length;
                         const nextLevel = arr[nextIndex];
                         setExpectedStrength(nextLevel);
-                        // Focus the next button
                         const buttons = (e.currentTarget.parentElement?.querySelectorAll('button[role="radio"]') || []) as NodeListOf<HTMLButtonElement>;
                         buttons[nextIndex]?.focus();
                       }
