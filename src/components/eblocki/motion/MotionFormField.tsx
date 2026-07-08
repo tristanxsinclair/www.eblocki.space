@@ -8,7 +8,8 @@ interface MotionFormFieldProps extends HTMLAttributes<HTMLDivElement> {
 
 /**
  * Wrapper for form fields with subtle micro feedback.
- * Use on inputs in the Proof form.
+ * Includes shake animation on error state.
+ * Use on inputs in the Proof form, Auth, and Onboarding.
  */
 export const MotionFormField = forwardRef<HTMLDivElement, MotionFormFieldProps>(
   ({ className, children, hasError, ...props }, ref) => {
@@ -17,7 +18,7 @@ export const MotionFormField = forwardRef<HTMLDivElement, MotionFormFieldProps>(
         ref={ref}
         className={cn(
           "motion-micro",
-          hasError && "motion-emphasis",
+          hasError && "shake motion-emphasis",
           className
         )}
         {...props}

@@ -17,6 +17,8 @@ import { track, reset as resetAnalytics, EVENTS } from "@/lib/analytics";
 import { BetaFeedback } from "@/components/eblocki/BetaFeedback";
 import { NotificationPreferences } from "@/components/eblocki/NotificationPreferences";
 import { PasswordSecurity } from "@/components/eblocki/PasswordSecurity";
+import { UpgradeCard } from "@/components/eblocki/UpgradeCard";
+import { normaliseAccessLevel } from "@/lib/eblocki/access-level";
 
 const MODELS = [
   "google/gemini-3-flash-preview",
@@ -398,6 +400,7 @@ export default function Settings() {
           </div>
         </Card>
 
+        <UpgradeCard currentLevel={normaliseAccessLevel(profile?.access_level)} />
         <NotificationPreferences />
         <PasswordSecurity />
         <BetaFeedback />

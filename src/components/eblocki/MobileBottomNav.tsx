@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
+import { haptics } from "@/hooks/useHaptics";
 
 const PRIMARY = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -49,7 +50,7 @@ export function MobileBottomNav() {
   return (
     <nav
       aria-label="Primary mobile navigation"
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 safe-bottom safe-x"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/80 bg-card/95 backdrop-blur-lg supports-[backdrop-filter]:bg-card/80 safe-bottom safe-x shadow-[0_-4px_20px_-4px_hsl(0_0%_0%/0.4)]"
     >
       <ul className="grid grid-cols-4">
         {PRIMARY.map((item) => (
@@ -57,6 +58,7 @@ export function MobileBottomNav() {
             <NavLink
               to={item.to}
               end={item.to === "/dashboard"}
+              onClick={() => haptics.select()}
               className={({ isActive }) =>
                 cn(
                   "native-tap flex flex-col items-center justify-center gap-0.5 min-h-[56px] px-1 py-1.5 text-[10px] font-mono uppercase tracking-widest",
@@ -70,11 +72,14 @@ export function MobileBottomNav() {
                 <>
                   <span
                     className={cn(
-                      "flex h-6 w-10 items-center justify-center rounded-sm",
+                      "relative flex h-6 w-10 items-center justify-center rounded-sm motion-micro",
                       isActive && "bg-primary/10 border border-primary/30",
                     )}
                   >
                     <item.icon className="h-4 w-4" />
+                    {isActive && (
+                      <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-primary motion-entrance" />
+                    )}
                   </span>
                   <span className="truncate max-w-full">{item.label}</span>
                 </>
