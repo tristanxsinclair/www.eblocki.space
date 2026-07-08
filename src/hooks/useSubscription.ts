@@ -52,9 +52,18 @@ export function useSubscription(): SubscriptionState {
       .eq("user_id", user.id)
       .eq("environment", env)
       .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    setRow((data as SubscriptionRow | null) ?? null);
+      .limit(10);
+    const rows = (data as SubscriptionRow[] | null) ?? [];
+    // Founder (one-time lifetime) always wins — never downgrade a founder
+    // if a later Pro row appears. Otherwise prefer the newest active row,
+    // falling back to the newest row of any status.
+    const founder = rows.find(
+      (r) => r.price_id === "founder_lifetime" && r.status === "active",
+    );
+    const activePro = rows.find(
+      (r) => r.status === "active" || r.status === "trialing" || r.status === "past_due",
+    );
+    setRow(founder ?? activePro ?? rows[0] ?? null);
     setLoading(false);
   };
 
