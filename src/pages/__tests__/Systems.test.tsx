@@ -1,19 +1,55 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { HelmetProvider } from "react-helmet-async";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import Systems from "../Systems";
 
 vi.mock("@/hooks/useAuth", () => ({
-  useAuth: () => ({ user: { id: "u1", email: "t@e.com" }, session: null, loading: false, signOut: vi.fn() }),
+  useAuth: () => ({
+    user: { id: "u1", email: "t@e.com" },
+    session: null,
+    loading: false,
+    signOut: vi.fn(),
+  }),
 }));
 vi.mock("@/hooks/usePushRegistration", () => ({ usePushRegistration: () => undefined }));
 vi.mock("@/components/eblocki/AppShell", () => ({
   AppShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }));
+vi.mock("@/hooks/use-toast", () => ({ toast: vi.fn() }));
 
-describe("Systems (stub)", () => {
-  it("renders the rebuild notice", () => {
+vi.mock("@/lib/eblocki/system-forge-store", () => ({
+  fetchActiveSystem: vi.fn().mockResolvedValue(null),
+  listRecentReps: vi.fn().mockResolvedValue([]),
+  createSystem: vi.fn(async (_userId: string, draft) => ({
+    id: "sys1",
+    user_id: "u1",
+    name: draft.name,
+    domain: draft.domain,
+    goal: draft.goal,
+    outcome: draft.outcome,
+    bottleneck: draft.bottleneck,
+    available_minutes_per_day: draft.availableMinutesPerDay,
+    skills: draft.skills,
+    daily_loop: draft.dailyLoop,
+    weekly_structure: draft.weeklyStructure,
+    minimum_viable_rep: draft.minimumViableRep,
+    proof_artifacts: draft.proofArtifacts,
+    scoring_rubric: draft.scoringRubric,
+    progression_levels: draft.progressionLevels,
+    review_cycle: draft.reviewCycle,
+    first_command: draft.firstCommand,
+    active_command: draft.activeCommand,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  })),
+  submitRep: vi.fn(),
+}));
+
+describe("Systems page", () => {
+  it("renders hero, forges a system, and exposes Start first rep", async () => {
     render(
       <HelmetProvider>
         <MemoryRouter>
@@ -21,6 +57,18 @@ describe("Systems (stub)", () => {
         </MemoryRouter>
       </HelmetProvider>,
     );
-    expect(screen.getByText(/System Forge is being rebuilt/i)).toBeInTheDocument();
+
+    expect(
+      await screen.findByText(/Build a proof-based training system/i),
+    ).toBeInTheDocument();
+
+    await userEvent.click(await screen.findByRole("button", { name: /Forge my system/i }));
+    await userEvent.type(screen.getByLabelText(/Domain/i), "law");
+    await userEvent.type(screen.getByLabelText(/Improvement goal/i), "IRAC answers");
+    await userEvent.click(screen.getByRole("button", { name: /Forge my system/i }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Start first rep/i })).toBeInTheDocument(),
+    );
   });
 });
