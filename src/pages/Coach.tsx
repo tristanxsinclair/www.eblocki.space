@@ -17,10 +17,12 @@ import {
   ArrowRight,
   BookOpen,
   Brain,
+  BrainCircuit,
   Briefcase,
   ChevronDown,
   ClipboardCopy,
   Compass,
+  Crosshair,
   Dumbbell,
   Gamepad2,
   Gavel,
@@ -337,6 +339,7 @@ export default function Coach() {
               )}
               <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Bring the messy problem. Leave with proof.</h1>
             </div>
+          </div>
           </header>
 
         <Card className="panel overflow-hidden border-primary/25 bg-card/60 max-w-full">
@@ -534,7 +537,7 @@ export default function Coach() {
                   <p className="text-sm mt-1 break-words">Contract saved. Submit the proof artifact in the Proof Check.</p>
                 </div>
                 <Link to="/proof"><Button size="sm">Submit Proof <ArrowRight className="h-3 w-3 ml-1" /></Button></Link>
-              </Card>
+              </MotionLockIn>
             )}
           </div>
         )}

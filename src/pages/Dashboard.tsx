@@ -380,53 +380,6 @@ export default function Dashboard() {
                   topPending={topPending}
                   latestArtifact={latestArtifact}
                 />
-                <DashboardForecastTabs
-                  value={diagnosticsTab}
-                  onValueChange={openDiagnosticsTab}
-                  forecastSlot={
-                    <>
-                      {temporalResult ? (
-                        <TemporalCommandCard result={temporalResult} />
-                      ) : (
-                        <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
-                      )}
-                      <TemporalFeedbackPanel />
-                      <InterventionCard state={(currentState as BehaviouralState) ?? state} />
-                    </>
-                  }
-                  evidenceSlot={
-                    <>
-                      {user && <IdentityLedger userId={user.id} limit={5} />}
-                      <div className="grid lg:grid-cols-2 gap-4">
-                        <MomentumPanel />
-                        <WeeklyRetro />
-                      </div>
-                      <QuickCheckInCard
-                        quick={quick}
-                        setQuick={setQuick}
-                        mode={mode}
-                        state={state}
-                        onDiagnose={handleCheckIn}
-                      />
-                      <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
-                        <div className="flex items-center justify-between gap-3 min-w-0">
-                          <div className="min-w-0">
-                            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Current setup</div>
-                            <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
-                              {currentMode ? `Last coach lens: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
-                            </p>
-                          </div>
-                          {currentState && <StateBadge state={currentState as BehaviouralState} />}
-                        </div>
-                        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          <MetricCell label="Mode count" value={String(view.evidenceSummary.modesCount)} />
-                          <MetricCell label="Latest proof" value={view.evidenceSummary.latestProofTitle ?? "none"} />
-                          <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
-                        </div>
-                      </Card>
-                    </div>
-                  </Card>
-                </>
               </div>
             </MobileCollapse>
           ) : (
@@ -448,7 +401,7 @@ export default function Dashboard() {
                     <TemporalCommandCard result={temporalResult} />
                   ) : (
                     <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
-                </>
+                  )}
                   <TemporalFeedbackPanel />
                   <InterventionCard state={(currentState as BehaviouralState) ?? state} />
                 </>
@@ -563,7 +516,7 @@ export function CommandHero({
           label="Latest verdict"
           value={view.commandLayer.latestCourtSignal}
           hint={identityImpact?.headline}
-        </div>
+        />
       </div>
     </Card>
   );
@@ -600,18 +553,16 @@ function EvidenceCommandPanel({
           <EvidenceBlock icon={<FileText />} label="Next proof" action="Submit" href="/proof">
             {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open coach to forge one."}
           </EvidenceBlock>
-          <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3">
+          <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3`}>
             <EvidenceBlock icon={<Gavel />} label="Last verdict" action="Open" href="/proof">
               {latestArtifact
                 ? `${latestArtifact.title} - ${plainEvidenceStrength(latestArtifact.evidence_strength)}`
                 : "No proof yet. Submit one artifact to start the verdict loop."}
-              : "No proof yet. Submit one artifact to start the record."}
             </EvidenceBlock>
             <EvidenceBlock icon={<CircleDot />} label="Weak spot" action="Modes" href="/modes">
               {view.evidenceSummary.strongestDomain
                 ? `Strongest: ${view.evidenceSummary.strongestDomain}. Weakest: ${view.evidenceSummary.weakestDomain ?? "none flagged"}.`
                 : "No weekly mode signal yet."}
-              : "No weekly mode signal yet."}
             </EvidenceBlock>
           </div>
           <button
@@ -714,8 +665,7 @@ function SectionHeader({ eyebrow, title, detail }: { eyebrow: string; title: str
         <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{eyebrow}</div>
         <h2 className="text-sm font-semibold mt-0.5">{title}</h2>
       </div>
-      {detail && <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{detail}</span>
-      )}
+      {detail && <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{detail}</span>}
     </div>
   );
 }
