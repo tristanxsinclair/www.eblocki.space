@@ -301,7 +301,6 @@ export default function Landing() {
             <Link to="/legal/terms" className="hover:text-foreground">Terms</Link>
           </div>
         </div>
-      </div>
       </footer>
     </div>
   );
