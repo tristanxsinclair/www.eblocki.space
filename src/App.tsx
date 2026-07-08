@@ -31,15 +31,12 @@ import Privacy from "./pages/legal/Privacy.tsx";
 import Terms from "./pages/legal/Terms.tsx";
 import DataHandling from "./pages/legal/DataHandling.tsx";
 import AIDisclosure from "./pages/legal/AIDisclosure.tsx";
-<<<<<<< HEAD
 import { PageTransition } from "@/components/eblocki/PageTransition";
 import { AppSkeleton } from "@/components/eblocki/AppSkeleton";
 import { NetworkBanner } from "@/components/eblocki/NetworkBanner";
-=======
 import OAuthConsent from "./pages/OAuthConsent.tsx";
 import Pricing from "./pages/Pricing.tsx";
 import CheckoutReturn from "./pages/CheckoutReturn.tsx";
->>>>>>> origin/main
 
 const queryClient = new QueryClient();
 

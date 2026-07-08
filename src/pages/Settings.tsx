@@ -17,12 +17,9 @@ import { track, reset as resetAnalytics, EVENTS } from "@/lib/analytics";
 import { BetaFeedback } from "@/components/eblocki/BetaFeedback";
 import { NotificationPreferences } from "@/components/eblocki/NotificationPreferences";
 import { PasswordSecurity } from "@/components/eblocki/PasswordSecurity";
-<<<<<<< HEAD
 import { UpgradeCard } from "@/components/eblocki/UpgradeCard";
 import { normaliseAccessLevel } from "@/lib/eblocki/access-level";
-=======
 import { BillingCard } from "@/components/eblocki/BillingCard";
->>>>>>> origin/main
 
 const MODELS = [
   "google/gemini-3-flash-preview",

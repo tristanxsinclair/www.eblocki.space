@@ -164,7 +164,7 @@ export function UpgradeCard({ currentLevel }: UpgradeCardProps) {
             <div className="flex items-center gap-2">
               <plan.icon className="h-4 w-4 text-primary" />
               <span className="font-semibold text-sm">{plan.name}</span>
-              {plan.badge && (
+              {"badge" in plan && plan.badge && (
                 <span className="ml-auto rounded-sm bg-primary/10 border border-primary/30 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest text-primary">
                   {plan.badge}
                 </span>
