@@ -665,8 +665,7 @@ function SectionHeader({ eyebrow, title, detail }: { eyebrow: string; title: str
         <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{eyebrow}</div>
         <h2 className="text-sm font-semibold mt-0.5">{title}</h2>
       </div>
-      {detail && <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{detail}</span>
-      )}
+      {detail && <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{detail}</span>}
     </div>
   );
 }
