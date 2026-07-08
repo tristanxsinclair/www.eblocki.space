@@ -39,55 +39,48 @@ test.describe("System Forge", () => {
     // 1. Load /systems – protected route should render (no auth redirect).
     await page.goto("/systems");
     await expect(page).toHaveURL(/\/systems$/);
-    await expect(page.getByRole("heading", { name: /System Forge/i })).toBeVisible();
+    await expect(page.getByTestId("system-forge-page")).toBeVisible();
 
-    // 2. Open the forge form (empty-state OR direct render).
-    const forgeCta = page.getByRole("button", { name: /Forge my system/i }).first();
-    if (await forgeCta.isVisible().catch(() => false)) {
-      // Only click if it's the empty-state CTA (not the submit button inside the form).
-      const domainField = page.locator("#domain");
-      if (!(await domainField.isVisible().catch(() => false))) {
-        await forgeCta.click();
-      }
+    // 2. Open the forge form (from empty-state CTA if it's shown).
+    const openForm = page.getByTestId("system-forge-open-form");
+    if (await openForm.isVisible().catch(() => false)) {
+      await openForm.click();
     }
 
     // 3. Fill the create-system form.
-    await page.locator("#domain").fill(LAW_INPUT.domain);
-    await page.locator("#goal").fill(LAW_INPUT.goal);
-    await page.locator("#outcome").fill(LAW_INPUT.outcome);
-    await page.locator("#bottleneck").fill(LAW_INPUT.bottleneck);
-    await page.locator("#minutes").fill(LAW_INPUT.minutes);
-
-    await page.getByRole("button", { name: /^Forge my system$/i }).last().click();
+    await page.getByTestId("system-forge-domain").fill(LAW_INPUT.domain);
+    await page.getByTestId("system-forge-goal").fill(LAW_INPUT.goal);
+    await page.getByTestId("system-forge-outcome").fill(LAW_INPUT.outcome);
+    await page.getByTestId("system-forge-bottleneck").fill(LAW_INPUT.bottleneck);
+    await page.getByTestId("system-forge-minutes").fill(LAW_INPUT.minutes);
+    await page.getByTestId("system-forge-submit").click();
 
     // 4. Active system panel appears.
-    await expect(page.getByText(/Active system/i)).toBeVisible();
-    await expect(page.getByText(/Law Proof System/i)).toBeVisible();
-    await expect(page.getByText(/Active command/i)).toBeVisible();
-    const startRep = page.getByRole("button", { name: /Start first rep/i });
-    await expect(startRep).toBeVisible();
+    const active = page.getByTestId("system-forge-active");
+    await expect(active).toBeVisible();
+    await expect(page.getByTestId("system-forge-active-name")).toContainText(/Law Proof System/i);
+    await expect(page.getByTestId("system-forge-active-command")).toBeVisible();
 
     // 5. Start rep + submit proof.
-    await startRep.click();
-    await page.locator("#proof").fill(PROOF_TEXT);
-    await page.locator("#self").fill("6");
-    await page.getByRole("button", { name: /^Submit proof$/i }).click();
+    await page.getByTestId("system-forge-start-rep").click();
+    await page.getByTestId("system-forge-proof").fill(PROOF_TEXT);
+    await page.getByTestId("system-forge-self-score").fill("6");
+    await page.getByTestId("system-forge-submit-proof").click();
 
     // 6. Verdict block renders with weakness + next upgrade.
-    await expect(page.getByText(/Verdict/i)).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/Weakness/i)).toBeVisible();
-    await expect(page.getByText(/Next upgrade/i)).toBeVisible();
+    await expect(page.getByTestId("system-forge-verdict")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("system-forge-weakness")).toBeVisible();
+    await expect(page.getByTestId("system-forge-next-upgrade")).toBeVisible();
 
     // 7. Refresh and assert persistence.
     await page.reload();
-    await expect(page.getByText(/Active system/i)).toBeVisible();
-    await expect(page.getByText(/Law Proof System/i)).toBeVisible();
-    await expect(page.getByText(/Active command/i)).toBeVisible();
+    await expect(page.getByTestId("system-forge-active")).toBeVisible();
+    await expect(page.getByTestId("system-forge-active-name")).toContainText(/Law Proof System/i);
+    await expect(page.getByTestId("system-forge-active-command")).toBeVisible();
 
-    // 8. Past reps list should include the rep we just submitted.
-    // Heading may be "Past reps" / "Recent reps" – match loosely.
-    const pastReps = page.getByText(/Past reps|Recent reps|Rep history/i);
-    await expect(pastReps.first()).toBeVisible();
+    // 8. Recent reps list contains the rep we just submitted.
+    await expect(page.getByTestId("system-forge-reps-list")).toBeVisible();
+    await expect(page.getByTestId("system-forge-rep-item").first()).toBeVisible();
 
     // 9. No unexpected console errors.
     // Filter out well-known noisy warnings (network offline, PostHog dev, etc.).
@@ -98,14 +91,14 @@ test.describe("System Forge", () => {
   });
 
   test("empty-state does not crash for a user with no systems", async ({ authedPage: page }) => {
-    // This test assumes the account has no active system OR renders empty-state gracefully
-    // alongside an existing one. It only asserts the page mounts without throwing.
+    // Assert only that the page mounts and shows either the empty-state form
+    // or an existing active system, without throwing.
     await page.goto("/systems");
-    await expect(page.getByRole("heading", { name: /System Forge/i })).toBeVisible();
-    // Either the empty-state CTA or the active-system panel must be present.
+    await expect(page.getByTestId("system-forge-page")).toBeVisible();
     const emptyOrActive = page
-      .getByRole("button", { name: /Forge my system/i })
-      .or(page.getByText(/Active system/i));
+      .getByTestId("system-forge-empty-state")
+      .or(page.getByTestId("system-forge-form-card"))
+      .or(page.getByTestId("system-forge-active"));
     await expect(emptyOrActive.first()).toBeVisible();
   });
 });
