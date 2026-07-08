@@ -12,7 +12,6 @@ export default defineConfig({
   // Give CI more headroom — cold builds, cold DB, and slower runners cause
   // benign timing flakes that shouldn't block PRs.
   timeout: isCI ? 90_000 : 60_000,
-  expect: { timeout: isCI ? 15_000 : 10_000 },
   fullyParallel: false,
   // Retry transient failures automatically on CI. Locally, keep retries off
   // so real bugs surface immediately instead of being masked.
@@ -20,6 +19,21 @@ export default defineConfig({
   reporter: isCI
     ? [["list"], ["html", { open: "never" }], ["github"]]
     : [["list"]],
+  // Visual regression baselines live next to the spec, per project (OS +
+  // browser). Keeping them in-repo lets PRs diff both the pixels and the
+  // updated baselines in one review.
+  snapshotPathTemplate: "{testDir}/__snapshots__/{testFilePath}/{arg}-{projectName}{ext}",
+  expect: {
+    timeout: isCI ? 15_000 : 10_000,
+    toHaveScreenshot: {
+      // Allow tiny sub-pixel/anti-alias drift between runs without hiding
+      // real layout regressions.
+      maxDiffPixelRatio: 0.01,
+      threshold: 0.2,
+      animations: "disabled",
+      caret: "hide",
+    },
+  },
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:8080",
     viewport: { width: 390, height: 844 },
