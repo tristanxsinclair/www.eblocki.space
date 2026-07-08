@@ -28,3 +28,22 @@ Lovable AI Playwright runner after signing in.
 - Submits a proof artifact and asserts verdict / weakness / next-upgrade render.
 - Refreshes the page and asserts the active system + past-rep state persist.
 - Fails if unexpected console errors fire during the flow.
+
+`system-forge-visual.spec.ts`:
+- Element-level visual regression snapshots for the hero, forge form,
+  active-system panel, verdict block, and recent-reps list.
+- Uses stable `data-testid` selectors; masks the timestamp in each rep row.
+- Baselines are committed under `tests/e2e/__snapshots__/` and are pinned to
+  the `mobile-chromium` project (Pixel 7 device profile).
+
+## Updating visual baselines
+
+When an intentional UI change lands, regenerate baselines locally:
+
+```bash
+bun run test:e2e:update
+```
+
+Commit the updated PNGs alongside the code change. Never update baselines to
+silence an unexpected diff — inspect the failure artifact from the Playwright
+HTML report first.
