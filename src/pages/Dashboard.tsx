@@ -401,7 +401,7 @@ export default function Dashboard() {
                     <TemporalCommandCard result={temporalResult} />
                   ) : (
                     <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
-                </>
+                  )}
                   <TemporalFeedbackPanel />
                   <InterventionCard state={(currentState as BehaviouralState) ?? state} />
                 </>
