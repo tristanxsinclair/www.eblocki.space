@@ -563,7 +563,7 @@ export function CommandHero({
           label="Latest verdict"
           value={view.commandLayer.latestCourtSignal}
           hint={identityImpact?.headline}
-        </div>
+        />
       </div>
     </Card>
   );
