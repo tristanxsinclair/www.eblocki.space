@@ -337,6 +337,7 @@ export default function Coach() {
               )}
               <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Bring the messy problem. Leave with proof.</h1>
             </div>
+          </div>
           </header>
 
         <Card className="panel overflow-hidden border-primary/25 bg-card/60 max-w-full">
