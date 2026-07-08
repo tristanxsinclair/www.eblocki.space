@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { SystemForgeDraft, SystemForgeRepEvaluation } from "./system-forge";
+import type { Json } from "@/integrations/supabase/types";
 
 export interface CustomSystemRow {
   id: string;
@@ -74,13 +75,13 @@ export async function createSystem(
       outcome: draft.outcome,
       bottleneck: draft.bottleneck,
       available_minutes_per_day: draft.availableMinutesPerDay,
-      skills: draft.skills,
+      skills: draft.skills as unknown as Json,
       daily_loop: draft.dailyLoop,
-      weekly_structure: draft.weeklyStructure,
+      weekly_structure: draft.weeklyStructure as unknown as Json,
       minimum_viable_rep: draft.minimumViableRep,
-      proof_artifacts: draft.proofArtifacts,
-      scoring_rubric: draft.scoringRubric,
-      progression_levels: draft.progressionLevels,
+      proof_artifacts: draft.proofArtifacts as unknown as Json,
+      scoring_rubric: draft.scoringRubric as unknown as Json,
+      progression_levels: draft.progressionLevels as unknown as Json,
       review_cycle: draft.reviewCycle,
       first_command: draft.firstCommand,
       active_command: draft.activeCommand,
