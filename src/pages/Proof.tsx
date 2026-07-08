@@ -1,15 +1,13 @@
-              <div>
-                <Label htmlFor="proof-expected-strength">How strong do you think this proof is? (optional)</Label>
-                <select
-                  id="proof-expected-strength"
-                  value={expectedStrength}
-                  onChange={(e) => setExpectedStrength(e.target.value as any)}
-                  className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="">- select -</option>
-                  <option value="weak">Weak</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="strong">Strong</option>
-                  <option value="elite">Elite</option>
-                </select>
+            {/* Dynamic Expected vs Actual judgment feedback */}
+            <div className="mt-3 rounded-sm border border-border bg-background/40 p-3 text-sm">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                Your judgment
               </div>
+              <div>
+                You expected: <span className="font-medium">{expectedStrength ? expectedStrength.charAt(0).toUpperCase() + expectedStrength.slice(1) : "—"}</span><br />
+                Actual result: <span className="font-medium">{verdict.evidenceStrength.charAt(0).toUpperCase() + verdict.evidenceStrength.slice(1)}</span>
+              </div>
+              <div className="mt-2 text-muted-foreground text-xs">
+                This is common — many people think their proof is stronger than it scores.
+              </div>
+            </div>
