@@ -15,7 +15,10 @@
     "preview": "vite preview",
     "smoke:routes": "node scripts/route-smoke.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:install": "playwright install chromium"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
