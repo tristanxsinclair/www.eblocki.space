@@ -12,7 +12,6 @@ export default defineConfig({
   // Give CI more headroom — cold builds, cold DB, and slower runners cause
   // benign timing flakes that shouldn't block PRs.
   timeout: isCI ? 90_000 : 60_000,
-  expect: { timeout: isCI ? 15_000 : 10_000 },
   fullyParallel: false,
   // Retry transient failures automatically on CI. Locally, keep retries off
   // so real bugs surface immediately instead of being masked.
@@ -35,8 +34,6 @@ export default defineConfig({
       caret: "hide",
     },
   },
-  // NOTE: `expect.timeout` above supersedes the earlier `expect: { timeout }`
-  // block; keep only this one.
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:8080",
     viewport: { width: 390, height: 844 },
