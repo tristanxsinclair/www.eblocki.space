@@ -535,7 +535,7 @@ export default function Coach() {
                   <p className="text-sm mt-1 break-words">Contract saved. Submit the proof artifact in the Proof Check.</p>
                 </div>
                 <Link to="/proof"><Button size="sm">Submit Proof <ArrowRight className="h-3 w-3 ml-1" /></Button></Link>
-              </Card>
+              </MotionLockIn>
             )}
           </div>
         )}
