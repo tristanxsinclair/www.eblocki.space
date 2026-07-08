@@ -1,5 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { HelmetProvider } from "react-helmet-async";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -62,10 +61,10 @@ describe("Systems page", () => {
       await screen.findByText(/Build a proof-based training system/i),
     ).toBeInTheDocument();
 
-    await userEvent.click(await screen.findByRole("button", { name: /Forge my system/i }));
-    await userEvent.type(screen.getByLabelText(/Domain/i), "law");
-    await userEvent.type(screen.getByLabelText(/Improvement goal/i), "IRAC answers");
-    await userEvent.click(screen.getByRole("button", { name: /Forge my system/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /Forge my system/i }));
+    fireEvent.change(screen.getByLabelText(/Domain/i), { target: { value: "law" } });
+    fireEvent.change(screen.getByLabelText(/Improvement goal/i), { target: { value: "IRAC answers" } });
+    fireEvent.click(screen.getByRole("button", { name: /Forge my system/i }));
 
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /Start first rep/i })).toBeInTheDocument(),
