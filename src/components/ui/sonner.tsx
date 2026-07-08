@@ -9,6 +9,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
   const isMobile = useIsMobile();
 
+  const extraProps: Record<string, unknown> = {
+    onAutoClose: () => haptics.light(),
+  };
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
@@ -24,7 +27,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
       }}
-      onAutoClose={(() => haptics.light()) as any}
+      {...extraProps}
       {...props}
     />
   );
