@@ -1,86 +1,25 @@
-              <div>
-                <Label id="proof-expected-strength-label" htmlFor="proof-expected-strength">
-                  How strong do you think this proof is? (optional)
-                </Label>
-                <div className="mt-2 flex items-center gap-2 flex-wrap">
-                  <div
-                    role="radiogroup"
-                    aria-labelledby="proof-expected-strength-label"
-                    className="flex flex-wrap gap-2"
-                    onTouchStart={(e) => {
-                      (e.currentTarget as any)._touchStartX = e.touches[0].clientX;
-                    }}
-                    onTouchEnd={(e) => {
-                      const startX = (e.currentTarget as any)._touchStartX;
-                      if (!startX) return;
-                      const endX = e.changedTouches[0].clientX;
-                      const diff = endX - startX;
-
-                      const currentIndex = ["weak", "moderate", "strong", "elite"].indexOf(expectedStrength || "moderate");
-                      let newIndex = currentIndex;
-
-                      if (Math.abs(diff) > 40) {
-                        if (diff > 0) {
-                          newIndex = (currentIndex - 1 + 4) % 4;
-                        } else {
-                          newIndex = (currentIndex + 1) % 4;
-                        }
-                        const levels = ["weak", "moderate", "strong", "elite"] as const;
-                        setExpectedStrength(levels[newIndex]);
-                      }
-                    }}
-                  >
-                    {(["weak", "moderate", "strong", "elite"] as const).map((level, index, arr) => {
-                      const isSelected = expectedStrength === level;
-                      const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-                        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                          e.preventDefault();
-                          const nextIndex = (index + 1) % arr.length;
-                          const nextLevel = arr[nextIndex];
-                          setExpectedStrength(nextLevel);
-                          const buttons = (e.currentTarget.parentElement?.querySelectorAll('button[role="radio"]') || []) as NodeListOf<HTMLButtonElement>;
-                          buttons[nextIndex]?.focus();
-                        }
-                        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                          e.preventDefault();
-                          const prevIndex = (index - 1 + arr.length) % arr.length;
-                          const prevLevel = arr[prevIndex];
-                          setExpectedStrength(prevLevel);
-                          const buttons = (e.currentTarget.parentElement?.querySelectorAll('button[role="radio"]') || []) as NodeListOf<HTMLButtonElement>;
-                          buttons[prevIndex]?.focus();
-                        }
-                      };
-
-                      return (
-                        <button
-                          key={level}
-                          type="button"
-                          role="radio"
-                          aria-checked={isSelected}
-                          tabIndex={isSelected ? 0 : -1}
-                          onClick={() => setExpectedStrength(level)}
-                          onKeyDown={handleKeyDown}
-                          className={cn(
-                            "rounded-sm border px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary/50",
-                            isSelected
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                          )}
-                        >
-                          {level.charAt(0).toUpperCase() + level.slice(1)}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {expectedStrength && (
-                    <button
-                      type="button"
-                      onClick={() => setExpectedStrength("")}
-                      className="ml-1 text-xs text-muted-foreground hover:text-foreground underline"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
+            {/* Dynamic Expected vs Actual judgment feedback */}
+            <div className="mt-3 rounded-sm border border-border bg-background/40 p-3 text-sm">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
+                Your judgment
               </div>
+              <div>
+                You expected: <span className="font-medium">{expectedStrength ? expectedStrength.charAt(0).toUpperCase() + expectedStrength.slice(1) : "—"}</span><br />
+                Actual result: <span className="font-medium">{verdict.evidenceStrength.charAt(0).toUpperCase() + verdict.evidenceStrength.slice(1)}</span>
+              </div>
+              <div className="mt-2 text-muted-foreground text-xs">
+                This is common — many people think their proof is stronger than it scores.
+              </div>
+
+              {/* Light optional reflection prompt */}
+              <div className="mt-3 pt-3 border-t border-border/60">
+                <div className="text-xs text-muted-foreground mb-1">What made you expect that strength? (optional)</div>
+                <Textarea
+                  value={reflection}
+                  onChange={(e) => setReflection(e.target.value)}
+                  placeholder="Brief note about why you chose that level..."
+                  className="text-xs min-h-[60px]"
+                  rows={2}
+                />
+              </div>
+            </div>
