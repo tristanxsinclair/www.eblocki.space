@@ -6,13 +6,13 @@ import { logEvent } from "@/lib/eblocki/analytics";
 import {
   ArrowRight,
   CheckCircle2,
-  Crosshair,
   Flame,
   Gavel,
   ShieldCheck,
   Sparkles,
   Target,
 } from "lucide-react";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
 const STEPS = [
   {
@@ -88,10 +88,7 @@ export default function Landing() {
       <header className="border-b border-border bg-background/95 backdrop-blur safe-top safe-x">
         <div className="container flex flex-wrap items-center justify-between gap-3 py-4">
           <Link to="/" className="flex items-center gap-2 native-tap">
-            <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-primary text-primary-foreground">
-              <Crosshair className="h-4 w-4" />
-            </div>
-            <span className="font-mono text-sm tracking-[0.25em]">EBLOCKI</span>
+            <EblockiLogo variant="compact" size="md" />
           </Link>
           <nav className="flex items-center gap-3">
             <a

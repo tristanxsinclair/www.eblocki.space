@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { logEvent } from "@/lib/eblocki/analytics";
 import { Seo } from "@/components/Seo";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
 /**
  * Short, premium welcome flow. Five steps, <2 minutes, ends by seeding
@@ -109,16 +110,19 @@ export default function Welcome() {
     <div className="min-h-screen bg-background text-foreground">
       <Seo title="Welcome | EBLOCKI" description="A two-minute intro to proof-first behavioural execution." path="/welcome" />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-12 space-y-6">
-        <div className="flex items-center gap-1.5">
-          {STEPS.map((s, i) => (
-            <div
-              key={s}
-              className={cn(
-                "h-1 flex-1 rounded-sm transition-colors",
-                i <= step ? "bg-primary" : "bg-muted",
-              )}
-            />
-          ))}
+        <div className="flex items-center justify-between gap-3">
+          <EblockiLogo variant="mark" size="md" />
+          <div className="flex items-center gap-1.5 flex-1">
+            {STEPS.map((s, i) => (
+              <div
+                key={s}
+                className={cn(
+                  "h-1 flex-1 rounded-sm transition-colors",
+                  i <= step ? "bg-primary" : "bg-muted",
+                )}
+              />
+            ))}
+          </div>
         </div>
         <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground">
           <span>Step {step + 1} of {STEPS.length}</span>

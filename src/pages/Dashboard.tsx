@@ -13,7 +13,6 @@ import { EvidenceStrengthBadge, ModeBadge, StateBadge } from "@/components/ebloc
 import {
   ArrowRight,
   CircleDot,
-  Crosshair,
   FileText,
   Gavel,
   Layers,
@@ -54,6 +53,7 @@ import { ProofClosureCard } from "@/components/eblocki/ProofClosureCard";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { hasProofOnDate, plainEvidenceStrength } from "@/lib/eblocki/user-facing-copy";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
 const EVIDENCE_STRENGTHS: EvidenceStrength[] = ["weak", "moderate", "strong", "elite"];
 
@@ -234,13 +234,16 @@ export default function Dashboard() {
       />
       <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-5">
         <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">
-          <div className="min-w-0">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Today
-            </span>
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1">
-              Today
-            </h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <EblockiLogo variant="mark" size="md" />
+            <div className="min-w-0">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                Today
+              </span>
+              <h1 className="text-2xl md:text-3xl font-semibold mt-1">
+                Today
+              </h1>
+            </div>
           </div>
           {!isMobile && (
             <div className="flex gap-2 flex-wrap">
@@ -376,72 +379,6 @@ export default function Dashboard() {
                   recent={recent}
                   topPending={topPending}
                   latestArtifact={latestArtifact}
-                />
-                <DashboardForecastTabs
-                  value={diagnosticsTab}
-                  onValueChange={openDiagnosticsTab}
-                  forecastSlot={
-                    <>
-                      {temporalResult ? (
-                        <TemporalCommandCard result={temporalResult} />
-                      ) : (
-                        <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
-                      )}
-                      <TemporalFeedbackPanel />
-                      <InterventionCard state={(currentState as BehaviouralState) ?? state} />
-                    </>
-                  }
-                  evidenceSlot={
-                    <>
-                      {user && <IdentityLedger userId={user.id} limit={5} />}
-                      <div className="grid lg:grid-cols-2 gap-4">
-                        <MomentumPanel />
-                        <WeeklyRetro />
-                      </div>
-                      <QuickCheckInCard
-                        quick={quick}
-                        setQuick={setQuick}
-                        mode={mode}
-                        state={state}
-                        onDiagnose={handleCheckIn}
-                      />
-                      <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
-                        <div className="flex items-center justify-between gap-3 min-w-0">
-                          <div className="min-w-0">
-                            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Current setup</div>
-                            <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
-                              {currentMode ? `Last coach lens: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
-                            </p>
-                          </div>
-                          {currentState && <StateBadge state={currentState as BehaviouralState} />}
-                        </div>
-                        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          <MetricCell label="Mode count" value={String(view.evidenceSummary.modesCount)} />
-                          <MetricCell label="Latest proof" value={view.evidenceSummary.latestProofTitle ?? "none"} />
-                          <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
-                        </div>
-                      </Card>
-                    </>
-                  }
-                  auditSlot={
-                    <>
-                      <TemporalIntelligencePanel />
-                      <TemporalModelAuditPanel />
-                      <div className="space-y-3">
-                        <ProductMatchPanel
-                          artifacts={allArtifacts}
-                          temporal={temporalResult}
-                          accessLevel="free"
-                          operatingProfile={{
-                            primaryDomain: activeDomains[0] ?? null,
-                            recommendationsAllowed: true,
-                            trustPreference: "neutral",
-                          }}
-                        />
-                        <InterestSignalCard />
-                      </div>
-                    </>
-                  }
                 />
               </div>
             </MobileCollapse>
@@ -694,7 +631,6 @@ function QuickCheckInCard({
   return (
     <Card className="panel p-4 border-border/80 bg-card/50">
       <div className="flex items-center gap-2">
-        <Crosshair className="h-4 w-4 text-primary" />
         <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Quick check-in</span>
       </div>
       <Textarea

@@ -15,19 +15,29 @@ import { toast } from "sonner";
 import {
   AlertCircle,
   ArrowRight,
+  BookOpen,
+  Brain,
   BrainCircuit,
+  Briefcase,
   ChevronDown,
   ClipboardCopy,
+  Compass,
   Crosshair,
+  Dumbbell,
   Gamepad2,
+  Gavel,
   Info,
   Loader2,
+  Lock,
   MessageSquare,
+  Package,
   Radar,
+  Scale,
   Send,
   ShieldCheck,
   Sparkles,
   Target,
+  TrendingUp,
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { logEvent } from "@/lib/eblocki/analytics";
@@ -38,17 +48,28 @@ import {
   type CoachEngineResult,
   type CoachResponseMode,
 } from "@/lib/eblocki/coach-engine";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
+import {
+  ProofSubmitButton,
+  MotionVerdictCard,
+  MotionLockIn,
+  MotionNextStep,
+} from "@/components/eblocki/motion";
 
-const MODE_CHIPS: Array<{ label: string; value: CoachResponseMode | "auto" }> = [
-  { label: "Auto", value: "auto" },
-  { label: "Study", value: "study_coach" },
-  { label: "Law", value: "law_reasoning" },
-  { label: "Psychology", value: "psychology_reasoning" },
-  { label: "Sales", value: "sales_coach" },
-  { label: "Sport", value: "sport_coach" },
-  { label: "Product", value: "product_builder" },
-  { label: "Life", value: "life_strategy" },
-  { label: "Execution Lock", value: "execution_lock" },
+const MODE_CHIPS: Array<{
+  label: string;
+  value: CoachResponseMode | "auto";
+  icon: ReactNode;
+}> = [
+  { label: "Auto", value: "auto", icon: <Sparkles className="h-3.5 w-3.5" /> },
+  { label: "Study", value: "study_coach", icon: <BookOpen className="h-3.5 w-3.5" /> },
+  { label: "Law", value: "law_reasoning", icon: <Scale className="h-3.5 w-3.5" /> },
+  { label: "Psychology", value: "psychology_reasoning", icon: <Brain className="h-3.5 w-3.5" /> },
+  { label: "Sales", value: "sales_coach", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+  { label: "Sport", value: "sport_coach", icon: <Dumbbell className="h-3.5 w-3.5" /> },
+  { label: "Product", value: "product_builder", icon: <Package className="h-3.5 w-3.5" /> },
+  { label: "Life", value: "life_strategy", icon: <Compass className="h-3.5 w-3.5" /> },
+  { label: "Execution Lock", value: "execution_lock", icon: <Lock className="h-3.5 w-3.5" /> },
 ];
 
 const QUICK_PROMPTS = [
@@ -73,6 +94,26 @@ type CoachHistoryRow = {
 function coerceMode(value: string | null | undefined): CoachResponseMode | "auto" {
   const match = MODE_CHIPS.find((chip) => chip.value === value);
   return match?.value ?? "auto";
+}
+
+function getCoachProcessingText(mode: CoachResponseMode | "auto"): string {
+  if (mode === "auto") {
+    return "Coach is diagnosing...";
+  }
+
+  const modeMap: Record<string, string> = {
+    study_coach: "Study",
+    law_reasoning: "Law",
+    psychology_reasoning: "Psychology",
+    sales_coach: "Sales",
+    sport_coach: "Sport",
+    product_builder: "Product",
+    life_strategy: "Life",
+    execution_lock: "Execution",
+  };
+
+  const label = modeMap[mode] ?? "Coach";
+  return `Coach is reasoning in ${label} mode...`;
 }
 
 function splitRemoteResponse(text: string): string {
@@ -290,23 +331,16 @@ export default function Coach() {
       />
       <div className="mobile-safe-page p-4 md:p-8 max-w-5xl mx-auto space-y-5 min-w-0 max-w-full text-wrap-safe pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-8">
         <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end min-w-0">
-          <div className="min-w-0">
-            {!isMobile && (
-              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Coach // Diagnosis Engine</span>
-            )}
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Bring the messy problem. Leave with proof.</h1>
-            <p className="text-sm text-muted-foreground mt-1 max-w-2xl break-words">
-              {isMobile
-                ? "Paste the messy problem. Eblocki turns it into one proof action you can complete today."
-                : "Coach classifies the domain, intent, state, urgency, and response mode. It answers directly, creates a proof action, and suggests GameForge when practice is the right intervention."}
-            </p>
+          <div className="flex items-center gap-3 min-w-0">
+            <EblockiLogo variant="mark" size="md" />
+            <div className="min-w-0">
+              {!isMobile && (
+                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Coach // Diagnosis Engine</span>
+              )}
+              <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Bring the messy problem. Leave with proof.</h1>
+            </div>
           </div>
-          {!isMobile && (
-            <Link to="/gameforge">
-              <Button size="sm" variant="outline" className="gap-2"><Gamepad2 className="h-3.5 w-3.5" /> GameForge</Button>
-            </Link>
-          )}
-        </header>
+          </header>
 
         <Card className="panel overflow-hidden border-primary/25 bg-card/60 max-w-full">
           <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-3 min-w-0">
@@ -332,10 +366,11 @@ export default function Coach() {
                       type="button"
                       onClick={() => setSelectedMode(chip.value)}
                       className={cn(
-                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors min-h-[44px]",
+                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors min-h-[44px] flex items-center gap-1.5",
                         selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
                       )}
                     >
+                      {chip.icon}
                       {chip.label}
                     </button>
                   ))}
@@ -351,10 +386,11 @@ export default function Coach() {
                       type="button"
                       onClick={() => setSelectedMode(chip.value)}
                       className={cn(
-                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors",
+                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors flex items-center gap-1.5",
                         selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
                       )}
                     >
+                      {chip.icon}
                       {chip.label}
                     </button>
                   ))}
@@ -363,12 +399,26 @@ export default function Coach() {
             )}
             <div className="flex items-center justify-between gap-3 flex-wrap border-t border-border pt-4">
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{input.length}/5000</div>
-              <Button onClick={send} disabled={loading} className="gap-2 w-full sm:w-auto">
+              <ProofSubmitButton
+                onClick={send}
+                disabled={loading}
+                className="gap-2 w-full sm:w-auto"
+              >
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Diagnosing</> : <><Send className="h-4 w-4" /> Diagnose</>}
-              </Button>
+              </ProofSubmitButton>
             </div>
           </div>
         </Card>
+
+        {/* Calm processing state while Coach is thinking */}
+        {loading && (
+          <div className="flex justify-center py-2">
+            <div className="motion-calm flex items-center gap-2 text-muted-foreground">
+              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+              {getCoachProcessingText(selectedMode)}
+            </div>
+          </div>
+        )}
 
         {!engineResult && !loading && (
           <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 max-w-full overflow-hidden">
@@ -414,13 +464,15 @@ export default function Coach() {
 
         {engineResult && (
           <div className="space-y-4">
-            <CoachResultSummaryCard
-              engineResult={engineResult}
-              remoteResult={remoteResult}
-              committedId={committedId}
-              committing={committing}
-              onCommit={commit}
-            />
+            <MotionVerdictCard className="max-w-full overflow-hidden">
+              <CoachResultSummaryCard
+                engineResult={engineResult}
+                remoteResult={remoteResult}
+                committedId={committedId}
+                committing={committing}
+                onCommit={commit}
+              />
+            </MotionVerdictCard>
 
             {engineResult.warning && (
               <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
@@ -479,13 +531,13 @@ export default function Coach() {
             )}
 
             {committedId && (
-              <Card className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3 max-w-full overflow-hidden">
+              <MotionLockIn active={!!committedId} className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3 max-w-full overflow-hidden">
                 <div className="min-w-0">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Next step</span>
                   <p className="text-sm mt-1 break-words">Contract saved. Submit the proof artifact in the Proof Check.</p>
                 </div>
                 <Link to="/proof"><Button size="sm">Submit Proof <ArrowRight className="h-3 w-3 ml-1" /></Button></Link>
-              </Card>
+              </MotionLockIn>
             )}
           </div>
         )}
@@ -501,7 +553,7 @@ export default function Coach() {
                 key={prompt}
                 size="sm"
                 variant="outline"
-                className="text-xs whitespace-normal text-left h-auto py-2"
+                className="text-xs whitespace-normal text-left h-auto py-2 motion-micro"
                 onClick={() => setInput((prev) => (prev.trim() ? `${prev.trim()}\n\n${prompt}` : prompt))}
               >
                 {prompt}

@@ -1,10 +1,11 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageSquare, Gavel, Settings, LogOut, Crosshair, Sparkles, Hexagon, Swords, Hammer } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Gavel, Settings, LogOut, Sparkles, Hexagon, Swords, Hammer } from "lucide-react";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
 import { LevelUpListener } from "./LevelUpListener";
 import { MobileBottomNav } from "./MobileBottomNav";
+import { EblockiLogo } from "./EblockiLogo";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -24,23 +25,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen-safe flex flex-col md:flex-row w-full max-w-full overflow-x-hidden">
-      {/* Mobile brand bar — replaces the horizontal-scroll nav on small screens */}
+      {/* Mobile brand bar */}
       <header className="md:hidden flex items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card/40 safe-top safe-x w-full max-w-full">
         <Link to="/dashboard" className="flex items-center gap-2 native-tap min-w-0">
-          <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground shrink-0">
-            <Crosshair className="h-4 w-4" />
-          </div>
-          <span className="font-mono text-sm tracking-[0.2em] truncate">EBLOCKI</span>
+          <EblockiLogo variant="compact" size="sm" />
         </Link>
       </header>
 
-      {/* Desktop / tablet sidebar — unchanged behaviour, now hidden on mobile */}
+      {/* Desktop / tablet sidebar */}
       <aside className="hidden md:flex md:w-56 md:min-h-screen border-r border-border bg-card/40 md:flex-col safe-x md:safe-bottom max-w-full min-w-0">
-        <Link to="/dashboard" className="flex items-center gap-2 px-4 py-4 border-b border-border md:w-full native-tap">
-          <div className="h-7 w-7 rounded-sm bg-primary flex items-center justify-center text-primary-foreground">
-            <Crosshair className="h-4 w-4" />
-          </div>
-          <span className="font-mono text-sm tracking-[0.2em]">EBLOCKI</span>
+        <Link to="/dashboard" className="flex items-center gap-2.5 px-4 py-4 border-b border-border md:w-full native-tap">
+          <EblockiLogo variant="compact" size="md" />
         </Link>
         <nav className="flex-1 flex md:flex-col gap-0.5 p-2 min-w-0 max-w-full">
           {NAV.map((n) => (
