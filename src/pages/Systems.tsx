@@ -186,8 +186,8 @@ export default function Systems() {
         description="Turn any goal into a proof-based training system with a first command."
         path="/systems"
       />
-      <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-4 min-w-0">
-        <Card className="panel p-5 md:p-6 border-border/80 bg-card/50 min-w-0">
+      <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-4 min-w-0" data-testid="system-forge-page">
+        <Card className="panel p-5 md:p-6 border-border/80 bg-card/50 min-w-0" data-testid="system-forge-hero">
           <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             System Forge
           </div>
@@ -200,29 +200,36 @@ export default function Systems() {
         </Card>
 
         {loading && (
-          <Card className="p-5 text-sm text-muted-foreground">Loading systems…</Card>
+          <Card className="p-5 text-sm text-muted-foreground" data-testid="system-forge-loading">
+            Loading systems…
+          </Card>
         )}
 
         {loadError && !loading && (
-          <Card className="p-5 text-sm text-destructive">Could not load systems: {loadError}</Card>
+          <Card className="p-5 text-sm text-destructive" data-testid="system-forge-load-error">
+            Could not load systems: {loadError}
+          </Card>
         )}
 
         {!loading && !activeRow && !showForge && (
-          <Card className="p-5 space-y-3 min-w-0">
+          <Card className="p-5 space-y-3 min-w-0" data-testid="system-forge-empty-state">
             <div className="text-sm text-muted-foreground">
               No system yet. Forge one goal into a proof loop.
             </div>
-            <Button onClick={() => setShowForge(true)}>Forge my system</Button>
+            <Button onClick={() => setShowForge(true)} data-testid="system-forge-open-form">
+              Forge my system
+            </Button>
           </Card>
         )}
 
         {!loading && (showForge || (!activeRow && !loadError)) && !activeRow && (
-          <Card className="p-5 md:p-6 min-w-0">
-            <form onSubmit={handleForge} className="space-y-4">
+          <Card className="p-5 md:p-6 min-w-0" data-testid="system-forge-form-card">
+            <form onSubmit={handleForge} className="space-y-4" data-testid="system-forge-form">
               <div className="space-y-1.5">
                 <Label htmlFor="domain">Domain</Label>
                 <Input
                   id="domain"
+                  data-testid="system-forge-domain"
                   placeholder="law, sales, spanish, football, founder, study, fitness…"
                   value={domain}
                   onChange={(e) => setDomain(e.target.value)}
@@ -232,6 +239,7 @@ export default function Systems() {
                 <Label htmlFor="goal">Improvement goal</Label>
                 <Input
                   id="goal"
+                  data-testid="system-forge-goal"
                   placeholder="What do you want to get better at?"
                   value={improvementGoal}
                   onChange={(e) => setImprovementGoal(e.target.value)}
@@ -241,6 +249,7 @@ export default function Systems() {
                 <Label htmlFor="outcome">Desired outcome</Label>
                 <Input
                   id="outcome"
+                  data-testid="system-forge-outcome"
                   placeholder="What proof would show it's working?"
                   value={desiredOutcome}
                   onChange={(e) => setDesiredOutcome(e.target.value)}
@@ -250,6 +259,7 @@ export default function Systems() {
                 <Label htmlFor="bottleneck">Current bottleneck</Label>
                 <Input
                   id="bottleneck"
+                  data-testid="system-forge-bottleneck"
                   placeholder="What are you avoiding?"
                   value={currentBottleneck}
                   onChange={(e) => setCurrentBottleneck(e.target.value)}
@@ -259,6 +269,7 @@ export default function Systems() {
                 <Label htmlFor="minutes">Minutes per day</Label>
                 <Input
                   id="minutes"
+                  data-testid="system-forge-minutes"
                   type="number"
                   min={5}
                   max={180}
@@ -266,7 +277,7 @@ export default function Systems() {
                   onChange={(e) => setMinutes(Number(e.target.value) || 20)}
                 />
               </div>
-              <Button type="submit" disabled={creating}>
+              <Button type="submit" disabled={creating} data-testid="system-forge-submit">
                 {creating ? "Forging…" : "Forge my system"}
               </Button>
             </form>
@@ -274,18 +285,20 @@ export default function Systems() {
         )}
 
         {activeRow && draft && (
-          <Card className="p-5 md:p-6 space-y-4 min-w-0">
+          <Card className="p-5 md:p-6 space-y-4 min-w-0" data-testid="system-forge-active">
             <div className="min-w-0">
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 Active system
               </div>
-              <h2 className="mt-1 text-lg font-semibold break-words">{draft.name}</h2>
+              <h2 className="mt-1 text-lg font-semibold break-words" data-testid="system-forge-active-name">
+                {draft.name}
+              </h2>
               <p className="text-xs text-muted-foreground">
                 {draft.domain} · {draft.availableMinutesPerDay} min/day
               </p>
             </div>
 
-            <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2 min-w-0">
+            <div className="rounded-md border border-border/60 bg-background/40 p-3 space-y-2 min-w-0" data-testid="system-forge-active-command">
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 Active command
               </div>
@@ -294,18 +307,19 @@ export default function Systems() {
                 Proof required: {draft.artifactType}. Minimum viable rep: {draft.minimumViableRep}
               </p>
               {!repOpen && (
-                <Button onClick={() => setRepOpen(true)} className="mt-2">
+                <Button onClick={() => setRepOpen(true)} className="mt-2" data-testid="system-forge-start-rep">
                   Start first rep
                 </Button>
               )}
             </div>
 
             {repOpen && (
-              <form onSubmit={handleSubmitRep} className="space-y-3">
+              <form onSubmit={handleSubmitRep} className="space-y-3" data-testid="system-forge-rep-form">
                 <div className="space-y-1.5">
                   <Label htmlFor="proof">Proof of the rep</Label>
                   <Textarea
                     id="proof"
+                    data-testid="system-forge-proof"
                     rows={6}
                     placeholder="Describe the artifact you produced. Include time, output, and one weakness or correction."
                     value={proofContent}
@@ -316,6 +330,7 @@ export default function Systems() {
                   <Label htmlFor="self">Self score (1–10, optional)</Label>
                   <Input
                     id="self"
+                    data-testid="system-forge-self-score"
                     type="number"
                     min={1}
                     max={10}
@@ -326,10 +341,15 @@ export default function Systems() {
                   />
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  <Button type="submit" disabled={submitting}>
+                  <Button type="submit" disabled={submitting} data-testid="system-forge-submit-proof">
                     {submitting ? "Submitting…" : "Submit proof"}
                   </Button>
-                  <Button type="button" variant="ghost" onClick={() => setRepOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setRepOpen(false)}
+                    data-testid="system-forge-cancel-rep"
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -337,19 +357,19 @@ export default function Systems() {
             )}
 
             {lastEval && (
-              <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2 min-w-0">
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2 min-w-0" data-testid="system-forge-verdict">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                   Verdict
                 </div>
-                <p className="text-sm font-semibold capitalize">
+                <p className="text-sm font-semibold capitalize" data-testid="system-forge-verdict-summary">
                   {lastEval.verdict} · score {lastEval.score}
                 </p>
                 <p className="text-sm break-words">{lastEval.why}</p>
-                <p className="text-sm break-words">
+                <p className="text-sm break-words" data-testid="system-forge-weakness">
                   <span className="text-muted-foreground">Weakness: </span>
                   {lastEval.weakness}
                 </p>
-                <p className="text-sm break-words">
+                <p className="text-sm break-words" data-testid="system-forge-next-upgrade">
                   <span className="text-muted-foreground">Next upgrade: </span>
                   {lastEval.nextUpgrade}
                 </p>
@@ -418,13 +438,17 @@ export default function Systems() {
             </Accordion>
 
             {reps.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2" data-testid="system-forge-reps">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                   Recent reps
                 </div>
-                <ul className="space-y-2">
+                <ul className="space-y-2" data-testid="system-forge-reps-list">
                   {reps.map((rep) => (
-                    <li key={rep.id} className="rounded-md border border-border/60 p-3 text-sm min-w-0">
+                    <li
+                      key={rep.id}
+                      className="rounded-md border border-border/60 p-3 text-sm min-w-0"
+                      data-testid="system-forge-rep-item"
+                    >
                       <div className="flex justify-between gap-2 flex-wrap">
                         <span className="capitalize font-medium">{rep.verdict ?? "—"}</span>
                         <span className="text-xs text-muted-foreground">
@@ -443,7 +467,12 @@ export default function Systems() {
             )}
 
             <div>
-              <Button variant="ghost" size="sm" onClick={() => { setActiveRow(null); setShowForge(true); setLastEval(null); }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setActiveRow(null); setShowForge(true); setLastEval(null); }}
+                data-testid="system-forge-reset"
+              >
                 Forge a new system
               </Button>
             </div>
