@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
+import { Check, Crown, Zap, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { StripeEmbeddedCheckout } from "@/components/StripeEmbeddedCheckout";
@@ -8,6 +8,7 @@ import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { PRICE_IDS, isPaymentsConfigured } from "@/lib/stripe";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
+import { Seo } from "@/components/Seo";
 
 interface Tier {
   id: "free" | "pro" | "founder";
@@ -18,6 +19,7 @@ interface Tier {
   priceId?: string;
   cta: string;
   highlight?: boolean;
+  contact?: boolean;
 }
 
 const TIERS: Tier[] = [
@@ -38,13 +40,14 @@ const TIERS: Tier[] = [
     id: "pro",
     name: "Pro",
     priceLabel: "$11.99",
-    cadence: "per month · or $64 / year",
+    cadence: "AUD / month · or $64 AUD / year",
     bullets: [
       "Court of Evidence + adversarial review",
       "Identity Ledger + weekly executive review",
       "Sentinel risk forecast",
       "Adaptive coaching",
       "Advanced proof analytics",
+      "7-day refund on first month",
     ],
     priceId: PRICE_IDS.proMonthly,
     cta: "Go Pro",
@@ -53,16 +56,17 @@ const TIERS: Tier[] = [
   {
     id: "founder",
     name: "Founder",
-    priceLabel: "$169.99",
-    cadence: "one-time · lifetime",
+    priceLabel: "By application",
+    cadence: "one-time · lifetime · limited seats",
     bullets: [
       "Everything in Pro, forever",
       "All future software + updates",
       "Priority feedback channel",
       "Early access to experimental features",
+      "Direct line to the founder",
     ],
-    priceId: PRICE_IDS.founderLifetime,
-    cta: "Become a Founder",
+    cta: "Apply for Founder",
+    contact: true,
   },
 ];
 
@@ -76,6 +80,10 @@ export default function Pricing() {
   const startCheckout = (tier: Tier) => {
     if (tier.id === "free") {
       navigate(user ? "/dashboard" : "/auth");
+      return;
+    }
+    if (tier.contact) {
+      navigate("/founder");
       return;
     }
     if (!user) {
@@ -94,6 +102,11 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Seo
+        title="Pricing — Eblocki"
+        description="Free, Pro, and Founder plans. Stop fake productivity. Log proof. Get the next command."
+        path="/pricing"
+      />
       <PaymentTestModeBanner />
       <header className="border-b border-border/40 px-6 py-4 flex items-center justify-between">
         <Link to="/" className="font-mono text-sm tracking-tight">Eblocki</Link>
@@ -104,7 +117,7 @@ export default function Pricing() {
 
       <main className="max-w-5xl mx-auto px-6 py-16">
         <div className="text-center mb-14">
-          <h1 className="text-3xl md:text-4xl font-mono tracking-tight mb-3">Stop fake productivity.</h1>
+          <h1 className="text-3xl md:text-5xl font-mono tracking-tight mb-3">Stop fake productivity.</h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
             Log proof. Get the next command. Compound real identity evidence.
           </p>
@@ -113,6 +126,7 @@ export default function Pricing() {
         <div className="grid md:grid-cols-3 gap-6">
           {TIERS.map((tier) => {
             const currentPlan = accessLevel === tier.id;
+            const Icon = tier.id === "founder" ? Crown : tier.id === "pro" ? Zap : Shield;
             return (
               <div
                 key={tier.id}
@@ -123,7 +137,10 @@ export default function Pricing() {
                 }`}
               >
                 <div className="mb-4">
-                  <h2 className="font-mono text-lg mb-1">{tier.name}</h2>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon className="h-4 w-4 text-primary" />
+                    <h2 className="font-mono text-lg">{tier.name}</h2>
+                  </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-mono">{tier.priceLabel}</span>
                   </div>
@@ -177,8 +194,26 @@ export default function Pricing() {
           })}
         </div>
 
+        <div className="mt-16 max-w-2xl mx-auto space-y-6">
+          <h2 className="font-mono text-lg tracking-tight text-center">Common questions</h2>
+          {[
+            { q: "Can I cancel anytime?", a: "Yes. Cancel from Settings → Manage billing. Access continues until the end of the paid period." },
+            { q: "Do you offer refunds?", a: "7-day no-questions refund on your first month of Pro. Email admin@eblocki.space." },
+            { q: "How does Founder work?", a: "Founder is application-only, limited seats, lifetime access. Apply at /founder — we reply within 48 hours." },
+            { q: "Is my proof data private?", a: "Yes. Stored per-user with row-level security. See Privacy for details." },
+            { q: "Does it work on mobile?", a: "Yes. Web, iOS, and Android via the same account. Sign in on any device." },
+          ].map((f) => (
+            <details key={f.q} className="border border-border/40 rounded-md p-4 bg-card/50">
+              <summary className="cursor-pointer font-mono text-sm">{f.q}</summary>
+              <p className="text-sm text-muted-foreground mt-2">{f.a}</p>
+            </details>
+          ))}
+        </div>
+
         <p className="text-center text-xs text-muted-foreground mt-10">
-          Prices in USD. Taxes handled at checkout for supported regions.
+          Prices in AUD. Secure payments via Stripe. Cancel anytime.{" "}
+          <Link to="/legal/terms" className="underline">Terms</Link> ·{" "}
+          <Link to="/legal/privacy" className="underline">Privacy</Link>
         </p>
       </main>
 

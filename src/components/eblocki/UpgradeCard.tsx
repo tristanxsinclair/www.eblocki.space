@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Crown, Sparkles, Zap } from "lucide-react";
@@ -53,6 +54,7 @@ interface UpgradeCardProps {
  */
 export function UpgradeCard({ currentLevel }: UpgradeCardProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
 
   if (currentLevel === "founder") {
@@ -96,6 +98,10 @@ export function UpgradeCard({ currentLevel }: UpgradeCardProps) {
   }
 
   async function handleCheckout(plan: "pro" | "founder") {
+    if (plan === "founder") {
+      navigate("/founder");
+      return;
+    }
     if (!user) {
       toast.error("Sign in to upgrade.");
       return;

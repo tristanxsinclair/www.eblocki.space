@@ -103,6 +103,9 @@ export default function Landing() {
             >
               Join beta
             </a>
+            <Link to="/pricing" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
+              Pricing
+            </Link>
             <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
               Sign in
             </Link>
