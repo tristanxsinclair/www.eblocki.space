@@ -9,7 +9,6 @@ import { PRICE_IDS, isPaymentsConfigured } from "@/lib/stripe";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Seo } from "@/components/Seo";
-import { logEvent } from "@/lib/eblocki/analytics";
 
 interface Tier {
   id: "free" | "pro" | "founder";
@@ -79,7 +78,6 @@ export default function Pricing() {
   const [proInterval, setProInterval] = useState<"monthly" | "yearly">("monthly");
 
   const startCheckout = (tier: Tier) => {
-    void logEvent("pricing_cta_clicked", { tier: tier.id, interval: proInterval });
     if (tier.id === "free") {
       navigate(user ? "/dashboard" : "/auth");
       return;
@@ -99,7 +97,6 @@ export default function Pricing() {
           ? PRICE_IDS.proYearly
           : PRICE_IDS.proMonthly
         : tier.priceId!;
-    void logEvent("checkout_started", { priceId });
     setCheckoutPriceId(priceId);
   };
 
@@ -108,7 +105,7 @@ export default function Pricing() {
       <Seo
         title="Pricing — Eblocki"
         description="Free, Pro, and Founder plans. Stop fake productivity. Log proof. Get the next command."
-        canonical="https://eblocki.space/pricing"
+        path="/pricing"
       />
       <PaymentTestModeBanner />
       <header className="border-b border-border/40 px-6 py-4 flex items-center justify-between">
