@@ -107,7 +107,7 @@ export function EblockiLogo({
   const wordmark = (
     <span
       className={cn(
-        "eblocki-wordmark font-display text-foreground lowercase",
+        "eblocki-wordmark font-brand text-foreground lowercase",
         TEXT_SIZE[size],
         shouldAnimate && "is-animating",
       )}
