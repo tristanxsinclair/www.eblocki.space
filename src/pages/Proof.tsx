@@ -1936,7 +1936,7 @@ function ProofVerdictDetails({
   const impact = verdictIdentityImpact(verdict.evidenceStrength);
   const toneClass =
     impact.tone === "warn"
-      ? "border-amber-500/40 bg-amber-500/5 text-amber-200"
+      ? "border-warning/40 bg-warning/5 text-warning"
       : impact.tone === "good"
         ? "border-primary/40 bg-primary/5 text-primary"
         : impact.tone === "elite"
