@@ -234,16 +234,13 @@ export default function Dashboard() {
       />
       <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-5">
         <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <EblockiLogo variant="mark" size="md" />
-            <div className="min-w-0">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                Today
-              </span>
-              <h1 className="text-2xl md:text-3xl font-semibold mt-1 tracking-tight">
-                Today
-              </h1>
-            </div>
+          <div className="min-w-0">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+              {new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
+            </span>
+            <h1 className="text-2xl md:text-4xl font-semibold mt-1.5 tracking-tight">
+              Today
+            </h1>
           </div>
           {!isMobile && (
             <div className="flex gap-2 flex-wrap">
