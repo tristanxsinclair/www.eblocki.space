@@ -111,6 +111,32 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv) {
     },
     { onConflict: "stripe_subscription_id" },
   );
+
+  // If this user has any active Pro subscriptions, mark them to cancel at
+  // period end so they keep Pro benefits (already covered by Founder) until
+  // the paid period ends and are not billed again.
+  try {
+    const { data: activePro } = await getSupabase()
+      .from("subscriptions")
+      .select("stripe_subscription_id, price_id, status, cancel_at_period_end")
+      .eq("user_id", userId)
+      .eq("environment", env)
+      .in("status", ["active", "trialing", "past_due"]);
+    const proRows = (activePro ?? []).filter(
+      (r: any) =>
+        (r.price_id === "pro_monthly" || r.price_id === "pro_yearly") &&
+        !r.cancel_at_period_end &&
+        typeof r.stripe_subscription_id === "string" &&
+        !r.stripe_subscription_id.startsWith("onetime_"),
+    );
+    for (const r of proRows) {
+      await stripe.subscriptions.update(r.stripe_subscription_id as string, {
+        cancel_at_period_end: true,
+      });
+    }
+  } catch (e) {
+    console.error("Failed to cancel active Pro after Founder purchase:", e);
+  }
 }
 
 Deno.serve(async (req) => {
