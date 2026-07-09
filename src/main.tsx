@@ -8,6 +8,7 @@ import "@fontsource/space-grotesk/700.css";
 import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/500.css";
 import "@fontsource/dm-sans/700.css";
+import "@fontsource-variable/fraunces";
 import { bootstrapNative } from "./lib/mobile/native";
 import { initAnalytics, track, EVENTS } from "./lib/analytics";
 
