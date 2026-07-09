@@ -237,10 +237,10 @@ export default function StartToday() {
         description="Define the one objective, one artifact, one timer. Convert intention into a Proof Contract in under 60 seconds."
         path="/start"
       />
-      <div className="p-4 md:p-8 max-w-2xl mx-auto space-y-5">
+      <div className="p-4 md:p-10 max-w-4xl mx-auto space-y-6">
         <header>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Start Today</span>
-          <h1 className="text-2xl md:text-3xl font-semibold mt-1">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Start Today</span>
+          <h1 className="text-2xl md:text-4xl font-semibold mt-1.5 tracking-tight">
             {planMode ? (hasProofToday ? "Plan today" : "Command gate") : "Command gate"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

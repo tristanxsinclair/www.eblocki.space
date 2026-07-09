@@ -33,36 +33,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Desktop / tablet sidebar */}
-      <aside className="hidden md:flex md:w-56 md:min-h-screen border-r border-border bg-card/40 md:flex-col safe-x md:safe-bottom max-w-full min-w-0">
-        <Link to="/dashboard" className="flex items-center gap-2.5 px-4 py-4 border-b border-border md:w-full native-tap">
+      <aside className="hidden md:flex md:w-60 md:min-h-screen border-r border-border bg-card/60 backdrop-blur-sm md:flex-col md:sticky md:top-0 md:h-screen safe-x md:safe-bottom max-w-full min-w-0">
+        <Link to="/dashboard" className="flex items-center gap-2.5 px-5 py-5 border-b border-border md:w-full native-tap">
           <EblockiLogo variant="compact" size="md" />
         </Link>
-        <nav className="flex-1 flex md:flex-col gap-0.5 p-2 min-w-0 max-w-full">
+        <nav className="flex-1 flex md:flex-col gap-1 p-3 min-w-0 max-w-full overflow-y-auto">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-sm font-mono text-xs uppercase tracking-wider whitespace-nowrap native-tap shrink-0 min-h-[44px]",
+                  "flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-semibold uppercase tracking-[0.16em] whitespace-nowrap native-tap shrink-0 min-h-[40px] motion-hover",
                   isActive
-                    ? "bg-primary/10 text-primary border border-primary/30"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                    ? "bg-primary/12 text-primary ring-1 ring-primary/25 shadow-[inset_0_1px_0_0_hsl(var(--primary)/0.15)]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
                 )
               }
             >
-              <n.icon className="h-3.5 w-3.5" />
+              <n.icon className="h-4 w-4" />
               {n.label}
             </NavLink>
           ))}
         </nav>
-        <div className="hidden md:block p-3 border-t border-border">
-          <div className="text-[10px] font-mono uppercase text-muted-foreground truncate">{user?.email}</div>
+        <div className="hidden md:flex md:flex-col gap-2 p-4 border-t border-border bg-background/40">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground truncate">{user?.email}</div>
           <button
             onClick={async () => { await signOut(); nav("/"); }}
-            className="mt-2 inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-destructive"
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground hover:text-destructive motion-hover"
           >
-            <LogOut className="h-3 w-3" /> Sign out
+            <LogOut className="h-3.5 w-3.5" /> Sign out
           </button>
         </div>
       </aside>
