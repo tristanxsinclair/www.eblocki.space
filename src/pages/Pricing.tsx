@@ -109,7 +109,9 @@ export default function Pricing() {
       />
       <PaymentTestModeBanner />
       <header className="border-b border-border/40 px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="font-mono text-sm tracking-tight">Eblocki</Link>
+        <Link to="/" aria-label="Eblocki home">
+          <EblockiLogo variant="compact" size="sm" />
+        </Link>
         <Link to={user ? "/dashboard" : "/auth"} className="font-mono text-xs text-muted-foreground hover:text-foreground">
           {user ? "Dashboard →" : "Sign in →"}
         </Link>
