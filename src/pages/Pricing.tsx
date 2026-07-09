@@ -9,6 +9,7 @@ import { PRICE_IDS, isPaymentsConfigured } from "@/lib/stripe";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Seo } from "@/components/Seo";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
 interface Tier {
   id: "free" | "pro" | "founder";

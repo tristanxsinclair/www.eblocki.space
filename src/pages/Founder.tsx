@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Crown, Mail, Check } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { useAuth } from "@/hooks/useAuth";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
 const CRITERIA = [
   "You've submitted at least 7 days of real proof.",
