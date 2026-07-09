@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         sans: ['"DM Sans"', "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
         display: ['"Space Grotesk"', '"DM Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+        brand: ['"Fraunces Variable"', '"Fraunces"', 'ui-serif', 'Georgia', 'serif'],
         mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       colors: {

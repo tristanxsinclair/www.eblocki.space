@@ -1,170 +1,58 @@
+## Plan — Premium E-Block Monogram Logo
 
-# Eblocki Commercial Launch Plan — Pro + Founder, Mobile & Desktop
+Redesign the Eblocki logo as a bespoke geometric "E" monogram in the Graphite & Bone register, with a one-shot reveal animation on first paint.
 
-Goal: Ship a flawless, auditable payment + access system so Eblocki is Google-Ads-ready. Free → Pro (subscription) → Founder (contact-to-unlock via admin@eblocki.space). Every step has an explicit audit gate before moving on.
+### Design commitments
 
----
+- **Mark:** A custom-drawn E constructed from three horizontal bars stacked into a block, with the middle bar shortened and offset (a "notched" cut) to encode the "block" concept. Precise 24×24 grid geometry, sharp corners, no strokes — pure filled forms. Reads at 16px (favicon), 32px (nav), and 512px (app icon / social) without breaking.
+- **Wordmark (lockup variant):** `eblocki` set in a tuned display face — **Fraunces** (variable, editorial serif with soft-square terminals) at low optical size, tight tracking (-0.02em), all-lowercase. Weighted 500. Paired only with the mark in the lockup; the mark alone is the primary identity.
+- **Palette:** Graphite `#0F1113` base, `#1C1F22` secondary surface, Bone `#F5F1E8` for the mark on dark, `#8A8F98` for muted metadata. **No green accent** in the logo itself — controlled green stays a product signal, not brand.
+- **Finish:** Engraved feel via a single 1px inner highlight (Bone at 6% opacity) on the top edge of each bar when rendered on graphite — sells "chiselled metal" without shadow noise. Flat/no highlight on light surfaces.
+- **Motion:** One-shot reveal on first paint only. Bars mask-wipe in from left, staggered 80ms each (top → middle → bottom), 420ms total, `cubic-bezier(0.22, 1, 0.36, 1)`. Wordmark fades + slides 4px right, starting at 240ms. Runs once per session (sessionStorage flag); static on every subsequent mount.
 
-## Phase 0 — Baseline audit (no code changes)
+### Deliverables
 
-**Do:**
-- Inspect current `Pricing.tsx`, `CheckoutReturn.tsx`, `BillingCard.tsx`, `UpgradeCard.tsx`, `useSubscription.ts`, `src/lib/stripe.ts`, `supabase/functions/create-checkout`, `create-portal-session`, `payments-webhook`, `_shared/stripe.ts`, `subscriptions` table + RLS, `supabase/config.toml`.
-- Confirm `payments-webhook` is signature-verified, env-scoped, and idempotent.
-- Confirm `/pricing`, `/checkout/return`, `/settings` routes wired in `App.tsx` (already are).
-- Read `.env` / `.env.production` for `VITE_PAYMENTS_CLIENT_TOKEN` presence and prefix (sandbox vs live).
+1. **`src/components/brand/EblockiMark.tsx`** — inline SVG React component. Props: `size` (default 32), `variant` (`"mark" | "lockup"`), `tone` (`"bone" | "graphite"` — auto-inverts fill), `animate` (default `true` on first session paint, `false` otherwise). ViewBox `0 0 24 24` for the mark; `0 0 96 24` for the lockup. All geometry as `<rect>` with integer coords — no paths, no external assets.
+2. **`src/components/brand/EblockiMark.css`** — keyframes for the mask-wipe and wordmark reveal, `prefers-reduced-motion` disables animation.
+3. **`public/favicon.svg`** — static export of the mark (bone on graphite, no animation). Update `index.html` to reference `favicon.svg` with `type="image/svg+xml"`, keep `favicon.png` fallback if present.
+4. **`public/og-mark.png`** — 1200×630 social card variant generated from the SVG (mark centered on graphite, wordmark below). Referenced from `index.html` og:image only if a project og image already exists — otherwise skipped per head-metadata rules.
+5. **Replace existing logo usage** — audit and swap every current logo/wordmark instance:
+   - `src/components/eblocki/AppShell.tsx` header
+   - `src/pages/Landing.tsx` hero + nav
+   - `src/pages/Pricing.tsx`, `Founder.tsx` headers if they render a logo
+   - Auth pages (`Login`, `SignUp` if present)
+   - Any `<img src=".../logo...">` references
+6. **Font wiring** — install `@fontsource-variable/fraunces` via `bun add`, import in `src/main.tsx`, register as `font-display` in `tailwind.config.ts`. Only the lockup uses it — no site-wide font swap.
+7. **Docs** — append a "Brand mark" section to `docs/PRODUCT_SPEC.md` with usage rules (clear-space = 1 bar-height, min size 16px, never recolor, never stretch, never add stroke).
 
-**Audit gate:** Written map of "what exists / what's missing / what's broken" before touching code.
+### Geometry (technical detail)
 
----
+```text
+ViewBox 0 0 24 24 — three bars forming an E-block
 
-## Phase 1 — Products & prices (Stripe managed payments)
+Top bar:     x=2  y=3   w=20 h=4   rx=0
+Middle bar:  x=2  y=10  w=13 h=4   rx=0   ← shortened + left-aligned = the "block cut"
+Bottom bar:  x=2  y=17  w=20 h=4   rx=0
 
-Australia-based seller → eligible for full compliance handling. Use `managed_payments: { enabled: true }` (already in `create-checkout`).
+Optical adjustment: middle bar shifts left 0 (already anchored); the negative
+space to its right (x=15..22, y=10..14) is the signature "notch" that reads as
+a removed block. This is what distinguishes the mark from a generic E.
+```
 
-**Products to create via `payments--batch_create_product` / `create_price`:**
-1. `pro_plan` → price `pro_monthly` — AUD $9/month, recurring, qty 1/1, tax_code `txcd_10103001` (SaaS).
-2. `pro_plan` → price `pro_yearly` — AUD $79/year, recurring, qty 1/1.
-3. Founder is **not** a Stripe product. Founder is a manual, contact-gated tier (see Phase 4).
+Lockup places the 24×24 mark at `x=0` and the wordmark starting at `x=32`, baseline-aligned to the middle of the mark.
 
-**Audit gate:** Prices resolvable via `lookup_keys: ["pro_monthly"]` in sandbox; test checkout returns a `clientSecret`.
+### Verification checklist (run after implementation)
 
----
+1. `bun run build` — clean, no TS errors.
+2. Playwright: capture `/` at desktop (1280×1800) and mobile (375×812), screenshot the header mark, verify pixel-crisp rendering at both DPRs.
+3. Favicon: fetch `/favicon.svg`, confirm it parses and renders in a browser tab (Playwright `page.title()` + `page.screenshot` of the tab area isn't possible, but the SVG served with correct `Content-Type` is sufficient).
+4. Reduced-motion: set `prefers-reduced-motion: reduce` in Playwright context, confirm no keyframe animation triggers.
+5. Contrast: mark on graphite ≥ 12:1 (Bone `#F5F1E8` on `#0F1113` = ~14.2:1 ✓).
+6. Grep for any remaining old logo imports — remove dead files if fully unreferenced.
 
-## Phase 2 — Pricing page: mobile + desktop routing
+### Out of scope
 
-**File:** `src/pages/Pricing.tsx` (rewrite to full commercial spec).
-
-Structure:
-- Hero: "Stop fake productivity. Log proof. Get the next command."
-- 3 tier cards: **Free / Pro / Founder** (responsive: single column <768px, 3-col grid ≥768px).
-- Pro card CTA: opens embedded Stripe checkout via `useStripeCheckout` hook (already implemented pattern in `UpgradeCard`).
-- Founder card CTA: **`mailto:admin@eblocki.space?subject=Founder Access Request&body=...` link + in-app "Request Founder Access" route.**
-- Mobile-first spacing, sticky "current plan" indicator when signed in.
-- FAQ section (tax, cancel, refund, Founder criteria).
-- Trust bar: "Secure payments via Stripe · Cancel anytime · AUD".
-
-Detect device:
-- Use existing `useIsMobile` hook for layout switch; **checkout code path is identical** (Stripe embedded checkout works on both). On Capacitor native, use `window.open(url, "_system")` (already handled in `UpgradeCard.handleCheckout`).
-
-**Audit gate:** Manual QA at 375px, 768px, 1280px. All CTAs reachable. `sessionStorage` used to preserve intent through `/auth` bounce for signed-out users.
-
----
-
-## Phase 3 — Pro checkout flow (embedded)
-
-**Files touched:**
-- `src/pages/Pricing.tsx` — wires `useStripeCheckout({ priceId: "pro_monthly" | "pro_yearly", userId, customerEmail, returnUrl: origin + "/checkout/return?session_id={CHECKOUT_SESSION_ID}" })`.
-- `src/pages/CheckoutReturn.tsx` — verify session id, poll `subscriptions` row for up to 15s (webhook may lag), show success + "Go to Dashboard".
-- `supabase/functions/create-checkout/index.ts` — already correct; verify `verify_jwt = false` in `config.toml` (it is).
-- `supabase/functions/payments-webhook/index.ts` — verify `customer.subscription.created/updated/deleted` handlers write env-scoped rows.
-- `src/hooks/useSubscription.ts` — verify `.eq('environment', getStripeEnvironment())` filter is present.
-
-**Audit gate:** Sandbox test card `4242 4242 4242 4242` → return page → `subscriptions` row created → `useSubscription` returns `pro` → gated features unlock. Repeat with decline card.
-
----
-
-## Phase 4 — Founder mode (contact-gated)
-
-Founder is not a self-serve Stripe purchase. It's an application-only lifetime tier granted manually.
-
-**Add:**
-- `/founder` route (`src/pages/Founder.tsx`) — pitch page, criteria, CTA `mailto:admin@eblocki.space?subject=Founder Access Application&body=<pre-filled template: name, current proof streak, why founder, commitment>`.
-- On Pricing page: Founder card "Apply for Founder" button → `/founder`.
-- Admin path: existing `useIsAdmin` + a small "Grant Founder" action in `/dev/beta` (or new `/admin/founder`) that:
-  - Inserts a `subscriptions` row with `product_id='founder_manual'`, `price_id='founder_lifetime'`, `status='active'`, `current_period_end=null`, `environment=<current>`, `stripe_subscription_id='manual_<uuid>'`, `stripe_customer_id='manual'`.
-  - Access resolver (`priceIdToAccessLevel`) already maps `founder_lifetime` → `founder`. ✓
-
-**Audit gate:** Admin can grant Founder to a test user; `useSubscription` returns `founder`; UpgradeCard shows Founder state; Founder-only features (per `ACCESS_FEATURES.founder`) render.
-
----
-
-## Phase 5 — Feature gating audit
-
-Ensure the following are properly gated by `hasFeature(accessLevel, ...)`:
-- Court of Evidence, Identity Ledger, Sentinel risk, Cortex paths, Weekly executive review, Adaptive coaching, Advanced proof analytics.
-
-For each: locked state shows an `<UpgradeGate>` with a "See plans" link to `/pricing`.
-
-Server-side: any edge function that returns pro-only data must call `has_active_subscription(user_uuid, env)` and return 403 otherwise. Audit `coach`, any analytics functions.
-
-**Audit gate:** Sign in as free user → confirm every pro feature shows lock UI. Sign in as pro → confirm unlocked. Server rejects pro API calls from free users with 403.
-
----
-
-## Phase 6 — Trust, legal, and marketing readiness
-
-Required before Google Ads:
-- `/legal/privacy`, `/legal/terms`, `/legal/data-handling`, `/legal/ai-disclosure` — already exist. Verify each is accurate for paid SaaS (mention Stripe processor, AUD pricing, cancellation, refund window).
-- Refund policy: 7-day no-questions refund on Pro monthly (added to Terms + FAQ).
-- Landing page (`/`) CTAs route to `/pricing` and `/auth`.
-- SEO: `<title>`, `<meta description>`, OG tags on Landing, Pricing, Why, Founder pages (see head-metadata rule).
-- `robots.txt`, `sitemap.xml` include `/`, `/pricing`, `/why`, `/founder`, `/legal/*`.
-- Conversion tracking: PostHog events on `pricing_view`, `checkout_started`, `checkout_completed`, `founder_application_started`.
-
-**Audit gate:** Lighthouse ≥ perf 0.8 / SEO 0.9 / a11y 0.9 (already enforced in CI). Route-smoke script passes on all new routes.
-
----
-
-## Phase 7 — Payment go-live
-
-- Confirm Stripe go-live status via `payments--get_go_live_status`.
-- If steps 1–3 incomplete: surface to user with `presentation-open-payments` link.
-- Once live: `.env.production` gets `pk_live_...`, live webhook auto-registered.
-- Test one real $9 charge, then refund via portal.
-- `PaymentTestModeBanner` renders red warning if token missing, orange in sandbox, nothing live.
-
-**Audit gate:** Live checkout works end-to-end with a real card; webhook writes `environment='live'` row; Billing Portal opens; refund reflects in `subscriptions.status`.
-
----
-
-## Phase 8 — Marketing-ready product spec doc
-
-Write `docs/PRODUCT_SPEC.md`:
-- One-liner, ICP, value prop, feature matrix by tier, pricing (AUD), refund policy, contact, differentiators, proof of loop, screenshots list to capture.
-- `docs/GOOGLE_ADS_LAUNCH.md`: keyword themes, landing page mapping, headline/description variants, negative keywords, conversion event names (matching PostHog + gtag), UTM convention.
-
-**Audit gate:** Docs reviewed; enough to hand to Google Ads without further questions.
-
----
-
-## Phase 9 — Final release gate
-
-Run the `eblocki-release-gate` skill:
-- Route safety, Supabase safety, secret hygiene, payments (test/live not mixed, webhooks, entitlement), UI/UX (375px), compliance, `npm run build`, `npm run test`, `npm run lint`, bundle-size guardrail, Lighthouse.
-
-**Deliverable:** Go/no-go report. On green → publish.
-
----
-
-## Technical details
-
-**Files created:**
-- `src/pages/Founder.tsx`
-- `docs/PRODUCT_SPEC.md`
-- `docs/GOOGLE_ADS_LAUNCH.md`
-
-**Files modified:**
-- `src/pages/Pricing.tsx` (full rewrite to 3-tier commercial spec)
-- `src/pages/CheckoutReturn.tsx` (polling + success UX)
-- `src/pages/Landing.tsx` (CTAs → /pricing)
-- `src/App.tsx` (add `/founder` route)
-- `src/components/eblocki/UpgradeCard.tsx` (Founder → /founder, not checkout)
-- `public/sitemap.xml`, `public/robots.txt`
-- `index.html` (verify head metadata)
-- `docs/RELEASE_CHECKLIST.md`
-
-**Stripe artifacts created via tools:** `pro_plan` product, `pro_monthly` and `pro_yearly` prices (AUD, tax_code `txcd_10103001`, managed_payments-eligible).
-
-**No schema changes.** `subscriptions` table already supports manual Founder rows (env-scoped, RLS in place, `has_active_subscription` function handles it).
-
----
-
-## Reality check on the revenue target
-
-You asked for $1,000 this week and $10,000 this month. I will build the entire commercial system so it is capable of accepting and processing those revenues without friction. **Actual revenue depends on traffic, ad spend, conversion rate, and market fit — none of which code alone controls.** At $9/mo Pro that's ~112 paying customers this week. This plan is what makes each of those conversions possible; the Google Ads doc in Phase 8 is what drives volume. I will not fabricate revenue or fake success states.
-
----
-
-## Approve to proceed
-
-Reply **"go"** to switch to build mode. I will execute Phase 0 → 9 sequentially, running each audit gate and reporting pass/fail before moving on.
+- No product/feature changes.
+- No color-system overhaul — only the brand mark and its usages.
+- No new brand guidelines PDF, no printed collateral.
+- Green accent stays on product UI (state signals, proof states) — untouched.
