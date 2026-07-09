@@ -123,11 +123,17 @@ Brand direction (July 2026):
 
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     font-feature-settings: "ss01", "cv11";
-    /* Tightened for new circular logo: single subtle green accent, minimal cyan */
+    letter-spacing: -0.005em;
     background-image:
-      radial-gradient(circle at 100% 0%, hsl(78 95% 56% / 0.035), transparent 55%);
+      radial-gradient(circle at 100% 0%, hsl(142 72% 56% / 0.035), transparent 55%);
     background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Space Grotesk", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
   }
 
   html { color-scheme: dark; }
