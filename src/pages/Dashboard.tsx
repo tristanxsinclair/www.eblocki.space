@@ -421,17 +421,17 @@ export default function Dashboard() {
                     state={state}
                     onDiagnose={handleCheckIn}
                   />
-                  <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
+                  <Card className="panel rounded-2xl p-5 border-border/70 bg-card/60 mobile-safe-card">
                     <div className="flex items-center justify-between gap-3 min-w-0">
                       <div className="min-w-0">
-                        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Current setup</div>
-                        <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Current setup</div>
+                        <p className="mt-1.5 text-sm text-muted-foreground text-wrap-safe">
                           {currentMode ? `Last coach lens: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
                         </p>
                       </div>
                       {currentState && <StateBadge state={currentState as BehaviouralState} />}
                     </div>
-                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
                       <MetricCell label="Mode count" value={String(view.evidenceSummary.modesCount)} />
                       <MetricCell label="Latest proof" value={view.evidenceSummary.latestProofTitle ?? "none"} />
                       <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
