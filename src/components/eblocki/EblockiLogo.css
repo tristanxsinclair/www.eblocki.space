@@ -1,0 +1,60 @@
+/* Eblocki brand mark — one-shot reveal animation.
+   Bars mask-wipe from left, staggered top→middle→bottom.
+   Wordmark fades + slides in slightly after. */
+
+.eblocki-mark .eb-bar {
+  transform-origin: left center;
+}
+
+.eblocki-mark.is-animating .eb-bar {
+  transform: scaleX(0);
+  animation: eb-bar-wipe 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.eblocki-mark.is-animating .eb-bar--top {
+  animation-delay: 0ms;
+}
+.eblocki-mark.is-animating .eb-bar--mid {
+  animation-delay: 80ms;
+}
+.eblocki-mark.is-animating .eb-bar--bot {
+  animation-delay: 160ms;
+}
+
+.eblocki-mark.is-animating .eb-highlight {
+  opacity: 0;
+  animation: eb-highlight-in 400ms ease-out 320ms forwards;
+}
+
+@keyframes eb-bar-wipe {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes eb-highlight-in {
+  from { opacity: 0; }
+  to   { opacity: 0.06; }
+}
+
+.eblocki-wordmark.is-animating {
+  opacity: 0;
+  transform: translateX(-4px);
+  animation: eb-word-in 480ms cubic-bezier(0.22, 1, 0.36, 1) 240ms forwards;
+}
+
+@keyframes eb-word-in {
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eblocki-mark.is-animating .eb-bar,
+  .eblocki-mark.is-animating .eb-highlight,
+  .eblocki-wordmark.is-animating {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
