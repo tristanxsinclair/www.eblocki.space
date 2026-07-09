@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import "./EblockiLogo.css";
 
 interface EblockiLogoProps {
   variant?: "mark" | "full" | "appIcon" | "wordmark" | "compact";
@@ -6,161 +8,133 @@ interface EblockiLogoProps {
   className?: string;
   showTagline?: boolean;
   alt?: string;
-  /**
-   * Base path without extension.
-   * Recommended modern asset stack in public/brand/:
-   *   eblocki-logo-circular.avif          (best compression)
-   *   eblocki-logo-circular-64.avif
-   *   eblocki-logo-circular-128.avif
-   *   eblocki-logo-circular-256.avif
-   *   eblocki-logo-circular.webp          (excellent fallback)
-   *   eblocki-logo-circular-64.webp
-   *   eblocki-logo-circular-128.webp
-   *   eblocki-logo-circular-256.webp
-   *   eblocki-logo-circular.png          (universal fallback)
-   *   eblocki-logo-circular-64.png
-   *   eblocki-logo-circular-128.png
-   *   eblocki-logo-circular-256.png
-   */
-  src?: string;
+  /** Force animation on/off. Defaults to once-per-session on first mount. */
+  animate?: boolean;
 }
 
+const SIZE_PX: Record<NonNullable<EblockiLogoProps["size"]>, number> = {
+  sm: 22,
+  md: 28,
+  lg: 36,
+  xl: 44,
+};
+
+const TEXT_SIZE: Record<NonNullable<EblockiLogoProps["size"]>, string> = {
+  sm: "text-[15px]",
+  md: "text-[18px]",
+  lg: "text-[22px]",
+  xl: "text-[28px]",
+};
+
+const SESSION_FLAG = "eblocki_logo_revealed_v1";
+
 /**
- * Reusable Eblocki brand logo with best-in-class image optimization.
- * Priority order: AVIF → WebP → PNG
- * Uses <picture> for progressive enhancement.
- * Critical nav logos get eager loading + high fetch priority.
+ * Eblocki brand mark — bespoke geometric E-block monogram.
+ * Three bars on a 24×24 grid with a shortened middle bar; the negative
+ * space to the right of the middle bar is the signature "block cut".
+ * Rendered as inline SVG so it is crisp at every size and needs no assets.
  */
+function LogoSvg({ px, animate }: { px: number; animate: boolean }) {
+  const rootRef = useRef<SVGSVGElement | null>(null);
+  return (
+    <svg
+      ref={rootRef}
+      width={px}
+      height={px}
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Eblocki"
+      className={cn("eblocki-mark shrink-0", animate && "is-animating")}
+    >
+      {/* Bars — filled bone on transparent so the mark inherits surface color */}
+      <g fill="currentColor">
+        <rect className="eb-bar eb-bar--top" x="2" y="3" width="20" height="4" />
+        <rect className="eb-bar eb-bar--mid" x="2" y="10" width="13" height="4" />
+        <rect className="eb-bar eb-bar--bot" x="2" y="17" width="20" height="4" />
+      </g>
+      {/* Engraved top highlight — 6% bone, drawn as 1px thin rects on the top edge of each bar */}
+      <g fill="#F5F1E8" opacity="0.06" className="eb-highlight">
+        <rect x="2" y="3" width="20" height="0.6" />
+        <rect x="2" y="10" width="13" height="0.6" />
+        <rect x="2" y="17" width="20" height="0.6" />
+      </g>
+    </svg>
+  );
+}
+
 export function EblockiLogo({
   variant = "full",
   size = "md",
   className,
   showTagline = false,
-  alt = "Eblocki - Proof over Intention",
-  src = "/brand/eblocki-logo-circular",
+  alt = "Eblocki",
+  animate,
 }: EblockiLogoProps) {
-  const sizeClasses = {
-    sm: "h-6 w-6",
-    md: "h-8 w-8",
-    lg: "h-10 w-10",
-    xl: "h-12 w-12",
-  };
+  const [shouldAnimate, setShouldAnimate] = useState(false);
 
-  const textSizeClasses = {
-    sm: "text-xs tracking-[0.15em]",
-    md: "text-sm tracking-[0.2em]",
-    lg: "text-base tracking-[0.2em]",
-    xl: "text-lg tracking-[0.25em]",
-  };
+  useEffect(() => {
+    if (animate === false) return;
+    if (typeof window === "undefined") return;
+    const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
+    if (animate === true) {
+      setShouldAnimate(true);
+      return;
+    }
+    try {
+      if (!sessionStorage.getItem(SESSION_FLAG)) {
+        sessionStorage.setItem(SESSION_FLAG, "1");
+        setShouldAnimate(true);
+      }
+    } catch {
+      /* private mode etc — silent fallback to static */
+    }
+  }, [animate]);
 
+  const px = SIZE_PX[size];
   const isIconOnly = variant === "mark" || variant === "appIcon";
-  const isCritical = variant === "compact" || variant === "mark"; // nav + headers
 
-  // AVIF srcset (best compression)
-  const avifSrcSet = [
-    `${src}-64.avif 64w`,
-    `${src}-128.avif 128w`,
-    `${src}-256.avif 256w`,
-    `${src}.avif 512w`,
-  ].join(", ");
-
-  // WebP srcset (strong fallback)
-  const webpSrcSet = [
-    `${src}-64.webp 64w`,
-    `${src}-128.webp 128w`,
-    `${src}-256.webp 256w`,
-    `${src}.webp 512w`,
-  ].join(", ");
-
-  // PNG srcset (universal fallback)
-  const pngSrcSet = [
-    `${src}-64.png 64w`,
-    `${src}-128.png 128w`,
-    `${src}-256.png 256w`,
-    `${src}.png 512w`,
-  ].join(", ");
-
-  const sizes = "(max-width: 640px) 64px, 128px";
-
-  const LogoMark = () => (
-    <div
-      className={cn(
-        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-black border border-white/10",
-        "shadow-[0_0_0_1px_hsl(78_95%_56%_/_0.25)]",
-        sizeClasses[size]
-      )}
-      aria-hidden={isIconOnly}
-    >
-      <picture>
-        {/* AVIF - best compression (modern browsers) */}
-        <source
-          type="image/avif"
-          srcSet={avifSrcSet}
-          sizes={sizes}
-        />
-        {/* WebP - excellent fallback */}
-        <source
-          type="image/webp"
-          srcSet={webpSrcSet}
-          sizes={sizes}
-        />
-        {/* PNG - universal fallback */}
-        <img
-          src={`${src}.png`}
-          srcSet={pngSrcSet}
-          sizes={sizes}
-          alt={alt}
-          className="h-full w-full object-contain"
-          loading={isCritical ? "eager" : "lazy"}
-          fetchPriority={isCritical ? "high" : "auto"}
-          onError={(e) => {
-            const img = e.currentTarget;
-            img.style.display = "none";
-            const fallback = img.parentElement?.parentElement?.querySelector(".logo-fallback") as HTMLElement | null;
-            if (fallback) fallback.style.display = "flex";
-          }}
-        />
-      </picture>
-
-      {/* Elegant fallback (only shows if all image formats fail) */}
-      <div
-        className="logo-fallback absolute inset-0 hidden items-center justify-center bg-black"
-        aria-hidden
-      >
-        <div className="relative flex h-[68%] w-[68%] items-center justify-center">
-          <div className="text-[hsl(78_95%_56%)] text-[115%] font-bold leading-none select-none">E</div>
-          <div className="absolute inset-0 rounded-full border-[1.5px] border-white/35" />
-        </div>
-      </div>
-    </div>
+  const Mark = (
+    <span className="inline-flex text-foreground" aria-hidden={isIconOnly ? undefined : true}>
+      <LogoSvg px={px} animate={shouldAnimate} />
+      {isIconOnly && <span className="sr-only">{alt}</span>}
+    </span>
   );
 
-  if (variant === "mark" || variant === "appIcon") {
-    return <LogoMark />;
-  }
+  if (isIconOnly) return <span className={className}>{Mark}</span>;
+
+  const wordmark = (
+    <span
+      className={cn(
+        "eblocki-wordmark font-display text-foreground lowercase",
+        TEXT_SIZE[size],
+        shouldAnimate && "is-animating",
+      )}
+      style={{ letterSpacing: "-0.02em", fontWeight: 500 }}
+    >
+      eblocki
+    </span>
+  );
 
   if (variant === "wordmark" || variant === "compact") {
     return (
       <div className={cn("flex items-center gap-2 min-w-0", className)}>
-        <LogoMark />
-        <span className={cn("font-mono uppercase text-foreground", textSizeClasses[size])}>
-          EBLOCKI
-        </span>
+        {Mark}
+        {wordmark}
       </div>
     );
   }
 
   return (
-    <div className={cn("flex flex-col items-start gap-0.5 min-w-0", className)}>
+    <div className={cn("flex flex-col items-start gap-1 min-w-0", className)}>
       <div className="flex items-center gap-2.5">
-        <LogoMark />
-        <div className="flex flex-col">
-          <span className={cn("font-mono uppercase text-foreground leading-none", textSizeClasses[size])}>
-            EBLOCKI
-          </span>
+        {Mark}
+        <div className="flex flex-col leading-none">
+          {wordmark}
           {showTagline && (
-            <span className="text-[10px] font-mono uppercase tracking-[0.35em] text-primary/80 leading-none mt-px">
-              PROOF OVER INTENTION
+            <span className="mt-1 text-[10px] font-mono uppercase tracking-[0.32em] text-muted-foreground">
+              proof over intention
             </span>
           )}
         </div>
