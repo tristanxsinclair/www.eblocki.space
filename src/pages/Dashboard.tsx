@@ -237,10 +237,10 @@ export default function Dashboard() {
           <div className="flex items-center gap-3 min-w-0">
             <EblockiLogo variant="mark" size="md" />
             <div className="min-w-0">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
                 Today
               </span>
-              <h1 className="text-2xl md:text-3xl font-semibold mt-1">
+              <h1 className="text-2xl md:text-3xl font-semibold mt-1 tracking-tight">
                 Today
               </h1>
             </div>
@@ -276,25 +276,25 @@ export default function Dashboard() {
               label="Modes not set up"
               trackId="dashboard_modes_setup"
             >
-              <Card className="panel p-4 border-primary/30 bg-primary/5 mobile-safe-card min-w-0 max-w-full">
-                <p className="text-sm text-muted-foreground break-words">
+              <Card className="panel rounded-2xl p-5 border-primary/25 bg-primary/[0.06] mobile-safe-card min-w-0 max-w-full">
+                <p className="text-sm leading-relaxed text-muted-foreground break-words">
                   Add at least one mode so proof routes to the right standard. You can still submit proof now.
                 </p>
                 <Link to="/modes" className="mt-3 inline-block w-full">
-                  <Button size="default" variant="outline" className="w-full min-h-[44px] native-tap">
+                  <Button size="default" variant="outline" className="w-full min-h-[44px] native-tap rounded-xl">
                     Set up modes
                   </Button>
                 </Link>
               </Card>
             </MobileCollapse>
           ) : (
-            <Card className="panel p-4 border-primary/30 bg-primary/5">
-              <div className="flex items-start justify-between gap-3 flex-wrap">
+            <Card className="panel rounded-2xl p-5 border-primary/25 bg-primary/[0.06]">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div>
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Modes not set up</div>
-                  <p className="text-sm mt-1 text-muted-foreground">Add at least one mode so proof routes to the right standard.</p>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">Modes not set up</div>
+                  <p className="text-sm mt-2 leading-relaxed text-muted-foreground">Add at least one mode so proof routes to the right standard.</p>
                 </div>
-                <Link to="/modes"><Button size="sm">Set up modes</Button></Link>
+                <Link to="/modes"><Button size="sm" className="rounded-xl">Set up modes</Button></Link>
               </div>
             </Card>
           )
@@ -305,21 +305,22 @@ export default function Dashboard() {
         )}
 
         {!isMobile && allArtifacts.length === 0 && (
-          <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
-              Start here
+          <Card className="panel rounded-2xl p-6 md:p-8 border-primary/30 bg-primary/[0.05] mobile-safe-card">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">Start here</span>
             </div>
-            <h2 className="mt-2 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">
+            <h2 className="mt-4 text-2xl md:text-3xl font-semibold leading-tight tracking-tight text-wrap-safe">
               Submit your first proof.
             </h2>
-            <p className="mt-2 text-sm text-muted-foreground text-wrap-safe">
+            <p className="mt-3 text-sm md:text-base leading-relaxed text-muted-foreground text-wrap-safe max-w-xl">
               Eblocki will tell you what counted, what was weak, and what to do next.
             </p>
-            <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
+            <div className="mt-6 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
               <Link to={submitProofHref} className="w-full sm:w-auto">
                 <Button
                   size="sm"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto rounded-xl"
                   onClick={() => {
                     void logEvent("activation_landing_primary_cta_clicked", {
                       route: "/dashboard",
@@ -336,7 +337,7 @@ export default function Dashboard() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto rounded-xl"
                   onClick={() => {
                     void logEvent("activation_landing_primary_cta_clicked", {
                       route: "/dashboard",
