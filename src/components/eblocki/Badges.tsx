@@ -21,10 +21,10 @@ export function ModeBadge({ mode, hybrid }: { mode: string; hybrid?: string }) {
   const hybridClass = hybrid ? MODE_COLOR[hybrid] ?? "border-muted-foreground/30 text-muted-foreground" : "";
 
   return (
-    <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-widest">
-      <span className={cn("rounded-sm border px-1.5 py-0.5", primaryClass)}>{primaryLabel}</span>
+    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.16em]">
+      <span className={cn("rounded-full border px-2 py-0.5", primaryClass)}>{primaryLabel}</span>
       {hybrid && (
-        <span className={cn("rounded-sm border px-1.5 py-0.5 opacity-80", hybridClass)}>
+        <span className={cn("rounded-full border px-2 py-0.5 opacity-80", hybridClass)}>
           + {hybridLabel}
         </span>
       )}
@@ -48,7 +48,7 @@ const STATE_COLOR: Record<BehaviouralState, string> = {
 export function StateBadge({ state }: { state: BehaviouralState }) {
   return (
     <span className={cn(
-      "inline-flex items-center gap-1.5 rounded-sm border px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest",
+      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]",
       STATE_COLOR[state],
     )}>
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -67,11 +67,11 @@ const STRENGTH_COLOR: Record<EvidenceStrength, string> = {
 export function EvidenceStrengthBadge({ strength, score }: { strength: EvidenceStrength; score?: number }) {
   return (
     <span className={cn(
-      "inline-flex items-center gap-1.5 rounded-sm border px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest",
+      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]",
       STRENGTH_COLOR[strength],
     )}>
       {strength}
-      {typeof score === "number" && <span className="opacity-80">{score}/10</span>}
+      {typeof score === "number" && <span className="opacity-70 tabular-nums">{score}/10</span>}
     </span>
   );
 }
