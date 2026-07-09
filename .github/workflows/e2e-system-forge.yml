@@ -66,6 +66,16 @@ jobs:
           cat preview.log
           exit 1
 
+      - name: Proof UI visual regression
+        env:
+          E2E_BASE_URL: http://localhost:8080
+          CI: 'true'
+        # Element-level screenshot baselines for proof surfaces
+        # (verdict block, reps list, hero, active command). Any pixel
+        # diff beyond the config threshold fails the PR. Update
+        # baselines locally with `npm run test:visual:update`.
+        run: npx playwright test tests/e2e/system-forge-visual.spec.ts
+
       - name: Run Playwright E2E
         env:
           E2E_BASE_URL: http://localhost:8080

@@ -34,6 +34,9 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Proof UI token scan
+        run: npm run test:proof-ui-tokens
+
       - name: Build
         run: npm run build
 
