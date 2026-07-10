@@ -31,29 +31,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Get Playwright version
-        id: playwright-version
-        run: |
-          version=$(node -p "require('@playwright/test/package.json').version")
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Install Playwright OS dependencies
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
-
       - name: Run tests
         run: npm run test
 
@@ -75,11 +52,6 @@ jobs:
           PREVIEW_PID=$!
           trap 'kill $PREVIEW_PID 2>/dev/null || true; wait $PREVIEW_PID 2>/dev/null || true' EXIT
           ROUTE_SMOKE_BASE_URL=http://127.0.0.1:4172 npm run smoke:routes
-
-      - name: Render public routes
-        run: |
-          export CHROME_PATH="$(node -e 'const { chromium } = require("playwright"); console.log(chromium.executablePath())')"
-          node scripts/render-public-routes.mjs
 
       - name: Audit dependencies
         run: npm audit --omit=dev --audit-level=moderate
