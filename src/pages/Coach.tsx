@@ -355,7 +355,8 @@ export default function Coach() {
               placeholder="Paste a problem, note, thought dump, question, or situation. Eblocki will diagnose it and give the next proof action."
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              className="min-h-[170px] resize-none w-full max-w-full"
+              className="min-h-[170px] resize-none w-full max-w-full input-anchored"
+              enterKeyHint="send"
             />
             {isMobile ? (
               <MobileCollapse eyebrow="Optional" label="Focus area (optional)" trackId="coach_mode_chips">
