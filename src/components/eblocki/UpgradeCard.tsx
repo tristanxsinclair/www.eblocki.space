@@ -1,14 +1,13 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Crown, Sparkles, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { haptics } from "@/hooks/useHaptics";
 import { Capacitor } from "@capacitor/core";
 import { type AccessLevel } from "@/lib/eblocki/access-level";
+import { getStripeEnvironment } from "@/lib/stripe";
 
 const PLANS = [
   {
@@ -53,9 +52,7 @@ interface UpgradeCardProps {
  * and redirects to Stripe Checkout (or opens in-app browser on native).
  */
 export function UpgradeCard({ currentLevel }: UpgradeCardProps) {
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState<string | null>(null);
 
   if (currentLevel === "founder") {
     return (
@@ -97,51 +94,33 @@ export function UpgradeCard({ currentLevel }: UpgradeCardProps) {
     );
   }
 
-  async function handleCheckout(plan: "pro" | "founder") {
+  function handleCheckout(plan: "pro" | "founder") {
+    haptics.light();
     if (plan === "founder") {
       navigate("/founder");
       return;
     }
-    if (!user) {
-      toast.error("Sign in to upgrade.");
-      return;
-    }
-    setLoading(plan);
-    haptics.light();
-    try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plan, returnUrl: window.location.origin + "/settings" },
-      });
-      if (error) throw error;
-      if (!data?.url) throw new Error("No checkout URL returned");
-
-      if (Capacitor.isNativePlatform()) {
-        // Open in system browser on native (avoids cookie issues)
-        window.open(data.url, "_system");
-      } else {
-        window.location.href = data.url;
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Checkout failed";
-      toast.error(message);
-      haptics.error();
-    } finally {
-      setLoading(null);
-    }
+    // Checkout is embedded on the Pricing page; route there to open it.
+    navigate("/pricing");
   }
 
   async function handleManage() {
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { action: "portal", returnUrl: window.location.origin + "/settings" },
+      const { data, error } = await supabase.functions.invoke("create-portal-session", {
+        body: {
+          environment: getStripeEnvironment(),
+          returnUrl: window.location.origin + "/settings",
+        },
       });
       if (error) throw error;
       if (data?.url) {
         if (Capacitor.isNativePlatform()) {
           window.open(data.url, "_system");
         } else {
-          window.location.href = data.url;
+          window.open(data.url, "_blank");
         }
+      } else {
+        throw new Error("No portal URL returned");
       }
     } catch {
       toast.error("Could not open subscription management.");
@@ -191,10 +170,9 @@ export function UpgradeCard({ currentLevel }: UpgradeCardProps) {
             <Button
               className="mt-4 w-full motion-micro active:scale-[0.98]"
               size="sm"
-              disabled={loading !== null}
               onClick={() => handleCheckout(plan.id)}
             >
-              {loading === plan.id ? "Redirecting…" : `Get ${plan.name}`}
+              {`Get ${plan.name}`}
             </Button>
           </div>
         ))}
