@@ -170,6 +170,16 @@ Brand direction (July 2026):
     min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     min-height: 100dvh;
   }
+  .pt-header-safe {
+    padding-top: calc(var(--app-header-h, 56px) + env(safe-area-inset-top));
+  }
+  .pb-nav-safe {
+    padding-bottom: calc(var(--app-nav-h, 64px) + env(safe-area-inset-bottom) + 8px);
+  }
+  .input-anchored {
+    scroll-margin-bottom: 96px;
+    scroll-margin-top: calc(var(--app-header-h, 56px) + 12px);
+  }
   .native-tap { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   .no-select { -webkit-user-select: none; user-select: none; }
 }
