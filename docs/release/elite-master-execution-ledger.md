@@ -7,6 +7,29 @@
 - Current release gate: WP-003 code/test/build complete; post-fix browser QA and export deployment remain external-verification gates
 - Ledger last updated: 2026-07-11
 
+## E2E Test Infrastructure (WP-003 supporting)
+
+Added 2026-07-10 to support WP-003 post-fix authenticated browser QA.
+
+Files created:
+- `scripts/seed-e2e-test-user.mjs` — idempotent test-user provisioning
+- `tests/e2e/fixtures/average-user-auth.ts` — Playwright authenticated fixture
+- `tests/e2e/wp-003-verdict-copy-qa.spec.ts` — WP-003 viewport QA spec
+- `docs/testing/permanent-average-user.md` — full documentation
+- `.env.example` — placeholder credentials
+
+Security design:
+- Credentials from environment variables only
+- `NODE_ENV !== "production"` guard
+- `E2E_ALLOW_TEST_USER_SEED === "true"` guard
+- Production URL pattern detection
+- No `VITE_` prefix for service-role key
+- No admin role or paid entitlement
+- Auth via real Supabase `signInWithPassword` (no RLS bypass)
+- `playwright/.auth/` gitignored
+
+Status: INFRASTRUCTURE READY — requires environment credentials to execute.
+
 ## Status definitions
 NOT STARTED · IN PROGRESS · PARTIALLY COMPLETE · BLOCKED · NEEDS MANUAL DECISION · VERIFIED COMPLETE · NOT APPLICABLE
 
