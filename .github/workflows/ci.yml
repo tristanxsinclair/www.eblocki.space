@@ -54,7 +54,7 @@ jobs:
           ROUTE_SMOKE_BASE_URL=http://127.0.0.1:4172 npm run smoke:routes
 
       - name: Lighthouse desktop performance thresholds
-        run: npx --yes @lhci/cli@0.14.x autorun --config=./lighthouserc.json
+        run: npx --yes @lhci/cli@0.15.x autorun --config=./lighthouserc.json
         env:
           LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
 
