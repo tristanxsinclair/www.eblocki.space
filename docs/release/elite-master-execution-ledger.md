@@ -42,7 +42,7 @@ audit completion.
 | ID | Phase | Prio | Task | Surface | Status | Next action |
 |---|---|---|---|---|---|---|
 | P0-CONFINE-AI-EXPORT | 0 | P0 | Strip `model`/`vector_store_id` from export-data archive | `supabase/functions/export-data` | IN PROGRESS (WP-001) | Verify + deploy |
-| P0-CONFINE-AI-BUNDLE-SCAN | 0 | P0 | Search built client bundle for `vs_`, model IDs | build output | NOT STARTED | Run after next `npm run build` |
+| P0-CONFINE-AI-BUNDLE-SCAN | 0 | P0 | Search built client bundle for `vs_`, model IDs | build output | VERIFIED COMPLETE (WP-002) | — |
 | P1-PRICING-SOT | 1 | P0 | Pricing source of truth (Stripe + display) | `src/lib/stripe.ts`, Pricing, UpgradeCard | NEEDS MANUAL DECISION | Awaiting Tristan-approved public prices |
 | P1-PAY-ENV | 1 | P0 | Payment env control (sandbox vs live surfacing) | `PaymentTestModeBanner`, `stripe.ts` | PARTIALLY COMPLETE | Verify banner never shows in live |
 | P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | NOT STARTED | Inspect Proof result screen |
@@ -54,11 +54,16 @@ audit completion.
 | P5-MONETISATION | 5 | P2 | Monetisation validation | — | NOT STARTED | Gated by P1-PRICING-SOT |
 
 ## Current blocking chain
-1. Earliest unresolved P0: **P0-CONFINE-AI-EXPORT** (WP-001, this turn).
-2. After close: verify built-bundle contains no infra IDs (P0-CONFINE-AI-BUNDLE-SCAN).
-3. Next executable P1 without user decision: **P1-VERDICT-COPY** or
+1. Phase 0 containment closed pending deploy of WP-001.
+2. Next executable P1 without user decision: **P1-VERDICT-COPY** or
    **P1-ACCOUNT-DELETE** review. **P1-PRICING-SOT** is blocked pending
    Tristan-approved public prices, Founder terms, refund rules.
+
+## WP-002 evidence (P0-CONFINE-AI-BUNDLE-SCAN)
+Built with `npx vite build` (2026-07-10). Scans across `dist/`:
+- `rg 'vs_[A-Za-z0-9]{6,}|gpt-[0-9][a-z0-9.-]*|openai/[a-z0-9/-]+|text-embedding-[a-z0-9-]+|EBLOCKI_VECTOR_STORE_ID' dist/` → 0 matches.
+- `rg '"model"\s*:\s*"[^"]+"' dist/assets` → 0 matches.
+No AI infrastructure identifiers reach the shipped client bundle.
 
 ## Evidence index
 - Client source search: `rg -n -S 'vs_|vector_store_id|openai/|gpt-' src/` → clean
