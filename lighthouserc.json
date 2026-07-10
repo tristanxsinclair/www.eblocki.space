@@ -3,8 +3,8 @@
     "collect": {
       "url": [
         "http://127.0.0.1:4173/",
-        "http://127.0.0.1:4173/dashboard",
-        "http://127.0.0.1:4173/proof"
+        "http://127.0.0.1:4173/auth",
+        "http://127.0.0.1:4173/welcome"
       ],
       "numberOfRuns": 1,
       "startServerCommand": "NO_COLOR=1 npm run preview -- --host 127.0.0.1 --port 4173 --strictPort",
