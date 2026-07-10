@@ -204,7 +204,7 @@ export default function Settings() {
 
   return (
     <AppShell>
-      <Seo title="Settings | EBLOCKI" description="Operator config — model preferences, profile, and identity claims." path="/settings" />
+      <Seo title="Settings | EBLOCKI" description="Operator config — profile, modes, and identity claims." path="/settings" />
       <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6 min-w-0 max-w-full text-wrap-safe">
         <header className="min-w-0">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Settings</span>
