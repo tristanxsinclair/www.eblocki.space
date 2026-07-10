@@ -31,6 +31,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright OS dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
       - name: Run tests
         run: npm run test
 
@@ -54,7 +77,9 @@ jobs:
           ROUTE_SMOKE_BASE_URL=http://127.0.0.1:4172 npm run smoke:routes
 
       - name: Lighthouse desktop performance thresholds
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" npx --yes @lhci/cli@0.15.x autorun --config=./lighthouserc.json
+        run: |
+          export CHROME_PATH="$(node -e 'const { chromium } = require("playwright"); console.log(chromium.executablePath())')"
+          npx --yes @lhci/cli@0.15.x autorun --config=./lighthouserc.json
         env:
           LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
 
