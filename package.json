@@ -24,7 +24,10 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:install": "playwright install chromium",
-    "test:e2e:update": "playwright test --update-snapshots"
+    "test:e2e:update": "playwright test --update-snapshots",
+    "test:user:seed": "node scripts/seed-e2e-test-user.mjs",
+    "test:e2e:auth": "playwright test tests/e2e/wp-003-verdict-copy-qa.spec.ts",
+    "test:e2e:reset-user": "E2E_ALLOW_TEST_USER_SEED=true node scripts/seed-e2e-test-user.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",

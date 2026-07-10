@@ -176,3 +176,35 @@ Manual export verification:
 5. Expected output: only `false` values.
 
 Next strict action: rerun authenticated proof-result QA after the raw-metadata patch is deployed at 390px and 1280px. After WP-003 browser QA passes, the next strict work package is P1-ACCOUNT-DELETE review; P1-PAY-ENV verification follows. P1-PRICING-SOT remains blocked pending Tristan's manual pricing decision.
+
+## 23. E2E Test Infrastructure (supporting WP-003 verification)
+
+Added to unblock authenticated browser QA without relying on Lovable-injected session variables.
+
+Files created:
+- `scripts/seed-e2e-test-user.mjs` — idempotent "Alex Morgan" average-user provisioning
+- `tests/e2e/fixtures/average-user-auth.ts` — Playwright fixture using real `signInWithPassword`
+- `tests/e2e/wp-003-verdict-copy-qa.spec.ts` — 390px + 1280px viewport QA spec
+- `docs/testing/permanent-average-user.md` — full documentation
+- `.env.example` — placeholder env vars
+
+Package scripts added:
+- `npm run test:user:seed` — provision the test user
+- `npm run test:e2e:auth` — run WP-003 authenticated QA
+- `npm run test:e2e:reset-user` — reset test user state
+
+Authentication flow:
+1. Seed script creates user via `supabase.auth.admin.createUser` (service-role, server only)
+2. Playwright fixture authenticates via `supabase.auth.signInWithPassword` (anon key)
+3. Session injected into browser localStorage
+4. Storage state cached to `playwright/.auth/average-user.json` (gitignored, 30-min TTL)
+
+Status: INFRASTRUCTURE READY — BLOCKED on environment credentials.
+
+Blocker: `E2E_TEST_USER_EMAIL`, `E2E_TEST_USER_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY` are not available in the current CI/sandbox environment. These must be configured as repository secrets or provided via `.env` in a local development session.
+
+To execute WP-003 browser QA:
+1. Configure the environment variables in `.env` (see `.env.example`)
+2. `npm run test:user:seed`
+3. `npm run test:e2e:auth`
+4. Screenshots saved to `docs/release/evidence/wp-003/`
