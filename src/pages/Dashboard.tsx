@@ -52,6 +52,7 @@ import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 import { ProofClosureCard } from "@/components/eblocki/ProofClosureCard";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useEntitlement } from "@/hooks/useEntitlement";
 import { hasProofOnDate, plainEvidenceStrength } from "@/lib/eblocki/user-facing-copy";
 import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
@@ -67,6 +68,7 @@ function isEvidenceStrength(value: string | null | undefined): value is Evidence
 export default function Dashboard() {
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { accessLevel } = useEntitlement();
   const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
   const [today, setToday] = useState<DashboardDailySheetRow | null>(null);
   const [pending, setPending] = useState<DashboardCommitmentRow[]>([]);
@@ -446,7 +448,7 @@ export default function Dashboard() {
                     <ProductMatchPanel
                       artifacts={allArtifacts}
                       temporal={temporalResult}
-                      accessLevel="free"
+                      accessLevel={accessLevel}
                       operatingProfile={{
                         primaryDomain: activeDomains[0] ?? null,
                         recommendationsAllowed: true,

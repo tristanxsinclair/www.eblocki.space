@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntitlement } from "@/hooks/useEntitlement";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,6 @@ import { BetaFeedback } from "@/components/eblocki/BetaFeedback";
 import { NotificationPreferences } from "@/components/eblocki/NotificationPreferences";
 import { PasswordSecurity } from "@/components/eblocki/PasswordSecurity";
 import { UpgradeCard } from "@/components/eblocki/UpgradeCard";
-import { normaliseAccessLevel } from "@/lib/eblocki/access-level";
 
 const MODELS = [
   "google/gemini-3-flash-preview",
@@ -31,6 +31,7 @@ const MODELS = [
 export default function Settings() {
   const { user, signOut } = useAuth();
   const nav = useNavigate();
+  const { accessLevel } = useEntitlement();
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [cfg, setCfg] = useState<any>(null);
@@ -400,7 +401,7 @@ export default function Settings() {
           </div>
         </Card>
 
-        <UpgradeCard currentLevel={normaliseAccessLevel(profile?.access_level)} />
+        <UpgradeCard currentLevel={accessLevel} />
         <NotificationPreferences />
         <PasswordSecurity />
         <BetaFeedback />
