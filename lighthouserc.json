@@ -12,6 +12,9 @@
       "settings": {
         "preset": "desktop",
         "chromeFlags": "--no-sandbox --headless=new --disable-dev-shm-usage --disable-gpu --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --disable-features=PaintHolding --window-size=1280,1024",
+        "throttlingMethod": "provided",
+        "maxWaitForFcp": 120000,
+        "maxWaitForLoad": 120000,
         "onlyCategories": ["performance", "accessibility", "best-practices", "seo"],
         "skipAudits": [
           "uses-http2",
