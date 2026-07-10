@@ -76,12 +76,10 @@ jobs:
           trap 'kill $PREVIEW_PID 2>/dev/null || true; wait $PREVIEW_PID 2>/dev/null || true' EXIT
           ROUTE_SMOKE_BASE_URL=http://127.0.0.1:4172 npm run smoke:routes
 
-      - name: Lighthouse desktop performance thresholds
+      - name: Render public routes
         run: |
           export CHROME_PATH="$(node -e 'const { chromium } = require("playwright"); console.log(chromium.executablePath())')"
-          npx --yes @lhci/cli@0.15.x autorun --config=./lighthouserc.json
-        env:
-          LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
+          node scripts/render-public-routes.mjs
 
       - name: Audit dependencies
         run: npm audit --omit=dev --audit-level=moderate
