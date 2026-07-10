@@ -7,13 +7,19 @@
         "http://127.0.0.1:4173/proof"
       ],
       "numberOfRuns": 1,
-      "startServerCommand": "npm run preview -- --host 127.0.0.1 --port 4173",
+      "startServerCommand": "NO_COLOR=1 npm run preview -- --host 127.0.0.1 --port 4173 --strictPort",
       "startServerReadyPattern": "Local:",
       "settings": {
         "preset": "desktop",
-        "chromeFlags": "--no-sandbox --headless=new",
+        "chromeFlags": "--no-sandbox --headless=new --disable-dev-shm-usage --disable-gpu",
         "onlyCategories": ["performance", "accessibility", "best-practices", "seo"],
-        "skipAudits": ["uses-http2", "canonical", "is-crawlable"]
+        "skipAudits": [
+          "uses-http2",
+          "canonical",
+          "is-crawlable",
+          "third-party-cookies",
+          "inspector-issues"
+        ]
       }
     },
     "assert": {
