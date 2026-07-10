@@ -28,6 +28,7 @@ False or duplicated result copy makes the proof loop feel less credible and can 
 - `Proof.tsx` rendered a toast with verdict wording and multiple result-card regions deriving copy independently.
 - `Proof.tsx` left the previous verdict mounted while a new submission was processing.
 - Strength tally labels rendered raw strength tokens.
+- Completed and pending proof lists rendered raw stored domain/mode/artifact metadata.
 - Attachment copy exposed OCR/indexing/verdict-context wording.
 - `ProofWeek.tsx` rendered two closed/completed labels in the same state.
 - Coach and proof-capture adjacent UI exposed prompt/model-style wording.
@@ -46,7 +47,7 @@ Each proof result view has one dominant verdict headline derived from canonical 
 No scoring rules, verdict thresholds, state detection, XP, identity progression, schema, Supabase migrations, Stripe, pricing, entitlements, Founder access, Coach prompt construction, AI provider configuration, or new analytics events.
 
 ## 12. Dependencies
-Repository truth on `origin/main` at `2332eed`. Browser QA depends on an injected Supabase session or approved test account. Export deployment verification depends on Supabase CLI/project access and a safe export account.
+Repository truth on the current published `main` branch; the original Lovable handoff target was `origin/main` at `2332eed`. Browser QA depends on an injected Supabase session or approved test account. Export deployment verification depends on Supabase CLI/project access and a safe export account.
 
 ## 13. Files inspected
 - `docs/release/elite-master-execution-ledger.md`
@@ -87,6 +88,12 @@ Repository truth on `origin/main` at `2332eed`. Browser QA depends on an injecte
 - `supabase/functions/mcp/index.ts`
 - `docs/release/elite-master-execution-ledger.md`
 - `docs/release/elite-current-work-package.md`
+- `docs/release/evidence/wp-003/fresh-mobile-01-moderate-result.jpg`
+- `docs/release/evidence/wp-003/fresh-mobile-02-strong-result.jpg`
+- `docs/release/evidence/wp-003/fresh-mobile-03-verdict-details-top.jpg`
+- `docs/release/evidence/wp-003/fresh-mobile-04-identity-feedback.jpg`
+- `docs/release/evidence/wp-003/fresh-mobile-05-feedback-and-artifacts-raw-enum.jpg`
+- `docs/release/evidence/wp-003/fresh-mobile-06-dashboard-closed.jpg`
 
 ## 15. Data / schema implications
 None. The only lockfile change syncs dependencies already declared in `package.json`; no schema or persisted proof data changes were made.
@@ -113,11 +120,11 @@ No new analytics events. Existing CTA logging remains in place.
 
 ## 21. Verification and evidence
 - `npx tsc --noEmit`: PASS, final run exited 0 with no output.
-- Targeted tests: PASS, `npx vitest run src/lib/eblocki/__tests__/proof-standard-preview.test.ts src/lib/eblocki/__tests__/user-facing-copy.test.ts` → 2 files, 17 tests passed.
+- Targeted tests: PASS, `npm run test -- src/lib/eblocki/__tests__/user-facing-copy.test.ts src/lib/eblocki/__tests__/proof-scoring.test.ts src/lib/eblocki/__tests__/proof-check.test.ts src/lib/eblocki/__tests__/display-labels.test.ts` → 3 files, 29 tests passed. `display-labels.test.ts` does not exist, so Vitest ran the existing matching proof suites.
 - `npm run test`: PASS, 39 files and 306 tests passed.
-- `npx vite build`: PASS. Initial build failed because declared font dependencies were absent from `package-lock.json`/`node_modules`; `npm install` synced the existing `package.json` declarations, then build passed. Final build after screenshot-driven raw-domain patch also passed.
+- `npx vite build`: PASS. Initial build failed because declared font dependencies were absent from `package-lock.json`/`node_modules`; `npm install` synced the existing `package.json` declarations, then build passed. Final build after screenshot-driven raw-metadata patch also passed.
 - Phase 0 bundle rescan: `rg -a -n 'vs_[A-Za-z0-9]{6,}|gpt-[0-9]|openai/|EBLOCKI_VECTOR_STORE_ID' dist` produced no output and `rg_exit=1`, interpreted as no matches.
-- Raw enum search: remaining matches are internal mapping keys, imports/types, product terms such as Momentum/Recovery, admin/debug pages, tests, or non-verdict surfaces; no WP-003 proof result JSX renders raw enum tokens directly. Screenshot-driven patch also routes Proof Standard Preview selected-domain display through `humaniseModeId`.
+- Raw enum search: remaining matches are internal mapping keys, imports/types, product terms such as Momentum/Recovery, admin/debug pages, tests, or non-verdict surfaces; no WP-003 proof result JSX renders raw enum tokens directly. Fresh proof-metadata search `rg -n -S "EBLOCKI_PRODUCT_REVIEW|\bOTHER\b" src/pages src/components/eblocki` produced no output and `rg_exit=1`.
 - Infrastructure vocabulary search: remaining matches are admin/audit panels, legal disclosure, browser/PWA API method names, query-param variable names, product "freeze token" wording, or non-rendered implementation references; proof result surfaces are clean.
 - Playwright/browser QA: BLOCKED for automated local proof QA. `LOVABLE_BROWSER_SUPABASE_STORAGE_KEY`, `LOVABLE_BROWSER_SUPABASE_SESSION_JSON`, and `LOVABLE_BROWSER_SUPABASE_COOKIES_JSON` are missing. `npx playwright test --list` found 4 existing System Forge tests and no proof-result harness; `npx playwright test` exited 0 with 4 skipped because the auth fixture self-skips without an injected Supabase session.
 - Manual Lovable-preview mobile QA: FAILED against the user-supplied preview screenshots. Tristan subsequently reported Lovable is up to date, so these screenshots are retained as last-observed failed evidence, not proof of the current deployed state. Fresh authenticated QA is still required. Evidence files:
@@ -136,6 +143,18 @@ No new analytics events. Existing CTA logging remains in place.
   - Deployed preview exposes raw `EBLOCKI_PRODUCT_REVIEW` in selected-standard/completed-artifact surfaces.
   - Deployed preview shows raw lower-case strength copy in details: `Scored 10/10 (elite).`
   - Screenshots are mobile only; no 1280px desktop proof-result evidence was provided.
+- Fresh authenticated mobile QA after the Lovable update:
+  - Evidence files:
+    - `docs/release/evidence/wp-003/fresh-mobile-01-moderate-result.jpg`
+    - `docs/release/evidence/wp-003/fresh-mobile-02-strong-result.jpg`
+    - `docs/release/evidence/wp-003/fresh-mobile-03-verdict-details-top.jpg`
+    - `docs/release/evidence/wp-003/fresh-mobile-04-identity-feedback.jpg`
+    - `docs/release/evidence/wp-003/fresh-mobile-05-feedback-and-artifacts-raw-enum.jpg`
+    - `docs/release/evidence/wp-003/fresh-mobile-06-dashboard-closed.jpg`
+  - Result-card copy is materially improved: one visible dominant headline, clear count/today status, no duplicate feedback block in the fresh result screenshots, and Dashboard closed-card copy is concise.
+  - Remaining defect found in `fresh-mobile-05-feedback-and-artifacts-raw-enum.jpg`: Completed Proof Artifacts exposed `EBLOCKI_PRODUCT_REVIEW - OTHER - 2026-07-10`.
+  - Corrective source patch: `src/pages/Proof.tsx` now renders pending/completed proof metadata through `humaniseModeId`/proof display helpers and no longer applies machine-style uppercase to those dynamic metadata values.
+  - Post-fix authenticated browser evidence is still required; no 1280px desktop proof-result screenshot has been observed.
 - Updated-preview recheck: direct unauthenticated curl still reaches Lovable auth-bridge and headless Playwright still lands on `lovable.dev/login`; Codex has not observed the updated authenticated proof result state.
 - Supabase export deployment/archive inspection: BLOCKED. `supabase` CLI is not available in this environment, and no safe test export account/JWT is present.
 
@@ -156,4 +175,4 @@ Manual export verification:
 4. `jq '.performance_os_config[] | has("model"), has("vector_store_id")' /tmp/eblocki-export.json`
 5. Expected output: only `false` values.
 
-Next strict action: rerun authenticated proof-result QA on the updated Lovable preview at 390px and 1280px. After WP-003 browser QA passes, the next strict work package is P1-ACCOUNT-DELETE review; P1-PAY-ENV verification follows. P1-PRICING-SOT remains blocked pending Tristan's manual pricing decision.
+Next strict action: rerun authenticated proof-result QA after the raw-metadata patch is deployed at 390px and 1280px. After WP-003 browser QA passes, the next strict work package is P1-ACCOUNT-DELETE review; P1-PAY-ENV verification follows. P1-PRICING-SOT remains blocked pending Tristan's manual pricing decision.

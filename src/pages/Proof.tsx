@@ -15,7 +15,7 @@ import { ProofStandardPreviewPanel } from "@/components/eblocki/ProofStandardPre
 import { scoreProofArtifact, type EvidenceStrength } from "@/lib/eblocki/proof-scoring";
 import { classifyStudyActivity } from "@/lib/eblocki/fake-study-detector";
 import { StudyVerdictHint } from "@/components/eblocki/StudyVerdictHint";
-import { isStudyDomain } from "@/lib/eblocki/display-labels";
+import { humaniseModeId, isStudyDomain } from "@/lib/eblocki/display-labels";
 import { buildProofStandardPreview, type ProofStandardPreview } from "@/lib/eblocki/proof-standard-preview";
 import type { UserMode } from "@/lib/eblocki/modes";
 import { computeTemporal } from "@/lib/eblocki/temporal-engine";
@@ -149,6 +149,29 @@ function isStudyDomainSignal(...values: Array<string | null | undefined>): boole
   const text = values.filter(Boolean).join(" ").toLowerCase();
   if (!text.trim()) return false;
   return /\b(study|learn|learning|law|legal|psych|psychology|academic|blaw|laws|exam|irac|source-bank|source bank|essay|tutorial|lecture|assignment)\b/.test(text);
+}
+
+function displayProofDomain(value: string | null | undefined): string {
+  return humaniseModeId(value) || "General";
+}
+
+function displayProofArtifactType(value: string | null | undefined): string {
+  return humaniseModeId(value ?? "artifact") || "Artifact";
+}
+
+function displayProofDate(value: string | null | undefined): string {
+  return value ? value.slice(0, 10) : "Date not recorded";
+}
+
+function formatProofMeta(parts: Array<string | null | undefined>): string {
+  return parts.filter((part): part is string => Boolean(part && part.trim())).join(" - ");
+}
+
+function displayProofContractLabel(contract: ProofCommitmentRow): string {
+  return formatProofMeta([
+    contract.mode ? humaniseModeId(contract.mode) : displayProofDomain(contract.domain),
+    contract.title,
+  ]);
 }
 
 function VerdictFeedback({ artifactId }: { artifactId: string }) {
@@ -1057,7 +1080,7 @@ export default function Proof() {
                     <option value="">- none -</option>
                     {pending.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.mode ?? p.domain} - {p.title}
+                        {displayProofContractLabel(p)}
                       </option>
                     ))}
                   </select>
@@ -1240,7 +1263,7 @@ export default function Proof() {
                     <option value="">- none -</option>
                     {pending.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.mode ?? p.domain} - {p.title}
+                        {displayProofContractLabel(p)}
                       </option>
                     ))}
                   </select>
@@ -1646,7 +1669,12 @@ export default function Proof() {
                   {filteredPending.map((p) => (
                     <Card key={p.id} className="panel p-4 flex items-start justify-between gap-3 flex-wrap max-w-full overflow-hidden">
                       <div className="min-w-0 flex-1">
-                        <div className="font-mono text-[10px] uppercase text-muted-foreground break-words">{p.domain} - {p.mode}</div>
+                        <div className="font-mono text-[10px] text-muted-foreground break-words">
+                          {formatProofMeta([
+                            displayProofDomain(p.domain),
+                            p.mode ? humaniseModeId(p.mode) : null,
+                          ])}
+                        </div>
                         <div className="text-sm font-medium break-words">{p.title}</div>
                         {p.required_artifact && <div className="text-xs text-muted-foreground mt-1 break-words">Required: {p.required_artifact}</div>}
                         {p.evidence_standard && <div className="text-xs text-muted-foreground mt-0.5 break-words">Standard: {p.evidence_standard}</div>}
@@ -1899,8 +1927,12 @@ function CompletedArtifactCard({ artifact }: { artifact: ProofArtifactRow }) {
   return (
     <Card className="panel p-4 max-w-full overflow-hidden">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="font-mono text-[10px] uppercase text-muted-foreground break-words min-w-0">
-          {artifact.domain} - {artifact.artifact_type ?? "artifact"} - {artifact.created_at?.slice(0, 10)}
+        <div className="font-mono text-[10px] text-muted-foreground break-words min-w-0">
+          {formatProofMeta([
+            displayProofDomain(artifact.domain),
+            displayProofArtifactType(artifact.artifact_type),
+            displayProofDate(artifact.created_at),
+          ])}
         </div>
         {artifact.evidence_strength && (
           isMobile ? (

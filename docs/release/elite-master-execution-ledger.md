@@ -4,8 +4,8 @@
 - Master plan: `Eblocki Elite Product Standard Complete` (uploaded 2026-07-10)
 - Stack: React 18 + Vite + TS + React Router + Tailwind/shadcn + Supabase + PostHog + Capacitor + Stripe
 - Current active phase: **Phase 1 — Trust and release blockers**
-- Current release gate: WP-003 code/test/build complete; browser QA and export deployment remain external-verification gates
-- Ledger last updated: 2026-07-10
+- Current release gate: WP-003 code/test/build complete; post-fix browser QA and export deployment remain external-verification gates
+- Ledger last updated: 2026-07-11
 
 ## Status definitions
 NOT STARTED · IN PROGRESS · PARTIALLY COMPLETE · BLOCKED · NEEDS MANUAL DECISION · VERIFIED COMPLETE · NOT APPLICABLE
@@ -45,7 +45,7 @@ audit completion.
 | P0-CONFINE-AI-BUNDLE-SCAN | 0 | P0 | Search built client bundle for `vs_`, model IDs | build output | VERIFIED COMPLETE (WP-002) | — |
 | P1-PRICING-SOT | 1 | P0 | Pricing source of truth (Stripe + display) | `src/lib/stripe.ts`, Pricing, UpgradeCard | NEEDS MANUAL DECISION | Awaiting Tristan-approved public prices |
 | P1-PAY-ENV | 1 | P0 | Payment env control (sandbox vs live surfacing) | `PaymentTestModeBanner`, `stripe.ts` | PARTIALLY COMPLETE | Verify banner never shows in live |
-| P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | PARTIALLY COMPLETE — FRESH BROWSER QA REQUIRED | Rerun authenticated proof result QA at 390px and 1280px |
+| P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | PARTIALLY COMPLETE — POST-FIX BROWSER QA REQUIRED | Rerun authenticated proof result QA at 390px and 1280px |
 | P1-BILLING-PORTAL | 1 | P1 | Billing portal reachable from Settings | `BillingCard`, `create-portal-session` | VERIFIED COMPLETE (prior turn) | — |
 | P1-ACCOUNT-EXPORT | 1 | P1 | Account data export | `export-data` | VERIFIED COMPLETE after WP-001 | — |
 | P1-ACCOUNT-DELETE | 1 | P1 | Account deletion | `delete-account` | NOT VERIFIED THIS PASS | Inspect next |
@@ -56,10 +56,13 @@ audit completion.
 ## Current blocking chain
 1. Phase 0 export redaction is implemented but blocked on Supabase deployment
    access and a safe test export account.
-2. WP-003 P1 verdict-copy code/test/build evidence is complete. The last
-   observed Lovable-preview mobile screenshots showed pre-WP-003 copy and
-   duplicated feedback. Tristan subsequently reported Lovable is up to date;
-   fresh authenticated proof-result QA is still required because unauthenticated
+2. WP-003 P1 verdict-copy code/test/build evidence is complete. Fresh
+   authenticated mobile screenshots showed the main proof-result copy is now
+   cleaner, but also exposed raw completed-artifact metadata
+   (`EBLOCKI_PRODUCT_REVIEW - OTHER - 2026-07-10`). `src/pages/Proof.tsx`
+   now maps pending/completed proof metadata through `humaniseModeId` and
+   removes machine-style uppercase from dynamic metadata. Post-fix
+   authenticated proof-result QA is still required because unauthenticated
    automation redirects to Lovable login.
 3. After WP-003 browser QA passes, next executable P1 without user decision is
    **P1-ACCOUNT-DELETE** review. **P1-PAY-ENV** verification follows.
@@ -86,8 +89,9 @@ Root cause:
   copy independently, plus a toast that repeated verdict outcome text.
 - `src/pages/Proof.tsx` kept the previous result mounted during a new
   submission, allowing stale verdict/next-command copy while loading.
-- `src/pages/Proof.tsx` rendered raw strength labels in tally UI and used
-  OCR/indexing/verdict-context vocabulary in normal attachment copy.
+- `src/pages/Proof.tsx` rendered raw strength labels in tally UI, raw
+  domain/artifact metadata in proof lists, and used OCR/indexing/verdict-context
+  vocabulary in normal attachment copy.
 - `src/pages/ProofWeek.tsx` rendered duplicated closed/completed labels in one
   proof-week completed state.
 - `src/pages/Coach.tsx` and proof-adjacent components contained prompt/model
@@ -127,21 +131,31 @@ Files changed:
 - `supabase/functions/mcp/index.ts`
 - `docs/release/elite-current-work-package.md`
 - `docs/release/elite-master-execution-ledger.md`
+- `docs/release/evidence/wp-003/fresh-mobile-01-moderate-result.jpg`
+- `docs/release/evidence/wp-003/fresh-mobile-02-strong-result.jpg`
+- `docs/release/evidence/wp-003/fresh-mobile-03-verdict-details-top.jpg`
+- `docs/release/evidence/wp-003/fresh-mobile-04-identity-feedback.jpg`
+- `docs/release/evidence/wp-003/fresh-mobile-05-feedback-and-artifacts-raw-enum.jpg`
+- `docs/release/evidence/wp-003/fresh-mobile-06-dashboard-closed.jpg`
 
 Acceptance evidence:
 - `npx tsc --noEmit` → PASS, exit 0, no output.
-- `npx vitest run src/lib/eblocki/__tests__/proof-standard-preview.test.ts src/lib/eblocki/__tests__/user-facing-copy.test.ts`
-  → PASS, 2 files and 17 tests passed.
+- `npm run test -- src/lib/eblocki/__tests__/user-facing-copy.test.ts src/lib/eblocki/__tests__/proof-scoring.test.ts src/lib/eblocki/__tests__/proof-check.test.ts src/lib/eblocki/__tests__/display-labels.test.ts`
+  → PASS, 3 files and 29 tests passed. `display-labels.test.ts` does not
+  exist, so Vitest ran the existing matching proof suites.
 - `npm run test` → PASS, 39 files and 306 tests passed.
 - `npx vite build` → PASS after `npm install` synced `package-lock.json` with
   dependencies already declared in `package.json`; no Stripe code, pricing,
   product, entitlement, or Founder logic changed. Final build after
-  screenshot-driven raw-domain patch also passed.
+  screenshot-driven raw-metadata patch also passed.
 - Phase 0 bundle rescan:
   `rg -a -n 'vs_[A-Za-z0-9]{6,}|gpt-[0-9]|openai/|EBLOCKI_VECTOR_STORE_ID' dist`
   → no output, `rg_exit=1`; interpreted as no matches.
 - Focused stale-copy search:
   `rg -n "Proof Verdict|Verdict:|Proof submitted —|ocr indexed|text indexed|verdict context|fed into verdict|Internal prompt|Quick prompts|model output|prompt log|Lovable prompt" src/pages src/components/eblocki`
+  → no output, `rg_exit=1`.
+- Fresh raw proof-metadata search:
+  `rg -n -S "EBLOCKI_PRODUCT_REVIEW|\bOTHER\b" src/pages src/components/eblocki`
   → no output, `rg_exit=1`.
 
 Search classification:
@@ -179,13 +193,25 @@ Browser evidence:
 - Failed preview findings: pre-WP-003 copy (`Proof saved.`, `Counted as Elite
   Proof.`), duplicate `Was this judgment useful?` blocks, raw
   `EBLOCKI_PRODUCT_REVIEW` labels, and raw lower-case `elite` in details.
-- Tristan subsequently reported Lovable is up to date. Direct unauthenticated
-  recheck still redirects to Lovable auth-bridge/login, so the current deployed
-  proof result state remains unobserved from Codex.
+- Fresh authenticated mobile screenshots after the Lovable update were saved:
+  `fresh-mobile-01-moderate-result.jpg`,
+  `fresh-mobile-02-strong-result.jpg`,
+  `fresh-mobile-03-verdict-details-top.jpg`,
+  `fresh-mobile-04-identity-feedback.jpg`,
+  `fresh-mobile-05-feedback-and-artifacts-raw-enum.jpg`,
+  `fresh-mobile-06-dashboard-closed.jpg`.
+- Fresh findings: the visible result-card headlines, count status, today status,
+  feedback block, and Dashboard closed card were materially improved. The fresh
+  proof list still exposed raw completed-artifact metadata in
+  `fresh-mobile-05-feedback-and-artifacts-raw-enum.jpg`; that defect is now
+  patched in `src/pages/Proof.tsx`, but not yet reobserved in browser.
+- Direct unauthenticated recheck still redirects to Lovable auth-bridge/login,
+  so the current post-fix deployed proof result state remains unobserved from
+  Codex.
 - No 1280px desktop proof-result screenshot was provided.
 
 Completion status:
-- **PARTIALLY COMPLETE — FRESH BROWSER QA REQUIRED**.
+- **PARTIALLY COMPLETE — POST-FIX BROWSER QA REQUIRED**.
 - Do not flip P1-VERDICT-COPY to VERIFIED COMPLETE until authenticated proof
   result QA at 390px and 1280px passes on the updated preview.
 
