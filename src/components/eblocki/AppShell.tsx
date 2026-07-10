@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -6,6 +7,7 @@ import { usePushRegistration } from "@/hooks/usePushRegistration";
 import { LevelUpListener } from "./LevelUpListener";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { EblockiLogo } from "./EblockiLogo";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -22,15 +24,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const nav = useNavigate();
   usePushRegistration();
+  const mobileTopRef = useRef<HTMLDivElement | null>(null);
+
+  // Publish the combined mobile top-bar (banner + brand header) height as
+  // --app-header-h so pages that opt into .pt-header-safe stay clear of the
+  // status bar and any test-mode banner. Desktop is unaffected — the desktop
+  // sidebar layout does not consume this var.
+  useEffect(() => {
+    const el = mobileTopRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const publish = () => {
+      const h = el.getBoundingClientRect().height;
+      if (h > 0) document.documentElement.style.setProperty("--app-header-h", `${Math.round(h)}px`);
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
-    <div className="min-h-screen-safe flex flex-col md:flex-row w-full max-w-full overflow-x-hidden">
-      {/* Mobile brand bar */}
-      <header className="md:hidden flex items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card/40 safe-top safe-x w-full max-w-full">
-        <Link to="/dashboard" className="flex items-center gap-2 native-tap min-w-0">
-          <EblockiLogo variant="compact" size="sm" />
-        </Link>
-      </header>
+    <div className="min-h-[100dvh] min-h-screen-safe flex flex-col md:flex-row w-full max-w-full overflow-x-hidden">
+      {/* Mobile top: test-mode banner + sticky brand bar. Owns --app-header-h. */}
+      <div
+        ref={mobileTopRef}
+        className="md:hidden sticky top-0 z-30 w-full max-w-full bg-card"
+      >
+        <PaymentTestModeBanner />
+        <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card safe-top safe-x w-full max-w-full">
+          <Link to="/dashboard" className="flex items-center gap-2 native-tap min-w-0">
+            <EblockiLogo variant="compact" size="sm" />
+          </Link>
+        </header>
+      </div>
 
       {/* Desktop / tablet sidebar */}
       <aside className="hidden md:flex md:w-60 md:min-h-screen border-r border-border bg-card/60 backdrop-blur-sm md:flex-col md:sticky md:top-0 md:h-screen safe-x md:safe-bottom max-w-full min-w-0">
@@ -66,7 +92,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
       </aside>
-      <main className="flex-1 min-w-0 w-full max-w-full overflow-x-hidden pb-24 md:pb-0" id="main">{children}</main>
+      <main className="flex-1 min-w-0 w-full max-w-full overflow-x-hidden pb-nav-safe md:pb-0" id="main">{children}</main>
       <MobileBottomNav />
       <LevelUpListener />
     </div>

@@ -248,7 +248,7 @@ export default function Modes() {
         description="Configure the operating modes that route your coach, evidence rubrics, and proof contracts."
         path="/modes"
       />
-      <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-6 min-w-0 max-w-full pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-8">
+      <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-6 min-w-0 max-w-full md:pb-8">
         <header className="space-y-2 min-w-0">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             {isMobile ? "Areas" : "Mode Operating System"}

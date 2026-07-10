@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -44,11 +44,29 @@ export function MobileBottomNav() {
   const location = useLocation();
   const nav = useNavigate();
   const { user, signOut } = useAuth();
+  const navRef = useRef<HTMLElement | null>(null);
+
+  // Publish measured nav height so pages can clear it via .pb-nav-safe without
+  // hard-coding magic numbers. Only mounts on mobile (component returns null
+  // above md in practice via the md:hidden class on the <nav>).
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const publish = () => {
+      const h = el.getBoundingClientRect().height;
+      if (h > 0) document.documentElement.style.setProperty("--app-nav-h", `${Math.round(h)}px`);
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const moreActive = SECONDARY.some((item) => location.pathname.startsWith(item.to));
 
   return (
     <nav
+      ref={navRef}
       aria-label="Primary mobile navigation"
       className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/80 bg-card/95 backdrop-blur-lg supports-[backdrop-filter]:bg-card/80 safe-bottom safe-x shadow-[0_-4px_20px_-4px_hsl(0_0%_0%/0.4)]"
     >

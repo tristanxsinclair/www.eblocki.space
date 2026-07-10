@@ -329,7 +329,7 @@ export default function Coach() {
         description="Diagnose the situation, get the answer, create proof, and generate a practice pack when skill repetition is the right move."
         path="/coach"
       />
-      <div className="mobile-safe-page p-4 md:p-8 max-w-5xl mx-auto space-y-5 min-w-0 max-w-full text-wrap-safe pb-[calc(96px+env(safe-area-inset-bottom))] md:pb-8">
+      <div className="mobile-safe-page p-4 md:p-8 max-w-5xl mx-auto space-y-5 min-w-0 max-w-full text-wrap-safe md:pb-8">
         <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end min-w-0">
           <div className="flex items-center gap-3 min-w-0">
             <EblockiLogo variant="mark" size="md" />
@@ -355,7 +355,8 @@ export default function Coach() {
               placeholder="Paste a problem, note, thought dump, question, or situation. Eblocki will diagnose it and give the next proof action."
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              className="min-h-[170px] resize-none w-full max-w-full"
+              className="min-h-[170px] resize-none w-full max-w-full input-anchored"
+              enterKeyHint="send"
             />
             {isMobile ? (
               <MobileCollapse eyebrow="Optional" label="Focus area (optional)" trackId="coach_mode_chips">
