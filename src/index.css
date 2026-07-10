@@ -17,6 +17,9 @@ Brand direction (July 2026):
   :root {
     /* EBLOCKI — Monolithic Precision palette (locked July 2026) */
     /* bg #0a0b0d · surface #111316 · elev #1c2024 · signal #3ee07a */
+    /* Mobile shell dimensions — overwritten at runtime by AppShell / MobileBottomNav. */
+    --app-header-h: 56px;
+    --app-nav-h: 64px;
     --background: 220 13% 5%;
     --foreground: 210 20% 98%;
 
