@@ -43,6 +43,7 @@ import { Seo } from "@/components/Seo";
 import { logEvent } from "@/lib/eblocki/analytics";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
+import { humaniseModeId } from "@/lib/eblocki/display-labels";
 import {
   buildCoachResponse,
   type CoachEngineResult,
@@ -170,11 +171,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 
 function displayToken(value: string | null | undefined): string {
   if (!value) return "Not detected";
-  return value
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+  return humaniseModeId(value);
 }
 
 export default function Coach() {
@@ -546,7 +543,7 @@ export default function Coach() {
         <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
           <div className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Quick prompts</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Quick starts</span>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {QUICK_PROMPTS.map((prompt) => (
@@ -709,7 +706,7 @@ function CoachFullReasoning({
             <Signal label="Urgency" value={displayToken(engineResult.urgency)} icon={<ShieldCheck />} />
           </div>
           <p className="mt-3 text-xs text-muted-foreground break-words">
-            Internal prompt summary: {engineResult.internalPromptSummary}
+            Diagnostic summary: {engineResult.internalPromptSummary}
           </p>
         </Card>
         <ResponseSection title="Diagnosis" icon={<Radar />}>{engineResult.diagnosis}</ResponseSection>

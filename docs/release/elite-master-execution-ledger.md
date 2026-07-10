@@ -3,8 +3,8 @@
 ## Governing documents
 - Master plan: `Eblocki Elite Product Standard Complete` (uploaded 2026-07-10)
 - Stack: React 18 + Vite + TS + React Router + Tailwind/shadcn + Supabase + PostHog + Capacitor + Stripe
-- Current active phase: **Phase 0 — Immediate containment**
-- Current release gate: OpenAI infra confinement fully closed; then Phase 1 trust/mobile blockers
+- Current active phase: **Phase 1 — Trust and release blockers**
+- Current release gate: WP-003 code/test/build complete; browser QA and export deployment remain external-verification gates
 - Ledger last updated: 2026-07-10
 
 ## Status definitions
@@ -41,11 +41,11 @@ audit completion.
 
 | ID | Phase | Prio | Task | Surface | Status | Next action |
 |---|---|---|---|---|---|---|
-| P0-CONFINE-AI-EXPORT | 0 | P0 | Strip `model`/`vector_store_id` from export-data archive | `supabase/functions/export-data` | IN PROGRESS (WP-001) | Verify + deploy |
+| P0-CONFINE-AI-EXPORT | 0 | P0 | Strip `model`/`vector_store_id` from export-data archive | `supabase/functions/export-data` | BLOCKED — EXTERNAL ACCESS REQUIRED | Deploy function and inspect one real export archive |
 | P0-CONFINE-AI-BUNDLE-SCAN | 0 | P0 | Search built client bundle for `vs_`, model IDs | build output | VERIFIED COMPLETE (WP-002) | — |
 | P1-PRICING-SOT | 1 | P0 | Pricing source of truth (Stripe + display) | `src/lib/stripe.ts`, Pricing, UpgradeCard | NEEDS MANUAL DECISION | Awaiting Tristan-approved public prices |
 | P1-PAY-ENV | 1 | P0 | Payment env control (sandbox vs live surfacing) | `PaymentTestModeBanner`, `stripe.ts` | PARTIALLY COMPLETE | Verify banner never shows in live |
-| P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | NOT STARTED | Inspect Proof result screen |
+| P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | PARTIALLY COMPLETE — FRESH BROWSER QA REQUIRED | Rerun authenticated proof result QA at 390px and 1280px |
 | P1-BILLING-PORTAL | 1 | P1 | Billing portal reachable from Settings | `BillingCard`, `create-portal-session` | VERIFIED COMPLETE (prior turn) | — |
 | P1-ACCOUNT-EXPORT | 1 | P1 | Account data export | `export-data` | VERIFIED COMPLETE after WP-001 | — |
 | P1-ACCOUNT-DELETE | 1 | P1 | Account deletion | `delete-account` | NOT VERIFIED THIS PASS | Inspect next |
@@ -54,16 +54,173 @@ audit completion.
 | P5-MONETISATION | 5 | P2 | Monetisation validation | — | NOT STARTED | Gated by P1-PRICING-SOT |
 
 ## Current blocking chain
-1. Phase 0 containment closed pending deploy of WP-001.
-2. Next executable P1 without user decision: **P1-VERDICT-COPY** or
-   **P1-ACCOUNT-DELETE** review. **P1-PRICING-SOT** is blocked pending
-   Tristan-approved public prices, Founder terms, refund rules.
+1. Phase 0 export redaction is implemented but blocked on Supabase deployment
+   access and a safe test export account.
+2. WP-003 P1 verdict-copy code/test/build evidence is complete. The last
+   observed Lovable-preview mobile screenshots showed pre-WP-003 copy and
+   duplicated feedback. Tristan subsequently reported Lovable is up to date;
+   fresh authenticated proof-result QA is still required because unauthenticated
+   automation redirects to Lovable login.
+3. After WP-003 browser QA passes, next executable P1 without user decision is
+   **P1-ACCOUNT-DELETE** review. **P1-PAY-ENV** verification follows.
+   **P1-PRICING-SOT** is blocked pending Tristan-approved public prices,
+   Founder terms, refund rules.
 
 ## WP-002 evidence (P0-CONFINE-AI-BUNDLE-SCAN)
 Built with `npx vite build` (2026-07-10). Scans across `dist/`:
 - `rg 'vs_[A-Za-z0-9]{6,}|gpt-[0-9][a-z0-9.-]*|openai/[a-z0-9/-]+|text-embedding-[a-z0-9-]+|EBLOCKI_VECTOR_STORE_ID' dist/` → 0 matches.
 - `rg '"model"\s*:\s*"[^"]+"' dist/assets` → 0 matches.
 No AI infrastructure identifiers reach the shipped client bundle.
+
+## WP-003 evidence (P1-VERDICT-COPY)
+Date: 2026-07-10.
+
+Objective:
+- Remove duplicated, false, stale, raw-enum, and infrastructure-flavoured
+  verdict copy from normal-user proof result surfaces after proof submission.
+- Preserve proof judgment logic, scoring rules, persistence, Stripe, and
+  pricing surfaces.
+
+Root cause:
+- `src/pages/Proof.tsx` had parent and child result regions deriving verdict
+  copy independently, plus a toast that repeated verdict outcome text.
+- `src/pages/Proof.tsx` kept the previous result mounted during a new
+  submission, allowing stale verdict/next-command copy while loading.
+- `src/pages/Proof.tsx` rendered raw strength labels in tally UI and used
+  OCR/indexing/verdict-context vocabulary in normal attachment copy.
+- `src/pages/ProofWeek.tsx` rendered duplicated closed/completed labels in one
+  proof-week completed state.
+- `src/pages/Coach.tsx` and proof-adjacent components contained prompt/model
+  wording visible to normal users.
+- `src/lib/eblocki/user-facing-copy.ts` did not have a canonical proof-result
+  copy object for one headline, count status, today status, next command, and
+  CTA state.
+
+Files inspected:
+- `src/pages/Proof.tsx`, `src/pages/ProofWeek.tsx`, `src/pages/Coach.tsx`
+- `src/components/eblocki/ProofClosureCard.tsx`
+- `src/components/eblocki/ProofContractCard.tsx`
+- `src/components/eblocki/ProofStandardPreviewPanel.tsx`
+- `src/components/eblocki/CourtVerdictBadge.tsx`
+- `src/components/eblocki/StudyVerdictHint.tsx`
+- `src/components/eblocki/CompletionReflection.tsx`
+- `src/components/eblocki/motion/MotionVerdictCard.tsx`
+- `src/components/eblocki/motion/ProofProcessingState.tsx`
+- `src/components/eblocki/ProofCapture.tsx`
+- `src/lib/eblocki/proof-scoring.ts`, `proof-check.ts`,
+  `verdict-identity-impact.ts`, `user-facing-copy.ts`, `display-labels.ts`
+- `supabase/functions/mcp/index.ts`
+- `playwright.config.ts`, `tests/e2e/fixtures/auth.ts`
+
+Files changed:
+- `package-lock.json`
+- `src/components/eblocki/IdentityLedger.tsx`
+- `src/components/eblocki/NotificationPreferences.tsx`
+- `src/components/eblocki/ProofCapture.tsx`
+- `src/lib/eblocki/__tests__/user-facing-copy.test.ts`
+- `src/lib/eblocki/__tests__/proof-standard-preview.test.ts`
+- `src/lib/eblocki/proof-standard-preview.ts`
+- `src/lib/eblocki/user-facing-copy.ts`
+- `src/pages/Coach.tsx`
+- `src/pages/Proof.tsx`
+- `src/pages/ProofWeek.tsx`
+- `supabase/functions/mcp/index.ts`
+- `docs/release/elite-current-work-package.md`
+- `docs/release/elite-master-execution-ledger.md`
+
+Acceptance evidence:
+- `npx tsc --noEmit` → PASS, exit 0, no output.
+- `npx vitest run src/lib/eblocki/__tests__/proof-standard-preview.test.ts src/lib/eblocki/__tests__/user-facing-copy.test.ts`
+  → PASS, 2 files and 17 tests passed.
+- `npm run test` → PASS, 39 files and 306 tests passed.
+- `npx vite build` → PASS after `npm install` synced `package-lock.json` with
+  dependencies already declared in `package.json`; no Stripe code, pricing,
+  product, entitlement, or Founder logic changed. Final build after
+  screenshot-driven raw-domain patch also passed.
+- Phase 0 bundle rescan:
+  `rg -a -n 'vs_[A-Za-z0-9]{6,}|gpt-[0-9]|openai/|EBLOCKI_VECTOR_STORE_ID' dist`
+  → no output, `rg_exit=1`; interpreted as no matches.
+- Focused stale-copy search:
+  `rg -n "Proof Verdict|Verdict:|Proof submitted —|ocr indexed|text indexed|verdict context|fed into verdict|Internal prompt|Quick prompts|model output|prompt log|Lovable prompt" src/pages src/components/eblocki`
+  → no output, `rg_exit=1`.
+
+Search classification:
+- Raw enum search still finds internal mapping keys, type imports, tests,
+  admin/debug surfaces, and product terms such as Momentum/Recovery. No WP-003
+  proof result JSX directly renders raw enum tokens. Proof Standard Preview now
+  routes selected-domain display through `humaniseModeId`, fixing the raw
+  `EBLOCKI_PRODUCT_REVIEW` label observed in manual screenshots.
+- Infrastructure vocabulary search still finds admin/audit panels, legal
+  disclosure pages, browser/PWA API names, query-param variable names,
+  product "freeze token" copy, and non-rendered implementation references.
+  Proof result surfaces and proof-adjacent copy changed in this work package
+  do not expose prompt/model/OCR indexing/verdict-context wording.
+
+Browser evidence:
+- Automated local Playwright QA remains BLOCKED. `LOVABLE_BROWSER_SUPABASE_STORAGE_KEY`,
+  `LOVABLE_BROWSER_SUPABASE_SESSION_JSON`, and
+  `LOVABLE_BROWSER_SUPABASE_COOKIES_JSON` are missing. The existing Playwright
+  harness self-skips without an injected Supabase session and only covers
+  System Forge, not the WP-003 proof result view.
+- `npx playwright test --list` found 4 existing System Forge tests and no
+  proof-result harness. `npx playwright test` exited 0 with 4 skipped because
+  the auth fixture self-skips without the injected Supabase session.
+- User-supplied Lovable-preview mobile screenshots were saved under
+  `docs/release/evidence/wp-003/` and classified as FAILED manual QA evidence:
+  `manual-mobile-01-form-top.jpg`,
+  `manual-mobile-02-standard.jpg`,
+  `manual-mobile-03-standard-detail.jpg`,
+  `manual-mobile-04-result-failed.jpg`,
+  `manual-mobile-05-verdict-details.jpg`,
+  `manual-mobile-06-identity-feedback.jpg`,
+  `manual-mobile-07-duplicate-feedback.jpg`,
+  `manual-mobile-08-completed-artifacts.jpg`,
+  `manual-mobile-09-today-closed.jpg`.
+- Failed preview findings: pre-WP-003 copy (`Proof saved.`, `Counted as Elite
+  Proof.`), duplicate `Was this judgment useful?` blocks, raw
+  `EBLOCKI_PRODUCT_REVIEW` labels, and raw lower-case `elite` in details.
+- Tristan subsequently reported Lovable is up to date. Direct unauthenticated
+  recheck still redirects to Lovable auth-bridge/login, so the current deployed
+  proof result state remains unobserved from Codex.
+- No 1280px desktop proof-result screenshot was provided.
+
+Completion status:
+- **PARTIALLY COMPLETE — FRESH BROWSER QA REQUIRED**.
+- Do not flip P1-VERDICT-COPY to VERIFIED COMPLETE until authenticated proof
+  result QA at 390px and 1280px passes on the updated preview.
+
+Manual browser QA:
+1. `npm run dev -- --host 127.0.0.1 --port 8080`
+2. Authenticate with an approved non-production account.
+3. Open `/proof` at 390px and 1280px.
+4. Submit weak/moderate and strong proof examples.
+5. Confirm one dominant verdict headline, no duplicate toast/card verdict
+   copy, no raw enum, no infrastructure wording, no stale prior result while
+   loading, honest no-next-command state where applicable, and mobile
+   containment.
+
+## WP-001 external verification status (P0-CONFINE-AI-EXPORT)
+Implementation evidence remains present:
+- `supabase/functions/export-data/index.ts` strips `model` and
+  `vector_store_id` from every `performance_os_config` row before returning
+  the user archive.
+
+External verification attempted:
+- `command -v supabase` and `supabase --version` produced no output; Supabase
+  CLI is not available in this environment.
+- No approved test account/JWT is available to trigger and inspect one real
+  export archive.
+
+Status:
+- **BLOCKED — EXTERNAL ACCESS REQUIRED**. Do not mark VERIFIED COMPLETE until
+  the edge function is deployed and one real export archive has been inspected.
+
+Manual verification commands:
+1. `supabase link --project-ref <project-ref>`
+2. `supabase functions deploy export-data`
+3. `curl -sS -H "Authorization: Bearer <test-user-jwt>" "https://<project-ref>.functions.supabase.co/export-data" -o /tmp/eblocki-export.json`
+4. `jq '.performance_os_config[] | has("model"), has("vector_store_id")' /tmp/eblocki-export.json`
+5. Expected result: only `false` values.
 
 ## Evidence index
 - Client source search: `rg -n -S 'vs_|vector_store_id|openai/|gpt-' src/` → clean
