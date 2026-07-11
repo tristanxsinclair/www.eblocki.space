@@ -55,6 +55,9 @@ A reusable, environment-guarded, idempotent test account representing an average
 3. Choose a strong random password for the test account
 4. Set `E2E_ALLOW_TEST_USER_SEED=true`
 
+The seed script and authenticated Playwright fixture load `.env` automatically.
+Do not export secrets manually unless you are running in CI.
+
 ## Commands
 
 ### Seed the test user
@@ -90,7 +93,7 @@ npm run test:e2e
 Import the `averageUserPage` fixture in your test:
 
 ```typescript
-import { test, expect } from "../fixtures/average-user-auth";
+import { test, expect } from "./fixtures/average-user-auth";
 
 test("proof page renders verdict", async ({ averageUserPage: page }) => {
   await page.goto("/proof");

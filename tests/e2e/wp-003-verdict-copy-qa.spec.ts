@@ -11,7 +11,7 @@
  * Viewports: 390px (mobile) and 1280px (desktop)
  */
 
-import { test, expect } from "../fixtures/average-user-auth";
+import { test, expect } from "./fixtures/average-user-auth";
 import * as path from "path";
 import * as fs from "fs";
 

@@ -24,6 +24,8 @@
  *   E2E_ALLOW_TEST_USER_SEED=true node scripts/seed-e2e-test-user.mjs
  */
 
+import "dotenv/config";
+
 import { createClient } from "@supabase/supabase-js";
 
 // ─── Environment validation ─────────────────────────────────────────────────

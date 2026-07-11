@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import { test as base, expect, type BrowserContext, type Page } from "@playwright/test";
 
 /**
