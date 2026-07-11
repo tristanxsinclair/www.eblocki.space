@@ -47,17 +47,35 @@ function LogoSvg({ px, animate }: { px: number; animate: boolean }) {
       aria-label="Eblocki"
       className={cn("eblocki-mark shrink-0", animate && "is-animating")}
     >
-      {/* Bars — filled bone on transparent so the mark inherits surface color */}
-      <g fill="currentColor">
-        <rect className="eb-bar eb-bar--top" x="2" y="3" width="20" height="4" />
-        <rect className="eb-bar eb-bar--mid" x="2" y="10" width="13" height="4" />
-        <rect className="eb-bar eb-bar--bot" x="2" y="17" width="20" height="4" />
+      <defs>
+        <linearGradient id="eb-grad-primary" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="hsl(142 72% 56%)" />
+          <stop offset="100%" stopColor="hsl(142 72% 38%)" />
+        </linearGradient>
+        <linearGradient id="eb-grad-secondary" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.65" />
+        </linearGradient>
+        <filter id="eb-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.8" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+        <filter id="eb-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="1.5" floodColor="rgba(0,0,0,0.4)" />
+        </filter>
+      </defs>
+
+      <g filter="url(#eb-shadow)">
+        <rect className="eb-bar eb-bar--top" x="2" y="3" width="20" height="4.5" rx="1.5" fill="url(#eb-grad-primary)" filter="url(#eb-glow)" />
+        <rect className="eb-bar eb-bar--mid" x="2" y="9.75" width="13" height="4.5" rx="1.5" fill="url(#eb-grad-secondary)" />
+        <rect className="eb-bar eb-bar--bot" x="2" y="16.5" width="20" height="4.5" rx="1.5" fill="url(#eb-grad-primary)" filter="url(#eb-glow)" />
       </g>
-      {/* Engraved top highlight — 6% bone, drawn as 1px thin rects on the top edge of each bar */}
-      <g fill="#F5F1E8" opacity="0.06" className="eb-highlight">
-        <rect x="2" y="3" width="20" height="0.6" />
-        <rect x="2" y="10" width="13" height="0.6" />
-        <rect x="2" y="17" width="20" height="0.6" />
+      
+      {/* Engraved highlights for 3D premium feel */}
+      <g fill="#FFFFFF" opacity="0.3" className="eb-highlight">
+        <rect x="2.5" y="3.5" width="19" height="0.6" rx="0.3" />
+        <rect x="2.5" y="10.25" width="12" height="0.6" rx="0.3" />
+        <rect x="2.5" y="17.0" width="19" height="0.6" rx="0.3" />
       </g>
     </svg>
   );

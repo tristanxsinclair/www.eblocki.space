@@ -33,7 +33,7 @@
 
 @keyframes eb-highlight-in {
   from { opacity: 0; }
-  to   { opacity: 0.06; }
+  to   { opacity: 0.3; }
 }
 
 .eblocki-wordmark.is-animating {
