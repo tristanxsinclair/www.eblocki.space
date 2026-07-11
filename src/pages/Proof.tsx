@@ -1601,56 +1601,6 @@ export default function Proof() {
           </MotionVerdictCard>
         )}
 
-        {!firstProofMode && (
-          <MobileCollapse eyebrow="Definitions" label="Contract vs Artifact" trackId="proof_definitions">
-            <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
-              <div className="flex items-start gap-3">
-                <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                    Definitions
-                  </span>
-                  <p className="text-sm text-muted-foreground mt-1 break-words">
-                    A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
-                    A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </MobileCollapse>
-        )}
-
-        {!firstProofMode && (
-          <MobileCollapse eyebrow="Stats" label="Strength tally & filter" trackId="proof_stats">
-            <Card className="panel p-4 max-w-full overflow-hidden">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="grid grid-cols-4 gap-2 flex-1">
-                  {(["weak", "moderate", "strong", "elite"] as const).map((s) => (
-                    <div key={s} className="rounded-sm border border-border p-2 text-center min-w-0">
-                      <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{plainEvidenceStrength(s)}</div>
-                      <div className={"mt-1 text-lg font-semibold font-mono " + (s === "elite" ? "text-primary" : "")}>{strengthCount(s)}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="proof-domain-filter" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Filter</Label>
-                  <select
-                    id="proof-domain-filter"
-                    value={filterDomain}
-                    onChange={(e) => setFilterDomain(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-1.5 text-sm max-w-full"
-                  >
-                    <option value="all">all areas</option>
-                    {activeModes.map((mode) => (
-                      <option key={mode.mode_id} value={mode.mode_id.toLowerCase()}>{mode.display_name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </Card>
-          </MobileCollapse>
-        )}
-
         {/* Pending contracts */}
         {!firstProofMode && (
           <MobileCollapse

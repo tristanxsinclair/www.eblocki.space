@@ -68,7 +68,7 @@ audit completion.
 | P0-CONFINE-AI-BUNDLE-SCAN | 0 | P0 | Search built client bundle for `vs_`, model IDs | build output | VERIFIED COMPLETE (WP-002) | — |
 | P1-PRICING-SOT | 1 | P0 | Pricing source of truth (Stripe + display) | `src/lib/stripe.ts`, Pricing, UpgradeCard | NEEDS MANUAL DECISION | Awaiting Tristan-approved public prices |
 | P1-PAY-ENV | 1 | P0 | Payment env control (sandbox vs live surfacing) | `PaymentTestModeBanner`, `stripe.ts` | PARTIALLY COMPLETE | Verify banner never shows in live |
-| P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | PARTIALLY COMPLETE — POST-FIX BROWSER QA REQUIRED | Rerun authenticated proof result QA at 390px and 1280px |
+| P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | VERIFIED COMPLETE (2026-07-11) | — |
 | P1-BILLING-PORTAL | 1 | P1 | Billing portal reachable from Settings | `BillingCard`, `create-portal-session` | VERIFIED COMPLETE (prior turn) | — |
 | P1-ACCOUNT-EXPORT | 1 | P1 | Account data export | `export-data` | VERIFIED COMPLETE after WP-001 | — |
 | P1-ACCOUNT-DELETE | 1 | P1 | Account deletion | `delete-account` | NOT VERIFIED THIS PASS | Inspect next |
@@ -79,15 +79,18 @@ audit completion.
 ## Current blocking chain
 1. Phase 0 export redaction is implemented but blocked on Supabase deployment
    access and a safe test export account.
-2. WP-003 P1 verdict-copy code/test/build evidence is complete. Fresh
-   authenticated mobile screenshots showed the main proof-result copy is now
-   cleaner, but also exposed raw completed-artifact metadata
-   (`EBLOCKI_PRODUCT_REVIEW - OTHER - 2026-07-10`). `src/pages/Proof.tsx`
-   now maps pending/completed proof metadata through `humaniseModeId` and
-   removes machine-style uppercase from dynamic metadata. Post-fix
-   authenticated proof-result QA is still required because unauthenticated
-   automation redirects to Lovable login.
-3. After WP-003 browser QA passes, next executable P1 without user decision is
+2. WP-003 reobservation (2026-07-11) completed authenticated at 390 px and
+   1280 px using injected Supabase session. Rendered-text scan shows zero
+   raw enum tokens and zero infra vocabulary in app-rendered copy. Reobservation
+   also uncovered a structural duplication defect on `/proof`: `Definitions`
+   and `Strength tally & filter` MobileCollapse blocks rendered twice (once
+   before, once after the submit form) — visible on desktop, appeared as
+   duplicate accordion headers on mobile. Same-defect-class fix applied
+   inside WP-003 scope: removed the second copy from `src/pages/Proof.tsx`
+   (lines 1604-1652 pre-patch). Post-fix reobservation confirmed a single
+   Definitions block and a single Strength tally on desktop, and mobile
+   duplicate accordion headers are gone.
+3. After WP-003 close-out, next executable P1 without user decision is
    **P1-ACCOUNT-DELETE** review. **P1-PAY-ENV** verification follows.
    **P1-PRICING-SOT** is blocked pending Tristan-approved public prices,
    Founder terms, refund rules.
@@ -99,7 +102,7 @@ Built with `npx vite build` (2026-07-10). Scans across `dist/`:
 No AI infrastructure identifiers reach the shipped client bundle.
 
 ## WP-003 evidence (P1-VERDICT-COPY)
-Date: 2026-07-10.
+Date: 2026-07-10 (original), reobserved 2026-07-11.
 
 Objective:
 - Remove duplicated, false, stale, raw-enum, and infrastructure-flavoured
@@ -180,6 +183,20 @@ Acceptance evidence:
 - Fresh raw proof-metadata search:
   `rg -n -S "EBLOCKI_PRODUCT_REVIEW|\bOTHER\b" src/pages src/components/eblocki`
   → no output, `rg_exit=1`.
+- 2026-07-11 rendered-text scan against authenticated `/proof` at 390 px
+  and 1280 px:
+  `grep -inE '\b(model|vector|embedding|retrieval|prompt|llm|openai|token|vs_[a-z0-9]{4})\b' text-mobile.txt text-desktop.txt`
+  → mobile clean; desktop hit was user-authored proof content only, no
+  app-rendered infra vocabulary.
+  `grep -inE 'EBLOCKI_[A-Z_]+|hype_drift|academic_displacement|strategic_build|low_energy|locked_in' text-*.txt`
+  → clean on both viewports.
+- 2026-07-11 layout-duplication scan (`sort | uniq -c | sort -rn`) surfaced
+  duplicated `Contract vs Artifact` / `Strength tally & filter` /
+  `SELECTED STANDARD` lines. Root cause: two identical MobileCollapse
+  blocks rendered in `src/pages/Proof.tsx` around lines 988-1037 and
+  1604-1652. The second copy was removed. Post-fix rescan shows only
+  legitimate per-item repetitions (per-proof-card evidence labels,
+  domain names in list vs form).
 
 Search classification:
 - Raw enum search still finds internal mapping keys, type imports, tests,
@@ -234,9 +251,22 @@ Browser evidence:
 - No 1280px desktop proof-result screenshot was provided.
 
 Completion status:
-- **PARTIALLY COMPLETE — POST-FIX BROWSER QA REQUIRED**.
-- Do not flip P1-VERDICT-COPY to VERIFIED COMPLETE until authenticated proof
-  result QA at 390px and 1280px passes on the updated preview.
+- **VERIFIED COMPLETE (code + reobservation)** as of 2026-07-11.
+- Automated authenticated reobservation at 390 px and 1280 px completed
+  via injected Supabase session; screenshots archived under
+  `docs/release/evidence/wp-003/post-fix/`. Live proof submission with a
+  fresh weak/moderate/strong artifact was NOT executed to avoid writing
+  disposable rows into the tenant; verdict result-surface layout, copy,
+  and containment were inspected on the current authenticated `/proof`
+  state which already displays historical weak/moderate/strong/elite
+  proof cards. If the release gate requires a fresh live-submission
+  verdict pass, spawn WP-003.1 with an isolated test account.
+
+Files changed during reobservation (2026-07-11):
+- `src/pages/Proof.tsx` — removed duplicated Definitions + Strength tally
+  MobileCollapse blocks after the submit form.
+- `docs/release/evidence/wp-003/post-fix/` — 8 screenshots (mobile 390 px
+  and desktop 1280 px, 4 scroll positions each).
 
 Manual browser QA:
 1. `npm run dev -- --host 127.0.0.1 --port 8080`
