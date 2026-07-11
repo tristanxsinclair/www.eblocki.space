@@ -68,7 +68,7 @@ audit completion.
 | P0-CONFINE-AI-BUNDLE-SCAN | 0 | P0 | Search built client bundle for `vs_`, model IDs | build output | VERIFIED COMPLETE (WP-002) | — |
 | P1-PRICING-SOT | 1 | P0 | Pricing source of truth (Stripe + display) | `src/lib/stripe.ts`, Pricing, UpgradeCard | NEEDS MANUAL DECISION | Awaiting Tristan-approved public prices |
 | P1-PAY-ENV | 1 | P0 | Payment env control (sandbox vs live surfacing) | `PaymentTestModeBanner`, `stripe.ts` | PARTIALLY COMPLETE | Verify banner never shows in live |
-| P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | PARTIALLY COMPLETE — POST-FIX BROWSER QA REQUIRED | Rerun authenticated proof result QA at 390px and 1280px |
+| P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | VERIFIED COMPLETE (2026-07-11) | — |
 | P1-BILLING-PORTAL | 1 | P1 | Billing portal reachable from Settings | `BillingCard`, `create-portal-session` | VERIFIED COMPLETE (prior turn) | — |
 | P1-ACCOUNT-EXPORT | 1 | P1 | Account data export | `export-data` | VERIFIED COMPLETE after WP-001 | — |
 | P1-ACCOUNT-DELETE | 1 | P1 | Account deletion | `delete-account` | NOT VERIFIED THIS PASS | Inspect next |
