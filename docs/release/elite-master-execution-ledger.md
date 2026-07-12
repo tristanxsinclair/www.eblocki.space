@@ -149,11 +149,28 @@ function header — subscription-cancel and storage-purge errors are logged with
 
 Acceptance evidence:
 - `npx tsgo --noEmit` → PASS, exit 0, no output.
-- `npm run test` → recorded below.
-- `npx vite build` → recorded below.
-- Phase 0 bundle rescan → recorded below.
-- Playwright at 390 px and 1280 px on `/settings` showing dialog closed → open
-  (destructive disabled) → typed `DELETE` (destructive enabled), no submission.
+- `npm run test` → PASS, 39 files, 306 tests, exit 0 (duration 12.46 s).
+- `npx vite build` → PASS, built in 6.37 s, exit 0.
+- Phase 0 bundle rescan:
+  `rg -a -n 'vs_[A-Za-z0-9]{6,}|gpt-[0-9]|openai/|EBLOCKI_VECTOR_STORE_ID' dist`
+  → no output, `rg_exit=1`. Confinement not regressed.
+- Playwright at 390 px and 1280 px on `/settings` (managed session, `LOVABLE_BROWSER_AUTH_STATUS=injected`):
+  - `docs/release/evidence/wp-004/mobile-390-01-account-card.png`
+  - `docs/release/evidence/wp-004/mobile-390-02-dialog-open-disabled.png`
+  - `docs/release/evidence/wp-004/mobile-390-03-wrong-phrase-still-disabled.png`
+  - `docs/release/evidence/wp-004/mobile-390-04-correct-phrase-enabled.png`
+  - `docs/release/evidence/wp-004/mobile-390-05-dialog-closed.png`
+  - `docs/release/evidence/wp-004/desktop-1280-01-account-card.png`
+  - `docs/release/evidence/wp-004/desktop-1280-02-dialog-open-disabled.png`
+  - `docs/release/evidence/wp-004/desktop-1280-03-wrong-phrase-still-disabled.png`
+  - `docs/release/evidence/wp-004/desktop-1280-04-correct-phrase-enabled.png`
+  - `docs/release/evidence/wp-004/desktop-1280-05-dialog-closed.png`
+  Visual confirmation on both viewports: on dialog open the destructive
+  `Delete account` button renders in the disabled/dim state; typing the wrong
+  phrase (`delete`) keeps it disabled; typing the exact phrase (`DELETE`)
+  transitions it to the bright destructive state with the input showing a
+  focus ring; the destructive submission was **not** executed to preserve the
+  test account.
 
 External-verification gate: `WP-004-EXTERNAL` — end-to-end Stripe cancellation on
 delete requires a disposable Stripe test-mode account. BLOCKED — EXTERNAL ACCESS
