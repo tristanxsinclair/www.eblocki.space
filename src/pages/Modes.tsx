@@ -15,6 +15,7 @@ import { ModeBadge } from "@/components/eblocki/Badges";
 import { calculateModeProgress } from "@/lib/eblocki/mode-progress";
 import { TRISTAN_DEFAULT_MODES, type EblockiDefaultMode } from "@/lib/eblocki/default-modes";
 import type { UserMode } from "@/lib/eblocki/modes";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 function isTristanUser(email?: string | null) {
   return !!email?.toLowerCase().includes("tristan");
@@ -80,6 +81,7 @@ function modeLabel(mode: UserMode | EblockiDefaultMode) {
 }
 
 export default function Modes() {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [userModes, setUserModes] = useState<UserMode[]>([]);
@@ -246,14 +248,18 @@ export default function Modes() {
         description="Configure the operating modes that route your coach, evidence rubrics, and proof contracts."
         path="/modes"
       />
-      <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
-        <header className="space-y-2">
+      <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-6 min-w-0 max-w-full md:pb-8">
+        <header className="space-y-2 min-w-0">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-            Mode Operating System
+            {isMobile ? "Areas" : "Mode Operating System"}
           </span>
-          <h1 className="text-2xl md:text-4xl font-semibold">Your modes are the arenas where proof matters.</h1>
-          <p className="text-sm md:text-base text-muted-foreground max-w-3xl">
-            Eblocki routes coaching, evidence, and commitment through the modes you choose. Every custom mode shapes the Proof Check.
+          <h1 className="text-2xl md:text-4xl font-semibold break-words">
+            {isMobile ? "Areas are where your proof belongs." : "Your modes are the arenas where proof matters."}
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground max-w-3xl break-words">
+            {isMobile
+              ? "Law, study, sales, sport, life, build — pick the areas that match your work. Proof routes to the right standard."
+              : "Eblocki routes coaching, evidence, and commitment through the modes you choose. Every custom mode shapes the Proof Check."}
           </p>
         </header>
 
@@ -312,14 +318,14 @@ export default function Modes() {
             {displayModes.map((mode) => {
               const stats = totalsByMode[mode.mode_id] ?? { pending: 0, completed: 0, strong: 0, elite: 0, score: 0, compounding: 0 };
               return (
-                <Card key={mode.mode_id} className="panel p-5 border-primary/10">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div>
+                <Card key={mode.mode_id} className="panel p-5 border-primary/10 mobile-safe-card min-w-0 max-w-full overflow-hidden">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between min-w-0">
+                    <div className="min-w-0 flex-1">
                       <ModeBadge mode={mode.mode_id} />
-                      <h2 className="text-lg font-semibold mt-3">{modeLabel(mode)}</h2>
-                      <p className="text-sm text-muted-foreground mt-2">{mode.description}</p>
+                      <h2 className="text-lg font-semibold mt-3 break-words">{modeLabel(mode)}</h2>
+                      <p className="text-sm text-muted-foreground mt-2 break-words">{mode.description}</p>
                     </div>
-                    <div className="flex flex-col gap-2 text-right">
+                    <div className="flex flex-col gap-2 sm:text-right shrink-0 min-w-0">
                       <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Mode ID</span>
                       <span className="font-mono text-sm text-foreground">{mode.mode_id}</span>
                       {'is_active' in mode && (
@@ -372,7 +378,7 @@ export default function Modes() {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-3 gap-2 text-[11px]">
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
                     <div className="rounded-sm border border-border p-3">
                       <div className="font-mono uppercase tracking-[0.2em] text-muted-foreground">Strong</div>
                       <div className="mt-1 font-semibold">{stats.strong}</div>

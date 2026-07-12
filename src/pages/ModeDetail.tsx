@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
@@ -12,19 +13,34 @@ import { ModeBadge } from "@/components/eblocki/Badges";
 import { calculateModeProgress } from "@/lib/eblocki/mode-progress";
 import { TRISTAN_DEFAULT_MODES, GENERAL_DEFAULT_MODES, type EblockiDefaultMode } from "@/lib/eblocki/default-modes";
 import type { UserMode } from "@/lib/eblocki/modes";
+import { humaniseModeId } from "@/lib/eblocki/display-labels";
+import { isEvidenceStrength } from "@/lib/eblocki/verdict-identity-impact";
 import { toast } from "sonner";
 import { ArrowLeft, BookOpen, ClipboardList, Gavel, MessageSquare, Scale, Sparkles } from "lucide-react";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
 import { Seo } from "@/components/Seo";
+
+type ProofArtifactRow = Tables<"proof_artifacts">;
+type ProofCommitmentRow = Tables<"proof_commitments">;
+type CoachInteractionRow = Tables<"coach_interactions">;
+
+function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return fallback;
+}
 
 export default function ModeDetail() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { modeId } = useParams();
   const [mode, setMode] = useState<UserMode | EblockiDefaultMode | null>(null);
-  const [artifacts, setArtifacts] = useState<any[]>([]);
-  const [commitments, setCommitments] = useState<any[]>([]);
-  const [interactions, setInteractions] = useState<any[]>([]);
+  const [artifacts, setArtifacts] = useState<ProofArtifactRow[]>([]);
+  const [commitments, setCommitments] = useState<ProofCommitmentRow[]>([]);
+  const [interactions, setInteractions] = useState<CoachInteractionRow[]>([]);
   const [researchNotes, setResearchNotes] = useState("");
   const [researchLoading, setResearchLoading] = useState(false);
   const [modeError, setModeError] = useState<string | null>(null);
@@ -73,8 +89,8 @@ export default function ModeDetail() {
         setCommitments(commitmentsData ?? []);
         setInteractions(interactionsData ?? []);
         setResearchNotes(researchData?.research_summary ?? "");
-      } catch (error: any) {
-        setModeError(error?.message || "Unable to load mode details.");
+      } catch (error: unknown) {
+        setModeError(errorMessage(error, "Unable to load mode details."));
       }
     };
 
@@ -97,8 +113,8 @@ export default function ModeDetail() {
       const { error } = await supabase.from("user_research_profiles").upsert(payload, { onConflict: "user_id,mode_id" });
       if (error) throw error;
       toast.success("Mode research saved.");
-    } catch (err: any) {
-      toast.error(err?.message || "Unable to save research notes.");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Unable to save research notes."));
     } finally {
       setResearchLoading(false);
     }
@@ -191,7 +207,9 @@ export default function ModeDetail() {
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <ModeBadge mode={mode.mode_id} />
-              <span className="text-sm text-muted-foreground">{mode.mode_id}</span>
+              <span className="text-sm text-muted-foreground">
+                {humaniseModeId(mode.mode_id, mode.display_name)}
+              </span>
               <span className={`font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm border ${isActiveMode ? "border-primary/40 text-primary" : "border-border text-muted-foreground"}`}>
                 {isActiveMode ? "Active" : "Inactive"}
               </span>
@@ -305,7 +323,9 @@ export default function ModeDetail() {
                             {a.artifact_type ?? "artifact"} · {a.created_at?.slice(0, 10)}
                           </div>
                         </div>
-                        {a.evidence_strength && <EvidenceStrengthBadge strength={a.evidence_strength} score={a.quality_score} />}
+                        {isEvidenceStrength(a.evidence_strength) && (
+                          <EvidenceStrengthBadge strength={a.evidence_strength} score={a.quality_score} />
+                        )}
                       </div>
                       {a.feedback && (
                         <div className="mt-1.5 text-[12px] text-muted-foreground line-clamp-2">
@@ -348,8 +368,10 @@ export default function ModeDetail() {
                         {c.evidence_standard && (
                           <div className="mt-0.5 text-xs text-muted-foreground"><span className="text-foreground font-mono">Standard:</span> {c.evidence_standard}</div>
                         )}
-                        <Link to={proofLink} className="mt-2 inline-block">
-                          <Button size="sm" variant="outline">Submit Proof</Button>
+                        <Link to={proofLink} className="mt-3 block sm:inline-block">
+                          <Button size="sm" variant="outline" className="w-full sm:w-auto min-h-[44px]">
+                            Submit Proof
+                          </Button>
                         </Link>
                       </li>
                     ))}

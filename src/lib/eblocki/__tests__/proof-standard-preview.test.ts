@@ -104,6 +104,16 @@ describe("proof standard preview", () => {
     expect(preview.alignmentMessage).toMatch(/one visible artifact/i);
   });
 
+  it("does not expose raw internal domain ids in the preview copy", () => {
+    const preview = buildProofStandardPreview({
+      domain: "EBLOCKI_PRODUCT_REVIEW",
+      artifactType: "product system review",
+    });
+
+    expect(preview.selectedDomain).toBe("Eblocki Product Review");
+    expect(preview.selectedDomain).not.toContain("EBLOCKI_PRODUCT_REVIEW");
+  });
+
   it("allows stronger identity treatment for implementation proof", () => {
     const preview = buildProofStandardPreview({
       domain: "product",

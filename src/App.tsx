@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard.tsx";
 import Coach from "./pages/Coach.tsx";
 import Sheet from "./pages/Sheet.tsx";
 import Proof from "./pages/Proof.tsx";
+import Systems from "./pages/Systems.tsx";
 import Modes from "./pages/Modes.tsx";
 import ModeDetail from "./pages/ModeDetail.tsx";
 import Settings from "./pages/Settings.tsx";
@@ -30,14 +31,30 @@ import Privacy from "./pages/legal/Privacy.tsx";
 import Terms from "./pages/legal/Terms.tsx";
 import DataHandling from "./pages/legal/DataHandling.tsx";
 import AIDisclosure from "./pages/legal/AIDisclosure.tsx";
+import { PageTransition } from "@/components/eblocki/PageTransition";
+import { AppSkeleton } from "@/components/eblocki/AppSkeleton";
+import { NetworkBanner } from "@/components/eblocki/NetworkBanner";
+import OAuthConsent from "./pages/OAuthConsent.tsx";
+import Pricing from "./pages/Pricing.tsx";
+import CheckoutReturn from "./pages/CheckoutReturn.tsx";
+import Founder from "./pages/Founder.tsx";
 
 const queryClient = new QueryClient();
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   useTimezoneSync();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground font-mono text-xs">Loading…</div>;
-  if (!user) return <Navigate to="/auth" replace />;
+  if (loading) return <AppSkeleton />;
+  if (!user) {
+    return (
+      <Navigate
+        to="/auth"
+        replace
+        state={{ from: `${location.pathname}${location.search}${location.hash}` }}
+      />
+    );
+  }
   return children;
 }
 
@@ -48,6 +65,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <NetworkBanner />
+          <PageTransition>
           <Routes>
             <Route path="/onboarding" element={<Protected><Onboarding /></Protected>} />
             <Route path="/" element={<Landing />} />
@@ -59,6 +78,10 @@ const App = () => (
             <Route path="/legal/data-handling" element={<DataHandling />} />
             <Route path="/legal/ai-disclosure" element={<AIDisclosure />} />
             <Route path="/why" element={<Why />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/founder" element={<Founder />} />
+            <Route path="/checkout/return" element={<CheckoutReturn />} />
             <Route path="/welcome" element={<Protected><Welcome /></Protected>} />
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
             <Route path="/operator" element={<Protected><Operator /></Protected>} />
@@ -68,6 +91,7 @@ const App = () => (
             <Route path="/start" element={<Protected><StartToday /></Protected>} />
             <Route path="/start-today" element={<Protected><StartToday /></Protected>} />
             <Route path="/proof" element={<Protected><Proof /></Protected>} />
+            <Route path="/systems" element={<Protected><Systems /></Protected>} />
             <Route path="/proof-week" element={<Protected><ProofWeek /></Protected>} />
             <Route path="/modes" element={<Protected><Modes /></Protected>} />
             <Route path="/modes/:modeId" element={<Protected><ModeDetail /></Protected>} />
@@ -76,6 +100,7 @@ const App = () => (
             <Route path="/dev/beta" element={<Protected><BetaAdmin /></Protected>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </PageTransition>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
