@@ -99,7 +99,23 @@ End-to-end Stripe cancellation validation requires a disposable Stripe test-mode
 Revert `supabase/functions/delete-account/index.ts` and `src/pages/Settings.tsx`; remove `src/components/eblocki/DeleteAccountDialog.tsx`. No schema/data changes to unwind.
 
 ## 22. Next work package after WP-004
-**P1-PAY-ENV** verification: confirm `PaymentTestModeBanner` never renders when `getStripeEnvironment() === 'live'` and `create-checkout` refuses cross-env price mismatches. **P1-PRICING-SOT** remains `NEEDS MANUAL DECISION` pending Tristan-approved public prices, Founder terms, and refund rules.
+**WP-005A — P1-PAY-ENV VERIFICATION** (`READY / EXECUTABLE`): confirm `PaymentTestModeBanner` never renders when `getStripeEnvironment() === 'live'`, `create-checkout` rejects cross-env price mismatches, and checkout/webhook/portal/subscription reads remain environment-consistent.
+
+**WP-005B — P1-PRICING-SOT CONSISTENCY LOCK** (`BLOCKED — MANUAL COMMERCIAL DECISION REQUIRED`): do not implement until Tristan supplies final Pro monthly, Pro annual, annual discount, Founder price/model, lifetime wording, and refund wording.
+
+## 23. Reconciliation closeout status (2026-07-12)
+- Audit report path: `docs/release/eblocki-repository-reconciliation-product-verdict.md` (preserved through PR #99).
+- Superseded branch cleanup completed after zero-diff re-verification:
+  - remote deleted: `codex/first-proof-post-merge-cleanup-20260629`
+  - remote deleted: `tristanxsinclair-sync-update-branches`
+- `main` branch protection enabled with strict required checks:
+  - `Verify product`
+  - `Test, build, and lint`
+  - `Playwright (mobile-chromium)`
+- Existing external gates remain unchanged and unresolved:
+  - `WP-003` authenticated-browser evidence dependency
+  - `WP-001` export-data external verification
+  - `WP-004-EXTERNAL` Stripe cancellation end-to-end verification
 
 ---
 
