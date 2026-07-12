@@ -28,4 +28,12 @@ export default tseslint.config(
       "no-var": "off",
     },
   },
+  {
+    files: ["tests/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/rules-of-hooks": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );
