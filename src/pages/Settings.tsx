@@ -20,11 +20,13 @@ import { PasswordSecurity } from "@/components/eblocki/PasswordSecurity";
 import { UpgradeCard } from "@/components/eblocki/UpgradeCard";
 import { normaliseAccessLevel } from "@/lib/eblocki/access-level";
 import { BillingCard } from "@/components/eblocki/BillingCard";
+import { DeleteAccountDialog } from "@/components/eblocki/DeleteAccountDialog";
 
 export default function Settings() {
   const { user, signOut } = useAuth();
   const nav = useNavigate();
   const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [cfg, setCfg] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -171,10 +173,6 @@ export default function Settings() {
 
   const deleteAccount = async () => {
     if (!user) return;
-    const phrase = window.prompt(
-      "Deleting your account erases every artifact, control sheet, mode and attachment. This cannot be undone.\n\nType DELETE to confirm.",
-    );
-    if (phrase !== "DELETE") return;
     setDeleting(true);
     try {
       void track(EVENTS.account_deletion_requested);
@@ -183,6 +181,7 @@ export default function Settings() {
       resetAnalytics();
       await supabase.auth.signOut();
       toast.success("Account deleted.");
+      setDeleteDialogOpen(false);
       nav("/", { replace: true });
     } catch (e: any) {
       toast.error(e?.message || "Delete failed.");
@@ -373,7 +372,12 @@ export default function Settings() {
             <Button variant="outline" onClick={exportAllData} disabled={exporting} className="justify-start">
               <Download className="h-4 w-4 mr-2" /> {exporting ? "Preparing…" : "Export my data (JSON)"}
             </Button>
-            <Button variant="destructive" onClick={deleteAccount} disabled={deleting} className="justify-start">
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+              disabled={deleting}
+              className="justify-start"
+            >
               <Trash2 className="h-4 w-4 mr-2" /> {deleting ? "Deleting…" : "Delete my account"}
             </Button>
           </div>
@@ -391,6 +395,14 @@ export default function Settings() {
         <BillingCard />
         <BetaFeedback />
       </div>
+      <DeleteAccountDialog
+        open={deleteDialogOpen}
+        onOpenChange={(o) => {
+          if (!deleting) setDeleteDialogOpen(o);
+        }}
+        deleting={deleting}
+        onConfirm={deleteAccount}
+      />
     </AppShell>
   );
 }
