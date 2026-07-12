@@ -7,6 +7,21 @@
 - Current release gate: WP-004 (P1-ACCOUNT-DELETE) code/test/build complete; live Stripe cancellation end-to-end remains an external-verification gate (`WP-004-EXTERNAL`)
 - Ledger last updated: 2026-07-12
 
+## Reconciliation closeout (2026-07-12)
+
+- Audit report preserved via closeout PR: `docs/release/eblocki-repository-reconciliation-product-verdict.md` (PR #99).
+- Superseded branch disposition (re-verified zero unique work before deletion):
+  - deleted remote `codex/first-proof-post-merge-cleanup-20260629`
+  - deleted remote `tristanxsinclair-sync-update-branches`
+  - deleted local `tristanxsinclair-sync-update-branches`
+- `main` protection enabled with strict required checks and conversation resolution:
+  - required checks: `Verify product`, `Test, build, and lint`, `Playwright (mobile-chromium)`
+  - force-push blocked, branch deletion blocked, admins enforced
+  - deployment policy: Pages + Datadog remain post-merge/post-deploy release signals
+- WP split enforced:
+  - `WP-005A / P1-PAY-ENV` = READY / EXECUTABLE (no pricing/term changes)
+  - `WP-005B / P1-PRICING-SOT` = BLOCKED — MANUAL COMMERCIAL DECISION REQUIRED (Tristan-owned decisions)
+
 ## E2E Test Infrastructure (WP-003 supporting)
 
 Added 2026-07-10 to support WP-003 post-fix authenticated browser QA.

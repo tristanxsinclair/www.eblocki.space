@@ -497,13 +497,23 @@ Scoring: P0 controls override formula where needed.
 
 ---
 
-## 20. Exact recommended branch actions awaiting approval
+## 20. Reconciliation closeout actions (executed)
 
-1. Delete `codex/first-proof-post-merge-cleanup-20260629`.
-2. Delete `tristanxsinclair-sync-update-branches`.
-3. Keep only `main` as active release branch.
-4. Enable `main` protection with required checks:
-   - CI
-   - Eblocki Verify
-   - E2E - System Forge
-   - Deploy GitHub Pages (or keep as post-merge if preferred).
+1. Deleted superseded remote branches after zero-diff / no-open-PR re-verification:
+   - `codex/first-proof-post-merge-cleanup-20260629`
+   - `tristanxsinclair-sync-update-branches`
+2. Deleted local `tristanxsinclair-sync-update-branches` after confirming no unique work.
+3. Enabled `main` branch protection with:
+   - pull requests required before merge,
+   - up-to-date branch required (`strict=true`),
+   - required successful checks:
+     - `Verify product` (CI workflow check run),
+     - `Test, build, and lint` (Eblocki Verify workflow check run),
+     - `Playwright (mobile-chromium)` (E2E - System Forge workflow check run),
+   - required conversation resolution,
+   - force pushes blocked,
+   - branch deletion blocked,
+   - admins enforced.
+4. Deployment gate policy recorded:
+   - GitHub Pages deploy remains post-merge deployment confirmation.
+   - Datadog synthetic remains post-deploy release signal (not a required pre-merge gate).
