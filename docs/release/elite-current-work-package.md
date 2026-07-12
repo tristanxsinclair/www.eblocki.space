@@ -99,7 +99,9 @@ End-to-end Stripe cancellation validation requires a disposable Stripe test-mode
 Revert `supabase/functions/delete-account/index.ts` and `src/pages/Settings.tsx`; remove `src/components/eblocki/DeleteAccountDialog.tsx`. No schema/data changes to unwind.
 
 ## 22. Next work package after WP-004
-**P1-PAY-ENV** verification: confirm `PaymentTestModeBanner` never renders when `getStripeEnvironment() === 'live'` and `create-checkout` refuses cross-env price mismatches. **P1-PRICING-SOT** remains `NEEDS MANUAL DECISION` pending Tristan-approved public prices, Founder terms, and refund rules.
+**WP-005A — P1-PAY-ENV VERIFICATION** (`READY / EXECUTABLE`): confirm `PaymentTestModeBanner` never renders when `getStripeEnvironment() === 'live'`, `create-checkout` rejects cross-env price mismatches, and checkout/webhook/portal/subscription reads remain environment-consistent.
+
+**WP-005B — P1-PRICING-SOT CONSISTENCY LOCK** (`BLOCKED — MANUAL COMMERCIAL DECISION REQUIRED`): do not implement until Tristan supplies final Pro monthly, Pro annual, annual discount, Founder price/model, lifetime wording, and refund wording.
 
 ---
 

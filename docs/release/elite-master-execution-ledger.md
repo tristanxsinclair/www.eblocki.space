@@ -66,8 +66,8 @@ audit completion.
 |---|---|---|---|---|---|---|
 | P0-CONFINE-AI-EXPORT | 0 | P0 | Strip `model`/`vector_store_id` from export-data archive | `supabase/functions/export-data` | BLOCKED — EXTERNAL ACCESS REQUIRED | Deploy function and inspect one real export archive |
 | P0-CONFINE-AI-BUNDLE-SCAN | 0 | P0 | Search built client bundle for `vs_`, model IDs | build output | VERIFIED COMPLETE (WP-002) | — |
-| P1-PRICING-SOT | 1 | P0 | Pricing source of truth (Stripe + display) | `src/lib/stripe.ts`, Pricing, UpgradeCard | NEEDS MANUAL DECISION | Awaiting Tristan-approved public prices |
-| P1-PAY-ENV | 1 | P0 | Payment env control (sandbox vs live surfacing) | `PaymentTestModeBanner`, `stripe.ts` | PARTIALLY COMPLETE | Verify banner never shows in live |
+| WP-005B / P1-PRICING-SOT | 1 | P0 | Pricing source of truth (Stripe + display) | `src/lib/stripe.ts`, Pricing, UpgradeCard | BLOCKED — MANUAL COMMERCIAL DECISION REQUIRED | Await Tristan decisions: Pro monthly, Pro annual, annual discount, Founder price/model, lifetime wording, refund wording |
+| WP-005A / P1-PAY-ENV | 1 | P0 | Payment env verification (sandbox vs live surfacing + routing) | `PaymentTestModeBanner`, `stripe.ts`, `create-checkout`, `payments-webhook`, `create-portal-session`, `useSubscription` | READY / EXECUTABLE | Verify banner/env partitioning and checkout mismatch rejection without changing prices/terms |
 | P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | VERIFIED COMPLETE (2026-07-11) | — |
 | P1-BILLING-PORTAL | 1 | P1 | Billing portal reachable from Settings | `BillingCard`, `create-portal-session` | VERIFIED COMPLETE (prior turn) | — |
 | P1-ACCOUNT-EXPORT | 1 | P1 | Account data export | `export-data` | VERIFIED COMPLETE after WP-001 | — |
@@ -92,11 +92,11 @@ audit completion.
    Definitions block and a single Strength tally on desktop, and mobile
    duplicate accordion headers are gone.
 3. After WP-003 close-out, next executable P1 without user decision is
-   **P1-ACCOUNT-DELETE** review. **P1-PAY-ENV** verification follows.
-   **P1-PRICING-SOT** is blocked pending Tristan-approved public prices,
-   Founder terms, refund rules.
+   **P1-ACCOUNT-DELETE** review. **WP-005A / P1-PAY-ENV** verification follows.
+   **WP-005B / P1-PRICING-SOT** is blocked pending Tristan-approved public
+   prices, Founder terms, and refund rules.
 4. WP-004 shipped 2026-07-12 (see the WP-004 evidence section below).
-   Next executable strict WP is **P1-PAY-ENV** verification.
+   Next executable strict WP is **WP-005A / P1-PAY-ENV VERIFICATION**.
 
 ## WP-004 evidence (P1-ACCOUNT-DELETE)
 Date: 2026-07-12.
