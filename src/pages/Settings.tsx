@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntitlement } from "@/hooks/useEntitlement";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,9 +23,18 @@ import { normaliseAccessLevel } from "@/lib/eblocki/access-level";
 import { BillingCard } from "@/components/eblocki/BillingCard";
 import { DeleteAccountDialog } from "@/components/eblocki/DeleteAccountDialog";
 
+const MODELS = [
+  "google/gemini-3-flash-preview",
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-pro",
+  "openai/gpt-5",
+  "openai/gpt-5-mini",
+];
+
 export default function Settings() {
   const { user, signOut } = useAuth();
   const nav = useNavigate();
+  const { accessLevel } = useEntitlement();
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -389,7 +399,7 @@ export default function Settings() {
           </div>
         </Card>
 
-        <UpgradeCard currentLevel={normaliseAccessLevel(profile?.access_level)} />
+        <UpgradeCard currentLevel={accessLevel} />
         <NotificationPreferences />
         <PasswordSecurity />
         <BillingCard />

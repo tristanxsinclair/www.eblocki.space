@@ -813,24 +813,30 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_level: string
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          stripe_customer_id: string | null
           updated_at: string
         }
         Insert: {
+          access_level?: string
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Update: {
+          access_level?: string
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Relationships: []
