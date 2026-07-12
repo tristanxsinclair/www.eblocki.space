@@ -2,16 +2,17 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Seo } from "@/components/Seo";
+import { logEvent } from "@/lib/eblocki/analytics";
 import {
   ArrowRight,
   CheckCircle2,
-  Crosshair,
   Flame,
   Gavel,
   ShieldCheck,
   Sparkles,
   Target,
 } from "lucide-react";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
 const STEPS = [
   {
@@ -19,20 +20,20 @@ const STEPS = [
     label: "Step 1",
     title: "Submit proof",
     body:
-      "Each day, submit one piece of evidence from study, work, gym, football, business, sales, or another serious goal.",
+      "Submit one real piece of study work: a paragraph, corrected answer, notes in your own words, or another clear artifact.",
   },
   {
     icon: Gavel,
     label: "Step 2",
     title: "Get a verdict",
     body:
-      "Your proof is rated as weak, useful, strong, or elite. No fake productivity. No vague hype.",
+      "Eblocki tells you what counted, what was weak, and whether the work proves progress.",
   },
   {
     icon: ArrowRight,
     label: "Step 3",
     title: "Correct the next move",
-    body: "You get a simple next action so tomorrow is sharper than today.",
+    body: "You get one next action so tomorrow starts with clarity instead of guesswork.",
   },
 ];
 
@@ -61,18 +62,18 @@ const SCALE = [
 
 const FOR_YOU = [
   "You study but still feel inconsistent.",
-  "You make plans but do not always execute.",
-  "You want proof instead of motivation.",
-  "You want your effort judged honestly.",
-  "You are building a better version of yourself but need evidence.",
+  "You revise, but you are not sure what really counts as progress.",
+  "You want proof instead of another productivity system.",
+  "You want your work judged honestly, not praised vaguely.",
+  "You need a clear next step after each study session.",
 ];
 
 const WHAT_YOU_GET = [
   "7 days of daily proof submission.",
-  "Simple proof verdicts.",
-  "Correction commands.",
-  "A final Proof Week report.",
-  "One feedback loop that shows where effort is leaking.",
+  "A simple verdict on what counted.",
+  "One next step after each submission.",
+  "A clearer picture of where your effort leaks.",
+  "A realistic first-week beta experience.",
 ];
 
 export default function Landing() {
@@ -87,10 +88,7 @@ export default function Landing() {
       <header className="border-b border-border bg-background/95 backdrop-blur safe-top safe-x">
         <div className="container flex flex-wrap items-center justify-between gap-3 py-4">
           <Link to="/" className="flex items-center gap-2 native-tap">
-            <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-primary text-primary-foreground">
-              <Crosshair className="h-4 w-4" />
-            </div>
-            <span className="font-mono text-sm tracking-[0.25em]">EBLOCKI</span>
+            <EblockiLogo variant="compact" size="md" />
           </Link>
           <nav className="flex items-center gap-3">
             <a
@@ -105,6 +103,9 @@ export default function Landing() {
             >
               Join beta
             </a>
+            <Link to="/pricing" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
+              Pricing
+            </Link>
             <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
               Sign in
             </Link>
@@ -114,32 +115,48 @@ export default function Landing() {
 
       <main>
         <section className="grid-bg border-b border-border">
-          <div className="container grid gap-10 py-14 md:grid-cols-[minmax(0,1fr)_minmax(320px,0.82fr)] md:items-center md:py-20 lg:py-24">
+          <div className="container grid gap-8 py-8 md:gap-10 md:py-20 md:grid-cols-[minmax(0,1fr)_minmax(320px,0.82fr)] md:items-center lg:py-24">
             <div className="max-w-3xl">
-              <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-primary">
-                Eblocki Proof Week Beta
-              </p>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-6xl">
-                Stop calling plans progress.
+              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-2.5 py-1">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-primary">
+                  Proof Week · Beta
+                </span>
+              </div>
+              <h1 className="mt-6 text-4xl font-semibold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+                Submit real study work.
                 <br />
-                Build proof for 7 days.
+                <span className="italic text-foreground/30">See if it actually counts.</span>
               </h1>
-              <p className="mt-6 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
-                Eblocki is a proof-based execution system for students and young operators who want evidence, not motivation. Submit one real action each day. Get a verdict. See what your effort actually proves.
+              <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground md:mt-6 md:text-lg">
+                Eblocki is a student-first proof loop. Paste one real piece of work, get an honest verdict, and leave with one clear next step.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a href="#join" className="inline-flex">
-                  <Button size="lg">
-                    Join the 7-Day Beta
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap md:mt-8">
+                <Link
+                  to="/proof-week"
+                  className="inline-flex w-full sm:w-auto"
+                  onClick={() => {
+                    void logEvent("activation_landing_primary_cta_clicked", {
+                      route: "/",
+                      destination: "/proof-week",
+                      ctaName: "start_proof_week",
+                    });
+                  }}
+                >
+                  <Button size="lg" className="w-full sm:w-auto">
+                    Start Proof Week
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                </a>
-                <a href="#how-it-works" className="inline-flex">
-                  <Button size="lg" variant="outline">See How It Works</Button>
+                </Link>
+                <a href="#how-it-works" className="inline-flex w-full sm:w-auto">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto">See How It Works</Button>
                 </a>
               </div>
               <p className="mt-4 text-sm text-muted-foreground">
-                Free beta. Limited to 5-10 testers. Honest feedback required.
+                Free beta. You submit real work, not plans. Honest feedback required.
               </p>
               <div className="mt-8 grid gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground sm:grid-cols-3">
                 <ProofLaw label="One real action" />
@@ -220,22 +237,49 @@ export default function Landing() {
           </div>
         </section>
 
+        <section className="border-b border-border">
+          <div className="container grid gap-6 py-14 md:grid-cols-2 md:py-16">
+            <Card className="panel p-6 sm:p-8">
+              <h2 className="text-2xl font-semibold">What you submit</h2>
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                One real artifact: an essay paragraph, corrected answer, notes in your own words, or another clear piece of work you actually produced.
+              </p>
+            </Card>
+            <Card className="panel p-6 sm:p-8">
+              <h2 className="text-2xl font-semibold">What Eblocki checks</h2>
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                Whether the work is real, whether it meets the standard, what was weak or missing, and what your next step should be.
+              </p>
+            </Card>
+          </div>
+        </section>
+
         <section id="join" className="container py-14 md:py-16">
           <Card className="panel overflow-hidden border-primary/30 bg-primary/10">
             <div className="grid gap-6 p-6 sm:p-8 md:grid-cols-[minmax(0,1fr)_320px] md:items-center">
               <div>
                 <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Join the beta</div>
-                <h2 className="mt-2 text-3xl font-semibold">Build proof with us for one week.</h2>
+                <h2 className="mt-2 text-3xl font-semibold">Use Eblocki for one honest week.</h2>
                 <p className="mt-4 max-w-2xl text-sm leading-6 text-foreground/85">
-                  The beta is free. You submit one proof update per day for 7 days. In return, you give honest feedback at the end.
+                  The beta is free. You submit one real proof update per day for 7 days. In return, you give honest feedback at the end.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <a href="https://www.instagram.com/eblocki" target="_blank" rel="noreferrer" className="inline-flex">
+                  <Link
+                    to="/proof-week"
+                    className="inline-flex"
+                    onClick={() => {
+                      void logEvent("activation_landing_primary_cta_clicked", {
+                        route: "/",
+                        destination: "/proof-week",
+                        ctaName: "join_beta_start_proof_week",
+                      });
+                    }}
+                  >
                     <Button size="lg" className="panel-glow">
-                      Message Eblocki
+                      Start Proof Week
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                  </a>
+                  </Link>
                   <a href="#how-it-works" className="inline-flex">
                     <Button size="lg" variant="outline">Read the loop first</Button>
                   </a>
@@ -249,7 +293,7 @@ export default function Landing() {
                 </div>
                 <p className="mt-4 text-2xl font-semibold">&quot;Proof Week&quot;</p>
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  Send this to Eblocki on Instagram or reply to the person who sent you the beta link.
+                  If you want founder support during beta, send this to Eblocki on Instagram after you start.
                 </p>
               </div>
             </div>
@@ -258,7 +302,14 @@ export default function Landing() {
       </main>
 
       <footer className="container border-t border-border py-8 text-xs font-mono uppercase tracking-wider text-muted-foreground">
-        Proof beats motivation.
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <span>Proof beats motivation.</span>
+          <div className="flex flex-wrap gap-3">
+            <Link to="/legal/privacy" className="hover:text-foreground">Privacy</Link>
+            <Link to="/legal/data-handling" className="hover:text-foreground">Data handling</Link>
+            <Link to="/legal/terms" className="hover:text-foreground">Terms</Link>
+          </div>
+        </div>
       </footer>
     </div>
   );
@@ -276,9 +327,9 @@ function HeroPreview() {
       <div className="space-y-4 p-4">
         <div className="rounded-sm border border-primary/30 bg-primary/10 p-4">
           <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Today&apos;s proof</div>
-          <p className="mt-2 text-lg font-semibold leading-snug">Past-paper answer corrected and rewritten under time pressure.</p>
+          <p className="mt-2 text-lg font-semibold leading-snug">Past-paper answer corrected and rewritten in your own words.</p>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            Submitted as evidence instead of a promise to work later.
+            Submitted as real evidence instead of a promise to study later.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -290,7 +341,7 @@ function HeroPreview() {
         <div className="rounded-sm border border-border bg-background/35 p-3">
           <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">System rule</div>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            No fake productivity. No vague hype. Show the work and let the evidence speak.
+            No fake productivity. Show the work, get the verdict, then do the next step.
           </p>
         </div>
       </div>

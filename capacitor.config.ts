@@ -1,25 +1,23 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.a2a81121b3334ee78b1f039d8175acf6',
-  appName: 'eblocki',
+  appId: 'space.eblocki.app',
+  appName: 'Eblocki',
   webDir: 'dist',
-  server: {
-    url: 'https://a2a81121-b333-4ee7-8b1f-039d8175acf6.lovableproject.com?forceHideBadge=true',
-    cleartext: true,
-  },
+  // No server.url — app loads from local dist/ bundle (required for App Store)
   ios: {
     contentInset: 'always',
     backgroundColor: '#0a0e14',
-    limitsNavigationsToAppBoundDomains: false,
+    limitsNavigationsToAppBoundDomains: true,
+    preferredContentMode: 'mobile',
   },
   android: {
     backgroundColor: '#0a0e14',
-    allowMixedContent: true,
+    allowMixedContent: false,
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 1200,
+      launchShowDuration: 1000,
       launchAutoHide: true,
       backgroundColor: '#0a0e14',
       androidScaleType: 'CENTER_CROP',
@@ -30,10 +28,10 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: 'DARK',
       backgroundColor: '#0a0e14',
-      overlaysWebView: false,
+      overlaysWebView: true,
     },
     Keyboard: {
-      resize: 'native',
+      resize: 'ionic',
       style: 'DARK',
       resizeOnFullScreen: true,
     },

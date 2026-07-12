@@ -15,37 +15,62 @@ import { toast } from "sonner";
 import {
   AlertCircle,
   ArrowRight,
+  BookOpen,
+  Brain,
   BrainCircuit,
+  Briefcase,
+  ChevronDown,
   ClipboardCopy,
+  Compass,
   Crosshair,
+  Dumbbell,
   Gamepad2,
+  Gavel,
   Info,
   Loader2,
+  Lock,
   MessageSquare,
+  Package,
   Radar,
+  Scale,
   Send,
   ShieldCheck,
   Sparkles,
   Target,
+  TrendingUp,
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { logEvent } from "@/lib/eblocki/analytics";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
+import { humaniseModeId } from "@/lib/eblocki/display-labels";
 import {
   buildCoachResponse,
   type CoachEngineResult,
   type CoachResponseMode,
 } from "@/lib/eblocki/coach-engine";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
+import {
+  ProofSubmitButton,
+  MotionVerdictCard,
+  MotionLockIn,
+  MotionNextStep,
+} from "@/components/eblocki/motion";
 
-const MODE_CHIPS: Array<{ label: string; value: CoachResponseMode | "auto" }> = [
-  { label: "Auto", value: "auto" },
-  { label: "Study", value: "study_coach" },
-  { label: "Law", value: "law_reasoning" },
-  { label: "Psychology", value: "psychology_reasoning" },
-  { label: "Sales", value: "sales_coach" },
-  { label: "Sport", value: "sport_coach" },
-  { label: "Product", value: "product_builder" },
-  { label: "Life", value: "life_strategy" },
-  { label: "Execution Lock", value: "execution_lock" },
+const MODE_CHIPS: Array<{
+  label: string;
+  value: CoachResponseMode | "auto";
+  icon: ReactNode;
+}> = [
+  { label: "Auto", value: "auto", icon: <Sparkles className="h-3.5 w-3.5" /> },
+  { label: "Study", value: "study_coach", icon: <BookOpen className="h-3.5 w-3.5" /> },
+  { label: "Law", value: "law_reasoning", icon: <Scale className="h-3.5 w-3.5" /> },
+  { label: "Psychology", value: "psychology_reasoning", icon: <Brain className="h-3.5 w-3.5" /> },
+  { label: "Sales", value: "sales_coach", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+  { label: "Sport", value: "sport_coach", icon: <Dumbbell className="h-3.5 w-3.5" /> },
+  { label: "Product", value: "product_builder", icon: <Package className="h-3.5 w-3.5" /> },
+  { label: "Life", value: "life_strategy", icon: <Compass className="h-3.5 w-3.5" /> },
+  { label: "Execution Lock", value: "execution_lock", icon: <Lock className="h-3.5 w-3.5" /> },
 ];
 
 const QUICK_PROMPTS = [
@@ -70,6 +95,26 @@ type CoachHistoryRow = {
 function coerceMode(value: string | null | undefined): CoachResponseMode | "auto" {
   const match = MODE_CHIPS.find((chip) => chip.value === value);
   return match?.value ?? "auto";
+}
+
+function getCoachProcessingText(mode: CoachResponseMode | "auto"): string {
+  if (mode === "auto") {
+    return "Coach is diagnosing...";
+  }
+
+  const modeMap: Record<string, string> = {
+    study_coach: "Study",
+    law_reasoning: "Law",
+    psychology_reasoning: "Psychology",
+    sales_coach: "Sales",
+    sport_coach: "Sport",
+    product_builder: "Product",
+    life_strategy: "Life",
+    execution_lock: "Execution",
+  };
+
+  const label = modeMap[mode] ?? "Coach";
+  return `Coach is reasoning in ${label} mode...`;
 }
 
 function splitRemoteResponse(text: string): string {
@@ -124,7 +169,13 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+function displayToken(value: string | null | undefined): string {
+  if (!value) return "Not detected";
+  return humaniseModeId(value);
+}
+
 export default function Coach() {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   const location = useLocation();
   const routeState = (location.state ?? {}) as CoachRouteState;
@@ -275,19 +326,18 @@ export default function Coach() {
         description="Diagnose the situation, get the answer, create proof, and generate a practice pack when skill repetition is the right move."
         path="/coach"
       />
-      <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-5 min-w-0 max-w-full text-wrap-safe">
+      <div className="mobile-safe-page p-4 md:p-8 max-w-5xl mx-auto space-y-5 min-w-0 max-w-full text-wrap-safe md:pb-8">
         <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end min-w-0">
-          <div className="min-w-0">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Coach // Diagnosis Engine</span>
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Bring the messy problem. Leave with proof.</h1>
-            <p className="text-sm text-muted-foreground mt-1 max-w-2xl break-words">
-              Coach classifies the domain, intent, state, urgency, and response mode. It answers directly, creates a proof action, and suggests GameForge when practice is the right intervention.
-            </p>
+          <div className="flex items-center gap-3 min-w-0">
+            <EblockiLogo variant="mark" size="md" />
+            <div className="min-w-0">
+              {!isMobile && (
+                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Coach // Diagnosis Engine</span>
+              )}
+              <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Bring the messy problem. Leave with proof.</h1>
+            </div>
           </div>
-          <Link to="/gameforge">
-            <Button size="sm" variant="outline" className="gap-2"><Gamepad2 className="h-3.5 w-3.5" /> GameForge</Button>
-          </Link>
-        </header>
+          </header>
 
         <Card className="panel overflow-hidden border-primary/25 bg-card/60 max-w-full">
           <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-3 min-w-0">
@@ -302,34 +352,71 @@ export default function Coach() {
               placeholder="Paste a problem, note, thought dump, question, or situation. Eblocki will diagnose it and give the next proof action."
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              className="min-h-[170px] resize-none w-full max-w-full"
+              className="min-h-[170px] resize-none w-full max-w-full input-anchored"
+              enterKeyHint="send"
             />
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Mode chips</div>
-              <div className="flex flex-wrap gap-2">
-                {MODE_CHIPS.map((chip) => (
-                  <button
-                    key={chip.value}
-                    type="button"
-                    onClick={() => setSelectedMode(chip.value)}
-                    className={cn(
-                      "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors",
-                      selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
-                    )}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
+            {isMobile ? (
+              <MobileCollapse eyebrow="Optional" label="Focus area (optional)" trackId="coach_mode_chips">
+                <div className="flex flex-wrap gap-2">
+                  {MODE_CHIPS.map((chip) => (
+                    <button
+                      key={chip.value}
+                      type="button"
+                      onClick={() => setSelectedMode(chip.value)}
+                      className={cn(
+                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors min-h-[44px] flex items-center gap-1.5",
+                        selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                      )}
+                    >
+                      {chip.icon}
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </MobileCollapse>
+            ) : (
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Mode chips</div>
+                <div className="flex flex-wrap gap-2">
+                  {MODE_CHIPS.map((chip) => (
+                    <button
+                      key={chip.value}
+                      type="button"
+                      onClick={() => setSelectedMode(chip.value)}
+                      className={cn(
+                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors flex items-center gap-1.5",
+                        selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                      )}
+                    >
+                      {chip.icon}
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             <div className="flex items-center justify-between gap-3 flex-wrap border-t border-border pt-4">
               <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{input.length}/5000</div>
-              <Button onClick={send} disabled={loading} className="gap-2 w-full sm:w-auto">
+              <ProofSubmitButton
+                onClick={send}
+                disabled={loading}
+                className="gap-2 w-full sm:w-auto"
+              >
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Diagnosing</> : <><Send className="h-4 w-4" /> Diagnose</>}
-              </Button>
+              </ProofSubmitButton>
             </div>
           </div>
         </Card>
+
+        {/* Calm processing state while Coach is thinking */}
+        {loading && (
+          <div className="flex justify-center py-2">
+            <div className="motion-calm flex items-center gap-2 text-muted-foreground">
+              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+              {getCoachProcessingText(selectedMode)}
+            </div>
+          </div>
+        )}
 
         {!engineResult && !loading && (
           <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 max-w-full overflow-hidden">
@@ -344,6 +431,13 @@ export default function Coach() {
               <EmptyCell icon={<Target />} title="Proof" body="Convert the answer into one artifact requirement." />
               <EmptyCell icon={<Gamepad2 />} title="Practice" body="Send weak concepts to GameForge when repetition is useful." />
             </div>
+            {isMobile && (
+              <Link to="/gameforge" className="mt-3 inline-block w-full">
+                <Button size="sm" variant="outline" className="w-full min-h-[44px] native-tap gap-2">
+                  <Gamepad2 className="h-3.5 w-3.5" /> GameForge (after diagnosis)
+                </Button>
+              </Link>
+            )}
           </Card>
         )}
 
@@ -368,18 +462,15 @@ export default function Coach() {
 
         {engineResult && (
           <div className="space-y-4">
-            <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-                <Signal label="Domain" value={engineResult.detectedDomain} icon={<Radar />} />
-                <Signal label="Intent" value={engineResult.detectedIntent.replace(/_/g, " ")} icon={<Crosshair />} />
-                <Signal label="State" value={engineResult.detectedState.replace(/_/g, " ")} icon={<BrainCircuit />} />
-                <Signal label="Mode" value={engineResult.responseMode.replace(/_/g, " ")} icon={<MessageSquare />} />
-                <Signal label="Urgency" value={engineResult.urgency.replace(/_/g, " ")} icon={<ShieldCheck />} />
-              </div>
-              <p className="mt-3 text-xs text-muted-foreground break-words">
-                Internal prompt summary: {engineResult.internalPromptSummary}
-              </p>
-            </Card>
+            <MotionVerdictCard className="max-w-full overflow-hidden">
+              <CoachResultSummaryCard
+                engineResult={engineResult}
+                remoteResult={remoteResult}
+                committedId={committedId}
+                committing={committing}
+                onCommit={commit}
+              />
+            </MotionVerdictCard>
 
             {engineResult.warning && (
               <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
@@ -388,61 +479,45 @@ export default function Coach() {
               </Card>
             )}
 
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)] items-start">
-              <div className="space-y-3">
-                <ResponseSection title="Diagnosis" icon={<Radar />}>{engineResult.diagnosis}</ResponseSection>
-                {responseSections.length > 0 ? (
-                  responseSections.map((section) => (
-                    <ResponseSection key={section.heading} title={section.heading} icon={<MessageSquare />}>
-                      {section.body}
-                    </ResponseSection>
-                  ))
-                ) : (
-                  <ResponseSection title="Answer" icon={<MessageSquare />}>{responseAnswer}</ResponseSection>
-                )}
-                <ResponseSection title="Plan" icon={<Target />}>
-                  <ol className="space-y-2">
-                    {engineResult.plan.map((step, index) => <li key={step} className="break-words">{index + 1}. {step}</li>)}
-                  </ol>
-                </ResponseSection>
+            <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Action</div>
+                <Button size="sm" variant="outline" onClick={copyProofAction} className="gap-1.5"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</Button>
               </div>
-              <div className="space-y-3">
-                <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Action</div>
-                    <Button size="sm" variant="outline" onClick={copyProofAction} className="gap-1.5"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</Button>
+              <p className="mt-2 text-sm leading-6 break-words whitespace-pre-wrap">{engineResult.proofAction}</p>
+              <div className="mt-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{displayToken(engineResult.proofActionType)}</div>
+            </Card>
+
+            <CoachFullReasoning
+              engineResult={engineResult}
+              responseAnswer={responseAnswer}
+              responseSections={responseSections}
+            />
+
+            {engineResult.suggestedGameForgePack && (
+              <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional GameForge Pack</div>
+                    <h3 className="mt-1 text-sm font-semibold break-words">{engineResult.suggestedGameForgePack.title}</h3>
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground break-words">{engineResult.suggestedGameForgePack.reason}</p>
                   </div>
-                  <p className="mt-2 text-sm leading-6 break-words whitespace-pre-wrap">{engineResult.proofAction}</p>
-                  <div className="mt-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{engineResult.proofActionType.replace(/_/g, " ")}</div>
-                </Card>
-                <ResponseSection title="Next Checkpoint" icon={<Crosshair />}>{engineResult.nextCheckpoint}</ResponseSection>
-                {engineResult.followUpQuestion && <ResponseSection title="Follow-up" icon={<Info />}>{engineResult.followUpQuestion}</ResponseSection>}
-                {engineResult.suggestedGameForgePack && (
-                  <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
-                    <div className="flex items-start justify-between gap-3 flex-wrap">
-                      <div className="min-w-0">
-                        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional GameForge Pack</div>
-                        <h3 className="mt-1 text-sm font-semibold break-words">{engineResult.suggestedGameForgePack.title}</h3>
-                        <p className="mt-2 text-xs leading-5 text-muted-foreground break-words">{engineResult.suggestedGameForgePack.reason}</p>
-                      </div>
-                      <Gamepad2 className="h-4 w-4 text-primary shrink-0" />
-                    </div>
-                    <Link
-                      to="/gameforge"
-                      state={{
-                        seed: engineResult.suggestedGameForgePack.sourceMaterial,
-                        mode: engineResult.suggestedGameForgePack.mode,
-                        style: engineResult.suggestedGameForgePack.style,
-                        intensity: "focused",
-                      }}
-                      className="mt-3 inline-flex"
-                    >
-                      <Button size="sm">Generate GameForge Pack <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Button>
-                    </Link>
-                  </Card>
-                )}
-              </div>
-            </div>
+                  <Gamepad2 className="h-4 w-4 text-primary shrink-0" />
+                </div>
+                <Link
+                  to="/gameforge"
+                  state={{
+                    seed: engineResult.suggestedGameForgePack.sourceMaterial,
+                    mode: engineResult.suggestedGameForgePack.mode,
+                    style: engineResult.suggestedGameForgePack.style,
+                    intensity: "focused",
+                  }}
+                  className="mt-3 inline-flex"
+                >
+                  <Button size="sm">Generate GameForge Pack <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Button>
+                </Link>
+              </Card>
+            )}
 
             {remoteResult?.proofContract.shouldCreate && (
               <ProofContractCard
@@ -454,13 +529,13 @@ export default function Coach() {
             )}
 
             {committedId && (
-              <Card className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3 max-w-full overflow-hidden">
+              <MotionLockIn active={!!committedId} className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3 max-w-full overflow-hidden">
                 <div className="min-w-0">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Next step</span>
                   <p className="text-sm mt-1 break-words">Contract saved. Submit the proof artifact in the Proof Check.</p>
                 </div>
                 <Link to="/proof"><Button size="sm">Submit Proof <ArrowRight className="h-3 w-3 ml-1" /></Button></Link>
-              </Card>
+              </MotionLockIn>
             )}
           </div>
         )}
@@ -468,7 +543,7 @@ export default function Coach() {
         <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
           <div className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Quick prompts</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Quick starts</span>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {QUICK_PROMPTS.map((prompt) => (
@@ -476,7 +551,7 @@ export default function Coach() {
                 key={prompt}
                 size="sm"
                 variant="outline"
-                className="text-xs whitespace-normal text-left h-auto py-2"
+                className="text-xs whitespace-normal text-left h-auto py-2 motion-micro"
                 onClick={() => setInput((prev) => (prev.trim() ? `${prev.trim()}\n\n${prompt}` : prompt))}
               >
                 {prompt}
@@ -526,6 +601,133 @@ function Signal({ label, value, icon }: { label: string; value: string; icon: Re
       </div>
       <div className="mt-1 truncate text-sm">{value}</div>
     </div>
+  );
+}
+
+function CoachResultSummaryCard({
+  engineResult,
+  remoteResult,
+  committedId,
+  committing,
+  onCommit,
+}: {
+  engineResult: CoachEngineResult;
+  remoteResult: NormalisedCoachResponse | null;
+  committedId: string | null;
+  committing: boolean;
+  onCommit: () => void;
+}) {
+  const contract = remoteResult?.proofContract;
+  const contractStatus = committedId
+    ? "Proof Contract saved"
+    : contract?.shouldCreate
+      ? "Ready to save"
+      : "Proof action ready";
+  const proofRequired = contract?.requiredArtifact || engineResult.recommendedProofArtifact.requiredArtifact || engineResult.proofAction;
+  const evidenceStandard = contract?.evidenceStandard || engineResult.recommendedProofArtifact.evidenceStandard;
+
+  return (
+    <Card className="panel p-4 md:p-5 border-primary/40 bg-primary/5 max-w-full overflow-hidden">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Coach Result</div>
+          <h2 className="mt-1 text-lg font-semibold leading-snug break-words">{displayToken(engineResult.detectedIntent)}</h2>
+        </div>
+        <span className="rounded-sm border border-primary/40 bg-background/50 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-primary">
+          {contractStatus}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <SummaryField label="Classification" value={`${displayToken(engineResult.detectedDomain)} / ${displayToken(engineResult.responseMode)}`} />
+        <SummaryField label="Detected blocker" value={engineResult.diagnosis} />
+        <SummaryField label="Why it matters" value={engineResult.warning || engineResult.answer} />
+        <SummaryField label="Proof required" value={proofRequired} />
+        <SummaryField label="Next command" value={engineResult.proofAction} emphasis />
+        <SummaryField label="Proof contract status" value={evidenceStandard ? `${contractStatus}: ${evidenceStandard}` : contractStatus} />
+      </div>
+
+      <div className="mt-4 flex flex-col sm:flex-row gap-2">
+        {committedId ? (
+          <Link to="/proof" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto min-h-[44px] native-tap">
+              Submit Proof <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        ) : contract?.shouldCreate ? (
+          <Button onClick={onCommit} disabled={committing} className="w-full sm:w-auto min-h-[44px] native-tap">
+            {committing ? "Saving contract..." : "Save Proof Contract"}
+          </Button>
+        ) : (
+          <Link to="/proof" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto min-h-[44px] native-tap">
+              Submit Proof <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function SummaryField({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
+  return (
+    <div className="rounded-sm border border-border/80 bg-background/40 p-3 min-w-0">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <p className={`mt-1 text-sm leading-6 break-words whitespace-pre-wrap ${emphasis ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function CoachFullReasoning({
+  engineResult,
+  responseAnswer,
+  responseSections,
+}: {
+  engineResult: CoachEngineResult;
+  responseAnswer: string;
+  responseSections: Array<{ heading: string; body: string }>;
+}) {
+  return (
+    <details className="group rounded-sm border border-border bg-card/50 p-4 max-w-full overflow-hidden">
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Full reasoning</span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="mt-3 grid gap-3">
+        <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <Signal label="Domain" value={displayToken(engineResult.detectedDomain)} icon={<Radar />} />
+            <Signal label="Intent" value={displayToken(engineResult.detectedIntent)} icon={<Crosshair />} />
+            <Signal label="State" value={displayToken(engineResult.detectedState)} icon={<BrainCircuit />} />
+            <Signal label="Mode" value={displayToken(engineResult.responseMode)} icon={<MessageSquare />} />
+            <Signal label="Urgency" value={displayToken(engineResult.urgency)} icon={<ShieldCheck />} />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground break-words">
+            Diagnostic summary: {engineResult.internalPromptSummary}
+          </p>
+        </Card>
+        <ResponseSection title="Diagnosis" icon={<Radar />}>{engineResult.diagnosis}</ResponseSection>
+        {responseSections.length > 0 ? (
+          responseSections.map((section) => (
+            <ResponseSection key={section.heading} title={section.heading} icon={<MessageSquare />}>
+              {section.body}
+            </ResponseSection>
+          ))
+        ) : (
+          <ResponseSection title="Answer" icon={<MessageSquare />}>{responseAnswer}</ResponseSection>
+        )}
+        <ResponseSection title="Plan" icon={<Target />}>
+          <ol className="space-y-2">
+            {engineResult.plan.map((step, index) => <li key={step} className="break-words">{index + 1}. {step}</li>)}
+          </ol>
+        </ResponseSection>
+        <ResponseSection title="Next Checkpoint" icon={<Crosshair />}>{engineResult.nextCheckpoint}</ResponseSection>
+        {engineResult.followUpQuestion && <ResponseSection title="Follow-up" icon={<Info />}>{engineResult.followUpQuestion}</ResponseSection>}
+      </div>
+    </details>
   );
 }
 
