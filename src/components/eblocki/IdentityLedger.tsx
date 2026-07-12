@@ -70,7 +70,7 @@ export function IdentityLedger({ userId, limit = 25 }: { userId: string; limit?:
             <div className="min-w-0 flex-1">
               {verdictLabel && (
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary mb-1">
-                  Verdict: {verdictLabel} · {r.domain}
+                  Result: {verdictLabel} · {r.domain}
                 </div>
               )}
               <div className="font-mono text-xs text-foreground break-words">{summaryText}</div>

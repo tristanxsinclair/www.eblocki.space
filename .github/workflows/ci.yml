@@ -34,18 +34,24 @@ jobs:
       - name: Run tests
         run: npm run test
 
+      - name: Proof UI token scan
+        run: npm run test:proof-ui-tokens
+
       - name: Build
         run: npm run build
+
+      - name: Bundle-size guardrail (desktop UI regression check)
+        run: npm run perf:bundle-size
 
       - name: Lint Eblocki touched surfaces
         run: npm run lint:eblocki
 
       - name: Smoke built SPA routes
         run: |
-          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/eblocki-preview.log 2>&1 &
+          npm run preview -- --host 127.0.0.1 --port 4172 --strictPort > /tmp/eblocki-preview.log 2>&1 &
           PREVIEW_PID=$!
-          trap 'kill $PREVIEW_PID' EXIT
-          ROUTE_SMOKE_BASE_URL=http://127.0.0.1:4173 npm run smoke:routes
+          trap 'kill $PREVIEW_PID 2>/dev/null || true; wait $PREVIEW_PID 2>/dev/null || true' EXIT
+          ROUTE_SMOKE_BASE_URL=http://127.0.0.1:4172 npm run smoke:routes
 
       - name: Audit dependencies
         run: npm audit --omit=dev --audit-level=moderate

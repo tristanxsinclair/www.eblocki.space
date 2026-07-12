@@ -3,13 +3,23 @@
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
 // src/lib/mcp/index.ts
-import { defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
 
 // src/lib/mcp/tools/check-proof-artifact.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z } from "npm:zod@^3.25.76";
 
 // src/lib/eblocki/modes.ts
+var MODE_LABELS = {
+  LAW_MAX: "Law Max",
+  PSYCH_HD: "Psych HD",
+  SALES_CLOSE: "Sales Close",
+  EBLOCKI: "Eblocki",
+  SPORT: "Sport",
+  BRAND: "Brand",
+  CAREER_MONEY: "Career / Money",
+  GENERAL_EXECUTION: "General Execution"
+};
 var MODE_DOMAINS = {
   LAW_MAX: "law",
   PSYCH_HD: "psychology",
@@ -605,6 +615,22 @@ ${input.assistantOutput}`.toLowerCase();
 }
 var PROOF_QUESTION = "What proof artifact will confirm completion?";
 
+// src/lib/eblocki/display-labels.ts
+var EXTRA_LABELS = {
+  EBLOCKI_PRODUCT_REVIEW: "Eblocki Product Review",
+  SALES_RETAIL_TGG: "Sales",
+  AUSTRALIAN_TECH_LAW_AI_GOVERNANCE: "Australian Tech Law",
+  GENERAL_EXECUTION: "General Execution"
+};
+function humaniseModeId(id, fallbackDisplayName) {
+  if (!id) return fallbackDisplayName ?? "";
+  if (fallbackDisplayName && fallbackDisplayName.trim()) return fallbackDisplayName;
+  const upper = id.toUpperCase();
+  if (upper in EXTRA_LABELS) return EXTRA_LABELS[upper];
+  if (upper in MODE_LABELS) return MODE_LABELS[upper];
+  return id.replace(/[_-]+/g, " ").toLowerCase().split(" ").filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
 // src/lib/eblocki/proof-standard-preview.ts
 function clean2(value) {
   return (value ?? "").trim();
@@ -668,11 +694,12 @@ function stableArtifactHint(value) {
   return value || "visible artifact";
 }
 function buildProofStandardPreview(input = {}) {
-  const selectedDomain = inferDomain(input);
+  const rawSelectedDomain = inferDomain(input);
+  const selectedDomain = humaniseModeId(rawSelectedDomain);
   const artifactType = stableArtifactHint(inferArtifactType(input));
   const selectionArtifact = [artifactType, contractArtifact(input.proofContract), input.proofAction].map((value) => clean2(value)).filter(Boolean).join(" ");
   const standard = selectDomainStandard({
-    domain: selectedDomain,
+    domain: rawSelectedDomain,
     intent: input.intent,
     artifactType: selectionArtifact || artifactType,
     signalText: input.signalText
@@ -699,7 +726,7 @@ function buildProofStandardPreview(input = {}) {
     proofAction: input.proofAction ?? contractArtifact(input.proofContract),
     proofContract: input.proofContract,
     proofStandardKey: standard.key,
-    domain: selectedDomain
+    domain: rawSelectedDomain
   });
   return {
     selectedDomain,
@@ -1400,11 +1427,16 @@ var suggest_next_command_default = defineTool3({
 });
 
 // src/lib/mcp/index.ts
+var projectRef = "imeghpjrqlmifkltuqdx";
 var mcp_default = defineMcp({
   name: "eblocki-mcp",
   title: "Eblocki",
   version: "0.1.0",
   instructions: "Eblocki proof tools. Read-only. Judge pasted artifact text against Eblocki's evidence rubric; return proof standards and next commands. Never implies external verification, saved account access, or write actions.",
+  auth: auth.oauth.issuer({
+    issuer: `https://${projectRef}.supabase.co/auth/v1`,
+    acceptedAudiences: "authenticated"
+  }),
   tools: [check_proof_artifact_default, get_proof_standard_default, suggest_next_command_default]
 });
 

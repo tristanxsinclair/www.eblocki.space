@@ -72,7 +72,7 @@ const MODE_EXAMPLES: Record<string, { proof: string[]; hard: string; upgrade: st
   EBLOCKI_BUILD: {
     proof: [
       "Bug fixed and committed — sha 4f3a2 on main",
-      "Lovable prompt refined, tested, and saved to prompt log",
+      "Build note refined, tested, and saved to the work log",
     ],
     hard: "Resisted scope creep on the auth refactor",
     upgrade: "Write the failing test BEFORE the next attempt",
@@ -109,7 +109,7 @@ function qualityCopy(n: number): string {
     "Shallow — it counts, but the depth isn't there yet.",
     "Solid — real artifact, real effort.",
     "Strong — would hold up to review.",
-    "Elite — defendable evidence, model output.",
+    "Elite — defendable evidence with a finished output.",
   ][n - 1];
 }
 

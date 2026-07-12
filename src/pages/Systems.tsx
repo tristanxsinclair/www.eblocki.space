@@ -186,7 +186,7 @@ export default function Systems() {
         description="Turn any goal into a proof-based training system with a first command."
         path="/systems"
       />
-      <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-4 min-w-0" data-testid="system-forge-page">
+      <div className="p-4 md:p-10 max-w-5xl mx-auto space-y-6 min-w-0" data-testid="system-forge-page">
         <Card className="panel p-5 md:p-6 border-border/80 bg-card/50 min-w-0" data-testid="system-forge-hero">
           <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
             System Forge

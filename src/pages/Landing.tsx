@@ -103,6 +103,9 @@ export default function Landing() {
             >
               Join beta
             </a>
+            <Link to="/pricing" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
+              Pricing
+            </Link>
             <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
               Sign in
             </Link>
@@ -114,15 +117,21 @@ export default function Landing() {
         <section className="grid-bg border-b border-border">
           <div className="container grid gap-8 py-8 md:gap-10 md:py-20 md:grid-cols-[minmax(0,1fr)_minmax(320px,0.82fr)] md:items-center lg:py-24">
             <div className="max-w-3xl">
-              <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-primary">
-                Eblocki Proof Week Beta
-              </p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-2.5 py-1">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-primary">
+                  Proof Week · Beta
+                </span>
+              </div>
+              <h1 className="mt-6 text-4xl font-semibold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
                 Submit real study work.
                 <br />
-                See if it actually counts.
+                <span className="italic text-foreground/30">See if it actually counts.</span>
               </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground md:mt-6 md:text-lg">
+              <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground md:mt-6 md:text-lg">
                 Eblocki is a student-first proof loop. Paste one real piece of work, get an honest verdict, and leave with one clear next step.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap md:mt-8">

@@ -34,6 +34,10 @@ import AIDisclosure from "./pages/legal/AIDisclosure.tsx";
 import { PageTransition } from "@/components/eblocki/PageTransition";
 import { AppSkeleton } from "@/components/eblocki/AppSkeleton";
 import { NetworkBanner } from "@/components/eblocki/NetworkBanner";
+import OAuthConsent from "./pages/OAuthConsent.tsx";
+import Pricing from "./pages/Pricing.tsx";
+import CheckoutReturn from "./pages/CheckoutReturn.tsx";
+import Founder from "./pages/Founder.tsx";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +78,10 @@ const App = () => (
             <Route path="/legal/data-handling" element={<DataHandling />} />
             <Route path="/legal/ai-disclosure" element={<AIDisclosure />} />
             <Route path="/why" element={<Why />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/founder" element={<Founder />} />
+            <Route path="/checkout/return" element={<CheckoutReturn />} />
             <Route path="/welcome" element={<Protected><Welcome /></Protected>} />
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
             <Route path="/operator" element={<Protected><Operator /></Protected>} />

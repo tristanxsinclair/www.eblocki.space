@@ -2,6 +2,16 @@ import type { TemporalResult } from "./temporal-engine";
 
 export type PlainVerdictLabel = "Counted" | "Needs upgrade" | "Did not count yet";
 
+export interface ProofResultCopy {
+  headline: string;
+  countStatus: string;
+  todayStatus: string;
+  nextCommand: string | null;
+  nextCommandReason: string | null;
+  primaryLabel: string;
+  primaryAction: "improve" | "dashboard";
+}
+
 export type TodayClosureStatus = "open" | "filed_pending" | "still_open" | "closed";
 
 export interface TodayClosureView {
@@ -73,6 +83,90 @@ export function plainEvidenceStrength(strength?: string | null): string {
     default:
       return "Unscored proof";
   }
+}
+
+export function proofResultCopy(input: {
+  strength?: string | null;
+  score?: number | null;
+  nextUpgrade?: string | null;
+  contractClosed?: boolean | null;
+  firstProofMode?: boolean;
+}): ProofResultCopy {
+  const verdict = plainVerdictLabel(input.strength, input.score);
+  const strength = (input.strength ?? "").toLowerCase();
+  const nextUpgrade = input.nextUpgrade?.trim() || null;
+  const firstProofMode = Boolean(input.firstProofMode);
+  const contractClosed = Boolean(input.contractClosed);
+
+  if (firstProofMode) {
+    return {
+      headline: `Proof submitted. ${verdict}.`,
+      countStatus: verdict,
+      todayStatus: "Your first proof is filed. Today can now show the next step.",
+      nextCommand: "Open Today and take the next visible command.",
+      nextCommandReason: "The first loop is capture first, then correction.",
+      primaryLabel: "See my next step",
+      primaryAction: "dashboard",
+    };
+  }
+
+  if (strength === "weak") {
+    return {
+      headline: "Proof submitted. It does not count yet.",
+      countStatus: "Did not count yet",
+      todayStatus: "Today stays open until the artifact shows visible evidence.",
+      nextCommand: nextUpgrade,
+      nextCommandReason: nextUpgrade ? "Upgrade the same artifact before starting another proof." : null,
+      primaryLabel: "Upgrade proof",
+      primaryAction: "improve",
+    };
+  }
+
+  if (strength === "moderate" || verdict === "Needs upgrade") {
+    return {
+      headline: "Proof submitted. It needs one upgrade.",
+      countStatus: "Needs upgrade",
+      todayStatus: "Useful proof was filed, but it is not a full close yet.",
+      nextCommand: nextUpgrade,
+      nextCommandReason: nextUpgrade ? "One concrete improvement can move this proof toward the standard." : null,
+      primaryLabel: "Strengthen proof",
+      primaryAction: "improve",
+    };
+  }
+
+  if (contractClosed) {
+    return {
+      headline: "Proof submitted. Contract closed.",
+      countStatus: verdict,
+      todayStatus: "The linked contract is closed by this artifact.",
+      nextCommand: "Open Today and take the next command.",
+      nextCommandReason: "Do not keep re-judging a closed proof here.",
+      primaryLabel: "Back to Today",
+      primaryAction: "dashboard",
+    };
+  }
+
+  if (strength === "elite") {
+    return {
+      headline: "Proof submitted. Elite proof accepted.",
+      countStatus: "Counted",
+      todayStatus: "Strong enough to close today.",
+      nextCommand: "Apply this standard to the next artifact.",
+      nextCommandReason: "Elite proof raises the bar for the next loop.",
+      primaryLabel: "Back to Today",
+      primaryAction: "dashboard",
+    };
+  }
+
+  return {
+    headline: "Proof submitted. Strong proof accepted.",
+    countStatus: "Counted",
+    todayStatus: "Strong enough to close today.",
+    nextCommand: nextUpgrade ? `Carry this into the next proof: ${nextUpgrade}` : "Open Today and take the next command.",
+    nextCommandReason: "The proof counts. The next command should compound the standard.",
+    primaryLabel: "Back to Today",
+    primaryAction: "dashboard",
+  };
 }
 
 /** Court / ledger verdict tokens — never show raw enums in primary UI. */

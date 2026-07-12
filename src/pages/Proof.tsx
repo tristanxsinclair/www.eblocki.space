@@ -15,7 +15,7 @@ import { ProofStandardPreviewPanel } from "@/components/eblocki/ProofStandardPre
 import { scoreProofArtifact, type EvidenceStrength } from "@/lib/eblocki/proof-scoring";
 import { classifyStudyActivity } from "@/lib/eblocki/fake-study-detector";
 import { StudyVerdictHint } from "@/components/eblocki/StudyVerdictHint";
-import { isStudyDomain } from "@/lib/eblocki/display-labels";
+import { humaniseModeId, isStudyDomain } from "@/lib/eblocki/display-labels";
 import { buildProofStandardPreview, type ProofStandardPreview } from "@/lib/eblocki/proof-standard-preview";
 import type { UserMode } from "@/lib/eblocki/modes";
 import { computeTemporal } from "@/lib/eblocki/temporal-engine";
@@ -40,7 +40,7 @@ import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
 import { extractNextUpgrade } from "@/lib/eblocki/next-upgrade-extract";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { plainEvidenceStrength, plainVerdictLabel } from "@/lib/eblocki/user-facing-copy";
+import { plainEvidenceStrength, proofResultCopy } from "@/lib/eblocki/user-facing-copy";
 import {
   FIRST_PROOF_COPY,
   FIRST_PROOF_DEFAULTS,
@@ -52,6 +52,7 @@ import {
 } from "@/lib/eblocki/first-proof";
 import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
 import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
+import { MotionVerdictCard } from "@/components/eblocki/motion";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -150,25 +151,27 @@ function isStudyDomainSignal(...values: Array<string | null | undefined>): boole
   return /\b(study|learn|learning|law|legal|psych|psychology|academic|blaw|laws|exam|irac|source-bank|source bank|essay|tutorial|lecture|assignment)\b/.test(text);
 }
 
-function countStatus(verdict: Verdict): string {
-  if (verdict.evidenceStrength === "elite") return "Counted as Elite Proof.";
-  if (verdict.evidenceStrength === "strong") return "Counted as Strong Proof.";
-  if (verdict.evidenceStrength === "moderate") return "Counted as Useful Proof.";
-  return "Did not count yet.";
+function displayProofDomain(value: string | null | undefined): string {
+  return humaniseModeId(value) || "General";
 }
 
-function todayStatus(verdict: Verdict): string {
-  if (verdict.evidenceStrength === "strong" || verdict.evidenceStrength === "elite") {
-    return "Strong enough to close today.";
-  }
-  if (verdict.evidenceStrength === "moderate") {
-    return "Not strong enough to close today fully.";
-  }
-  return "Today stays open until the proof shows a real artifact.";
+function displayProofArtifactType(value: string | null | undefined): string {
+  return humaniseModeId(value ?? "artifact") || "Artifact";
 }
 
-function shouldImproveProof(verdict: Verdict): boolean {
-  return verdict.evidenceStrength === "weak" || verdict.evidenceStrength === "moderate";
+function displayProofDate(value: string | null | undefined): string {
+  return value ? value.slice(0, 10) : "Date not recorded";
+}
+
+function formatProofMeta(parts: Array<string | null | undefined>): string {
+  return parts.filter((part): part is string => Boolean(part && part.trim())).join(" - ");
+}
+
+function displayProofContractLabel(contract: ProofCommitmentRow): string {
+  return formatProofMeta([
+    contract.mode ? humaniseModeId(contract.mode) : displayProofDomain(contract.domain),
+    contract.title,
+  ]);
 }
 
 function VerdictFeedback({ artifactId }: { artifactId: string }) {
@@ -424,6 +427,8 @@ export default function Proof() {
     }
 
     setSubmitting(true);
+    setVerdict(null);
+    setSubmittedStudyClassification(null);
     try {
       const modeId =
         selectedMode?.mode_id ??
@@ -607,11 +612,7 @@ export default function Proof() {
           : null,
       );
 
-      toast.success(
-        isMobile || firstProofMode
-          ? `Proof submitted — ${plainVerdictLabel(score.evidenceStrength, score.qualityScore)}`
-          : `Verdict: ${score.qualityScore}/10 - ${score.evidenceStrength}`,
-      );
+      toast.success("Proof submitted. Review the result below.");
       if (firstProofMode) {
         setFirstProofSubmitted(true);
         void logEvent("proof_capture_completed", { route: "/proof", source: "first_proof" });
@@ -687,7 +688,7 @@ export default function Proof() {
         setExtractedEdited(false);
         setAttachState({
           file, status: "ready", progress: 100,
-          message: `Text indexed - ${clipped.length.toLocaleString()} chars added to verdict context.`,
+          message: `Text captured - ${clipped.length.toLocaleString()} characters added to this proof.`,
           error: null, extractedSource: "text-file", ocrTruncated: text.length > 20000,
         });
         return;
@@ -699,7 +700,7 @@ export default function Proof() {
 
         setAttachState((s) => ({
           ...s, status: "extracting", progress: 60,
-          message: isPdf ? "OCR extracting from PDF..." : "OCR extracting from image...",
+          message: isPdf ? "Reading text from PDF..." : "Reading text from image...",
         }));
 
         const { data, error } = await supabase.functions.invoke<OcrExtractResponse>("ocr-extract", {
@@ -723,7 +724,7 @@ export default function Proof() {
         } else {
           setAttachState({
             file, status: "ready", progress: 100,
-            message: `OCR captured ${extracted.length.toLocaleString()} chars${truncated ? " (truncated)" : ""} - added to verdict context.`,
+            message: `Readable text captured - ${extracted.length.toLocaleString()} characters${truncated ? " (truncated)" : ""} added to this proof.`,
             error: null, extractedSource: "ocr", ocrTruncated: truncated,
           });
         }
@@ -1011,7 +1012,7 @@ export default function Proof() {
                 <div className="grid grid-cols-4 gap-2 flex-1">
                   {(["weak", "moderate", "strong", "elite"] as const).map((s) => (
                     <div key={s} className="rounded-sm border border-border p-2 text-center min-w-0">
-                      <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{s}</div>
+                      <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{plainEvidenceStrength(s)}</div>
                       <div className={"mt-1 text-lg font-semibold font-mono " + (s === "elite" ? "text-primary" : "")}>{strengthCount(s)}</div>
                     </div>
                   ))}
@@ -1033,99 +1034,6 @@ export default function Proof() {
               </div>
             </Card>
           </MobileCollapse>
-        )}
-
-        {/* Verdict card */}
-        {verdict && (
-          <Card className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                  Proof Verdict
-                </span>
-              </div>
-              <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
-            </div>
-            {firstProofMode ? (
-              <>
-                <div className="mt-3 grid gap-3 text-sm">
-                  <VerdictRow label="What counted" value={verdict.feedback} />
-                  <VerdictRow
-                    label="What was weak or missing"
-                    value={
-                      verdict.evidenceStrength === "elite"
-                        ? "Nothing major — this is a strong first proof."
-                        : verdict.missingStandard
-                    }
-                  />
-                  <VerdictRow label="One next action" value={verdict.nextUpgrade} />
-                </div>
-                <div className="mt-3 rounded-sm border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
-                  Next: open Today for your updated command, then come back tomorrow with the next proof.
-                </div>
-              </>
-            ) : (
-              <div className="mt-3 grid md:grid-cols-2 gap-3 text-sm">
-                <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
-                <VerdictRow label="Why it scored that way" value={verdict.why} />
-                <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
-                <VerdictRow label="Missing standard" value={verdict.missingStandard} />
-                <VerdictRow label="Next upgrade" value={verdict.nextUpgrade} />
-                <VerdictRow label="Elite version" value={verdict.eliteVersion} />
-                <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
-                <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
-                <VerdictRow
-                  label="Identity escalation"
-                  value={`${verdict.identityEscalationAllowed ? "Allowed" : "Blocked"}: ${verdict.identityEscalationReason}`}
-                />
-              </div>
-            )}
-            {verdict.attachmentUrl && (
-              <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
-                <Paperclip className="h-3 w-3 text-primary" />
-                <span className="text-muted-foreground">Attached evidence:</span>
-                <a href={verdict.attachmentUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline truncate">
-                  {verdict.attachmentName ?? "view file"}
-                </a>
-              </div>
-            )}
-            {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
-            {submittedStudyClassification && !firstProofMode && (
-              <div className="mt-4">
-                <StudyVerdictHint
-                  classification={submittedStudyClassification}
-                  label="Fake study detector"
-                />
-              </div>
-            )}
-            <div className="mt-4 flex flex-col sm:flex-row gap-2">
-              <Link to="/dashboard" className="w-full sm:w-auto">
-                <Button
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    void logEvent(firstProofMode ? "activation_verdict_cta_clicked" : "proof_verdict_cta_clicked", {
-                      route: "/proof",
-                      source: firstProofMode ? "first_proof" : "proof",
-                      ctaName: "back_to_today",
-                      destination: "/dashboard",
-                    });
-                  }}
-                >
-                  {firstProofMode ? "See my next step" : "Back to Today"}
-                </Button>
-              </Link>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => { setVerdict(null); setSubmittedStudyClassification(null); setDetailOpen(false); }}
-              >
-                Submit another proof
-              </Button>
-            </div>
-          </Card>
         )}
 
         {/* Submission form */}
@@ -1172,7 +1080,7 @@ export default function Proof() {
                     <option value="">- none -</option>
                     {pending.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.mode ?? p.domain} - {p.title}
+                        {displayProofContractLabel(p)}
                       </option>
                     ))}
                   </select>
@@ -1355,7 +1263,7 @@ export default function Proof() {
                     <option value="">- none -</option>
                     {pending.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.mode ?? p.domain} - {p.title}
+                        {displayProofContractLabel(p)}
                       </option>
                     ))}
                   </select>
@@ -1454,7 +1362,7 @@ export default function Proof() {
                   Attach supporting evidence (optional)
                 </Label>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  PDF, image, or text up to 10MB. Images and PDFs are run through OCR; text files are read directly. Extracted text is added to the verdict context.
+                  PDF, image, or text up to 10MB. Readable text from files is added to this proof before submission.
                 </p>
 
                 <input
@@ -1513,7 +1421,7 @@ export default function Proof() {
                         </span>
                         {attachState.status === "ready" && attachState.extractedSource !== "none" && (
                           <span className="font-mono uppercase tracking-widest text-[9px] text-primary shrink-0">
-                            {attachState.extractedSource === "ocr" ? "ocr indexed" : "text indexed"}
+                            Text captured
                           </span>
                         )}
                       </div>
@@ -1549,7 +1457,7 @@ export default function Proof() {
                       <div className="flex items-center gap-2 text-xs">
                         <ScanLine className="h-3.5 w-3.5 text-primary" />
                         <span className="font-mono uppercase tracking-widest text-[10px] text-muted-foreground">
-                          Extracted text ({attachState.extractedSource === "ocr" ? "OCR" : "text file"}) - editable
+                          Captured text - editable
                         </span>
                         {extractedEdited && (
                           <span className="font-mono uppercase tracking-widest text-[9px] text-primary">edited</span>
@@ -1588,12 +1496,12 @@ export default function Proof() {
                         setAttachmentText(e.target.value);
                         setExtractedEdited(e.target.value !== originalExtractedText);
                       }}
-                      placeholder="Extracted text will appear here. Correct OCR mistakes before scoring."
+                      placeholder="Captured text will appear here. Correct any mistakes before submission."
                       className="mt-2 min-h-[140px] max-h-[280px] font-mono text-xs leading-relaxed"
                     />
                     <div className="mt-1 flex justify-between font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                      <span>{attachmentText.length.toLocaleString()} chars / fed into verdict</span>
-                      {attachState.ocrTruncated && <span className="text-primary">truncated at 20k</span>}
+                      <span>{attachmentText.length.toLocaleString()} characters added to proof</span>
+                      {attachState.ocrTruncated && <span className="text-primary">shortened at 20k</span>}
                     </div>
                   </div>
                 )}
@@ -1646,8 +1554,17 @@ export default function Proof() {
           </div>
         </Card>
 
+        {submitting && (
+          <Card className="panel p-4 border-primary/30 bg-primary/5 max-w-full overflow-hidden">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <ScanLine className="h-4 w-4 text-primary animate-pulse" />
+              <span>Evaluating this proof...</span>
+            </div>
+          </Card>
+        )}
+
         {verdict && (
-          <Card className="panel p-4 md:p-5 border-primary/40 max-w-full overflow-hidden" id="feedback">
+          <MotionVerdictCard className="panel p-4 md:p-5 max-w-full overflow-hidden" id="feedback">
             <ProofVerdictSummaryCard
               verdict={verdict}
               firstProofMode={firstProofMode}
@@ -1665,7 +1582,6 @@ export default function Proof() {
             <ProofVerdictDetails
               verdict={verdict}
               firstProofMode={firstProofMode}
-              submittedStudyClassification={submittedStudyClassification}
             />
             {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
             {submittedStudyClassification && !firstProofMode && isStudyDomain(
@@ -1682,83 +1598,7 @@ export default function Proof() {
                 />
               </div>
             )}
-            <div className="mt-4 flex flex-col sm:flex-row gap-2">
-              <Link to="/dashboard" className="w-full sm:w-auto">
-                <Button
-                  size="sm"
-                  className="w-full sm:w-auto min-h-[44px] native-tap"
-                  onClick={() => {
-                    void logEvent(firstProofMode ? "activation_verdict_cta_clicked" : "proof_verdict_cta_clicked", {
-                      route: "/proof",
-                      source: firstProofMode ? "first_proof" : "proof",
-                      ctaName: "back_to_today",
-                      destination: "/dashboard",
-                    });
-                  }}
-                >
-                  {firstProofMode ? "See my next step" : "Back to Today"}
-                </Button>
-              </Link>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full sm:w-auto min-h-[44px] native-tap"
-                onClick={() => { setVerdict(null); setSubmittedStudyClassification(null); setDetailOpen(false); }}
-              >
-                Submit another proof
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {!firstProofMode && (
-          <MobileCollapse eyebrow="Definitions" label="Contract vs Artifact" trackId="proof_definitions">
-            <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
-              <div className="flex items-start gap-3">
-                <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                    Definitions
-                  </span>
-                  <p className="text-sm text-muted-foreground mt-1 break-words">
-                    A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
-                    A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </MobileCollapse>
-        )}
-
-        {!firstProofMode && (
-          <MobileCollapse eyebrow="Stats" label="Strength tally & filter" trackId="proof_stats">
-            <Card className="panel p-4 max-w-full overflow-hidden">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="grid grid-cols-4 gap-2 flex-1">
-                  {(["weak", "moderate", "strong", "elite"] as const).map((s) => (
-                    <div key={s} className="rounded-sm border border-border p-2 text-center min-w-0">
-                      <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{s}</div>
-                      <div className={"mt-1 text-lg font-semibold font-mono " + (s === "elite" ? "text-primary" : "")}>{strengthCount(s)}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="proof-domain-filter" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Filter</Label>
-                  <select
-                    id="proof-domain-filter"
-                    value={filterDomain}
-                    onChange={(e) => setFilterDomain(e.target.value)}
-                    className="rounded-md border border-input bg-background px-3 py-1.5 text-sm max-w-full"
-                  >
-                    <option value="all">all areas</option>
-                    {activeModes.map((mode) => (
-                      <option key={mode.mode_id} value={mode.mode_id.toLowerCase()}>{mode.display_name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </Card>
-          </MobileCollapse>
+          </MotionVerdictCard>
         )}
 
         {/* Pending contracts */}
@@ -1779,7 +1619,12 @@ export default function Proof() {
                   {filteredPending.map((p) => (
                     <Card key={p.id} className="panel p-4 flex items-start justify-between gap-3 flex-wrap max-w-full overflow-hidden">
                       <div className="min-w-0 flex-1">
-                        <div className="font-mono text-[10px] uppercase text-muted-foreground break-words">{p.domain} - {p.mode}</div>
+                        <div className="font-mono text-[10px] text-muted-foreground break-words">
+                          {formatProofMeta([
+                            displayProofDomain(p.domain),
+                            p.mode ? humaniseModeId(p.mode) : null,
+                          ])}
+                        </div>
                         <div className="text-sm font-medium break-words">{p.title}</div>
                         {p.required_artifact && <div className="text-xs text-muted-foreground mt-1 break-words">Required: {p.required_artifact}</div>}
                         {p.evidence_standard && <div className="text-xs text-muted-foreground mt-0.5 break-words">Standard: {p.evidence_standard}</div>}
@@ -1873,25 +1718,46 @@ function ProofVerdictSummaryCard({
   firstProofMode: boolean;
   onImprove: () => void;
 }) {
-  const improve = shouldImproveProof(verdict);
+  const copy = proofResultCopy({
+    strength: verdict.evidenceStrength,
+    score: verdict.qualityScore,
+    nextUpgrade: verdict.nextUpgrade,
+    contractClosed: verdict.contractClosed,
+    firstProofMode,
+  });
   return (
     <div className="rounded-sm border border-primary/35 bg-primary/5 p-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 min-w-0">
-          <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof saved.</span>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof result</span>
+          </div>
+          <h2 className="mt-2 text-lg font-semibold leading-snug break-words">{copy.headline}</h2>
         </div>
         <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
       </div>
       <div className="mt-3 grid gap-3 text-sm">
-        <VerdictRow label="Count status" value={countStatus(verdict)} />
-        <VerdictRow label="Today status" value={todayStatus(verdict)} />
-        <VerdictRow label="One next command" value={verdict.nextUpgrade} />
+        <VerdictRow label="Count status" value={copy.countStatus} />
+        <VerdictRow label="Today status" value={copy.todayStatus} />
       </div>
+      {copy.nextCommand ? (
+        <div className="mt-3 rounded-sm border border-primary/30 bg-background/50 p-4">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">One next command</div>
+          <p className="mt-2 text-base font-medium leading-6 break-words">{copy.nextCommand}</p>
+          {copy.nextCommandReason && (
+            <p className="mt-2 text-xs text-muted-foreground leading-5 break-words">{copy.nextCommandReason}</p>
+          )}
+        </div>
+      ) : (
+        <div className="mt-3 rounded-sm border border-border bg-background/50 p-4 text-sm text-muted-foreground">
+          No next command is available yet. Submit the proof again after checking the required fields.
+        </div>
+      )}
       <div className="mt-4 flex flex-col sm:flex-row gap-2">
-        {improve ? (
+        {copy.primaryAction === "improve" ? (
           <Button size="sm" className="w-full sm:w-auto min-h-[44px] native-tap" onClick={onImprove}>
-            Improve proof
+            {copy.primaryLabel}
           </Button>
         ) : (
           <Link to="/dashboard" className="w-full sm:w-auto">
@@ -1907,7 +1773,7 @@ function ProofVerdictSummaryCard({
                 });
               }}
             >
-              {firstProofMode ? "See my next step" : "Back to Today"}
+              {copy.primaryLabel}
             </Button>
           </Link>
         )}
@@ -1927,16 +1793,14 @@ function ProofVerdictSummaryCard({
 function ProofVerdictDetails({
   verdict,
   firstProofMode,
-  submittedStudyClassification,
 }: {
   verdict: Verdict;
   firstProofMode: boolean;
-  submittedStudyClassification: ReturnType<typeof classifyStudyActivity> | null;
 }) {
   const impact = verdictIdentityImpact(verdict.evidenceStrength);
   const toneClass =
     impact.tone === "warn"
-      ? "border-amber-500/40 bg-amber-500/5 text-amber-200"
+      ? "border-warning/40 bg-warning/5 text-warning"
       : impact.tone === "good"
         ? "border-primary/40 bg-primary/5 text-primary"
         : impact.tone === "elite"
@@ -1971,13 +1835,6 @@ function ProofVerdictDetails({
             {verdict.identityEscalationAllowed ? "Standard raised" : "Standard not raised"}: {verdict.identityEscalationReason}
           </div>
         </div>
-        {submittedStudyClassification && !firstProofMode && (
-          <StudyVerdictHint
-            classification={submittedStudyClassification}
-            label="Fake study detector"
-          />
-        )}
-        {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
       </div>
     </details>
   );
@@ -2020,8 +1877,12 @@ function CompletedArtifactCard({ artifact }: { artifact: ProofArtifactRow }) {
   return (
     <Card className="panel p-4 max-w-full overflow-hidden">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="font-mono text-[10px] uppercase text-muted-foreground break-words min-w-0">
-          {artifact.domain} - {artifact.artifact_type ?? "artifact"} - {artifact.created_at?.slice(0, 10)}
+        <div className="font-mono text-[10px] text-muted-foreground break-words min-w-0">
+          {formatProofMeta([
+            displayProofDomain(artifact.domain),
+            displayProofArtifactType(artifact.artifact_type),
+            displayProofDate(artifact.created_at),
+          ])}
         </div>
         {artifact.evidence_strength && (
           isMobile ? (

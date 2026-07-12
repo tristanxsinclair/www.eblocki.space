@@ -5,6 +5,7 @@ import {
   plainCourtVerdict,
   plainEvidenceStrength,
   plainLedgerText,
+  proofResultCopy,
   plainRiskLine,
   plainTierLabel,
   plainVerdictLabel,
@@ -28,6 +29,23 @@ describe("user-facing-copy", () => {
     expect(plainEvidenceStrength("accepted_strong")).toBe("Strong proof");
     expect(plainEvidenceStrength("accepted_useful")).toBe("Useful proof");
     expect(plainEvidenceStrength("elite")).toBe("Elite proof");
+  });
+
+  it("builds honest proof result copy without raw strength enums", () => {
+    const weak = proofResultCopy({ strength: "weak", score: 3, nextUpgrade: "Add a visible paragraph." });
+    expect(weak.headline).toBe("Proof submitted. It does not count yet.");
+    expect(weak.countStatus).toBe("Did not count yet");
+    expect(weak.primaryAction).toBe("improve");
+    expect(weak.headline).not.toContain("weak");
+
+    const first = proofResultCopy({ strength: "moderate", score: 6, firstProofMode: true });
+    expect(first.headline).toBe("Proof submitted. Needs upgrade.");
+    expect(first.primaryLabel).toBe("See my next step");
+
+    const strong = proofResultCopy({ strength: "strong", score: 8, nextUpgrade: "Use the same standard tomorrow." });
+    expect(strong.countStatus).toBe("Counted");
+    expect(strong.primaryAction).toBe("dashboard");
+    expect(strong.headline).not.toContain("strong");
   });
 
   it("maps court verdict enums", () => {
