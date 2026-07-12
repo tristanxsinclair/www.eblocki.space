@@ -1,210 +1,108 @@
-# Work Package WP-003 — P1 Verdict Copy
+# Work Package WP-004 — P1 Account Delete hardening
 
-- Governing control: **P1-VERDICT-COPY** (Phase 1)
-- Master-plan sections: Trust/Reliability; 300-Control Register (proof verdict credibility)
+- Governing control: **P1-ACCOUNT-DELETE** (Phase 1)
+- Master-plan sections: Trust/Reliability, Commercial integrity, Data-lifecycle
+- Supersedes WP-003 as the active current work package (WP-003 flipped to VERIFIED COMPLETE 2026-07-11).
 
 ## 1. Work-package ID
-WP-003.
+WP-004.
 
 ## 2. Governing control
-P1-VERDICT-COPY.
+P1-ACCOUNT-DELETE.
 
 ## 3. Phase
 Phase 1 — Trust and release blockers.
 
 ## 4. Priority
-P0.
+P1.
 
 ## 5. Objective
-Remove duplicated, stale, raw-enum, false, and infrastructure-flavoured verdict copy from normal-user proof result surfaces after proof submission, without changing judgment logic.
+Make account deletion complete, safe, and trust-preserving:
+- Cancel any active Stripe subscription before deleting the auth user, so a deleted account can never continue to be billed.
+- Paginate the storage purge so users with >1000 proof attachments are not silently truncated.
+- Remove the hard-coded manual `delete()` table loop and rely on the `ON DELETE CASCADE` contract already declared on every user-scoped public table.
+- Replace the native `window.prompt` destructive confirmation with a mobile-safe shadcn `AlertDialog` that keeps the destructive button disabled until the user types `DELETE`.
 
 ## 6. User problem
-Proof result UI repeated verdict messages, exposed implementation wording, and could keep the previous verdict visible while a new proof was being submitted.
+Deleting an Eblocki account did not cancel the user's live Stripe subscription. Storage purge was capped at 1000 files. Destructive confirmation used a native browser prompt inconsistent with the design system and prone to mobile misfires.
 
 ## 7. Commercial / trust harm
-False or duplicated result copy makes the proof loop feel less credible and can imply a proof counted, a next command exists, or a technical process succeeded when the current submission did not provide that evidence.
+A deleted user could remain billed by Stripe with no in-app record. Silent storage truncation left the user's evidence behind after they explicitly requested deletion. A drift-prone manual table list guarantees future user-scoped tables would leak past a delete unless someone remembered to edit the function.
 
-## 8. Current behaviour
-- `Proof.tsx` rendered a toast with verdict wording and multiple result-card regions deriving copy independently.
-- `Proof.tsx` left the previous verdict mounted while a new submission was processing.
-- Strength tally labels rendered raw strength tokens.
-- Completed and pending proof lists rendered raw stored domain/mode/artifact metadata.
-- Attachment copy exposed OCR/indexing/verdict-context wording.
-- `ProofWeek.tsx` rendered two closed/completed labels in the same state.
-- Coach and proof-capture adjacent UI exposed prompt/model-style wording.
+## 8. Current behaviour (pre-WP-004)
+- `supabase/functions/delete-account/index.ts` purged storage with a single `list({ limit: 1000 })` call.
+- The function iterated a hard-coded list of tables (`proof_artifacts`, `proof_commitments`, `coach_interactions`, `daily_control_sheets`, `performance_os_config`, `user_modes`, `user_onboarding_profiles`, `user_research_profiles`, `push_tokens`, `analytics_events`, `user_roles`, `profiles`) — a subset of the actual user-scoped tables.
+- No Stripe subscription cancellation.
+- `src/pages/Settings.tsx` used `window.prompt("… Type DELETE to confirm.")` for the destructive action.
 
 ## 9. Expected behaviour
-Each proof result view has one dominant verdict headline derived from canonical copy, subordinate labels only add distinct information, loading suppresses stale verdict output, and absence states do not invent missing next commands.
+- Function cancels any `active` / `trialing` / `past_due` non-`onetime_` subscription for the user, grouped by `environment`, using `createStripeClient(env)`.
+- Function paginates storage list/remove.
+- Function relies on `ON DELETE CASCADE` from `auth.users` for the remaining table cleanup.
+- Settings UI uses `AlertDialog` with typed `DELETE` confirmation and the destructive button disabled until the phrase matches.
 
-## 10. Scope
-- `src/pages/Proof.tsx`
-- `src/pages/ProofWeek.tsx`
-- `src/pages/Coach.tsx` only where proof/coach copy exposed prompt-style wording
-- Proof-adjacent components found by focused searches
-- Existing canonical display/copy helpers
+## 10. Scope (declared surface)
+- `supabase/functions/delete-account/index.ts`
+- `src/pages/Settings.tsx`
+- `src/components/eblocki/DeleteAccountDialog.tsx` (new)
+- `docs/release/elite-current-work-package.md`
+- `docs/release/elite-master-execution-ledger.md`
 
 ## 11. Non-scope
-No scoring rules, verdict thresholds, state detection, XP, identity progression, schema, Supabase migrations, Stripe, pricing, entitlements, Founder access, Coach prompt construction, AI provider configuration, or new analytics events.
+No changes to Stripe pricing, product, entitlement, Founder access, webhook logic, `create-checkout`, `create-portal-session`, or `payments-webhook`. No schema / migration / RLS / GRANT changes (all user-scoped tables already CASCADE from `auth.users`). No changes to `export-data`, `coach`, or proof surfaces. No new analytics events. No new secrets.
 
 ## 12. Dependencies
-Repository truth on the current published `main` branch; the original Lovable handoff target was `origin/main` at `2332eed`. Browser QA depends on an injected Supabase session or approved test account. Export deployment verification depends on Supabase CLI/project access and a safe export account.
+- `createStripeClient(env)` in `supabase/functions/_shared/stripe.ts` (already exists; used by `create-checkout`, `payments-webhook`, `create-portal-session`).
+- `STRIPE_SANDBOX_API_KEY` (already configured). `STRIPE_LIVE_API_KEY` is only present after live provisioning; the function catches per-row cancellation errors so a missing live key on a sandbox-only project does not abort deletion.
 
-## 13. Files inspected
-- `docs/release/elite-master-execution-ledger.md`
+## 13. Files changed
+- `supabase/functions/delete-account/index.ts`
+- `src/pages/Settings.tsx`
+- `src/components/eblocki/DeleteAccountDialog.tsx` (new)
 - `docs/release/elite-current-work-package.md`
-- `src/pages/Proof.tsx`
-- `src/pages/ProofWeek.tsx`
-- `src/pages/Coach.tsx`
-- `src/components/eblocki/ProofClosureCard.tsx`
-- `src/components/eblocki/ProofContractCard.tsx`
-- `src/components/eblocki/ProofStandardPreviewPanel.tsx`
-- `src/components/eblocki/CourtVerdictBadge.tsx`
-- `src/components/eblocki/StudyVerdictHint.tsx`
-- `src/components/eblocki/CompletionReflection.tsx`
-- `src/components/eblocki/motion/MotionVerdictCard.tsx`
-- `src/components/eblocki/motion/ProofProcessingState.tsx`
-- `src/components/eblocki/ProofCapture.tsx`
-- `src/lib/eblocki/proof-scoring.ts`
-- `src/lib/eblocki/proof-check.ts`
-- `src/lib/eblocki/verdict-identity-impact.ts`
-- `src/lib/eblocki/user-facing-copy.ts`
-- `src/lib/eblocki/display-labels.ts`
-- `supabase/functions/mcp/index.ts`
-- `playwright.config.ts`
-- `tests/e2e/fixtures/auth.ts`
-
-## 14. Files changed
-- `package-lock.json`
-- `src/components/eblocki/IdentityLedger.tsx`
-- `src/components/eblocki/NotificationPreferences.tsx`
-- `src/components/eblocki/ProofCapture.tsx`
-- `src/lib/eblocki/__tests__/user-facing-copy.test.ts`
-- `src/lib/eblocki/__tests__/proof-standard-preview.test.ts`
-- `src/lib/eblocki/proof-standard-preview.ts`
-- `src/lib/eblocki/user-facing-copy.ts`
-- `src/pages/Coach.tsx`
-- `src/pages/Proof.tsx`
-- `src/pages/ProofWeek.tsx`
-- `supabase/functions/mcp/index.ts`
 - `docs/release/elite-master-execution-ledger.md`
-- `docs/release/elite-current-work-package.md`
-- `docs/release/evidence/wp-003/fresh-mobile-01-moderate-result.jpg`
-- `docs/release/evidence/wp-003/fresh-mobile-02-strong-result.jpg`
-- `docs/release/evidence/wp-003/fresh-mobile-03-verdict-details-top.jpg`
-- `docs/release/evidence/wp-003/fresh-mobile-04-identity-feedback.jpg`
-- `docs/release/evidence/wp-003/fresh-mobile-05-feedback-and-artifacts-raw-enum.jpg`
-- `docs/release/evidence/wp-003/fresh-mobile-06-dashboard-closed.jpg`
 
-## 15. Data / schema implications
-None. The only lockfile change syncs dependencies already declared in `package.json`; no schema or persisted proof data changes were made.
+## 14. Data / schema implications
+None. Deletion still relies on `ON DELETE CASCADE` already declared on every user-scoped public table. No DDL touched.
 
-## 16. Security implications
-Normal proof surfaces no longer expose OCR/indexing/verdict-context/prompt/model-style wording. No auth or authorization changes.
+## 15. Security implications
+- No new client-exposed secrets.
+- Stripe API calls remain server-side and routed through the connector gateway via `createStripeClient(env)`.
+- Auth-user deletion still uses the service-role key server-side only.
+- Failure modes: Stripe or storage errors are logged with `console.warn` and do not abort auth-user deletion; the user's right to be deleted takes precedence over cleanup completeness. This is intentional and documented in the function header.
 
-## 17. Mobile implications
-Result-card CTAs remain full-width on small screens, stale verdict output is suppressed during submission, and the result card still uses the existing motion/card surface.
+## 16. Mobile implications
+`AlertDialog` uses the same shadcn primitives already used across the app; destructive button is full-width on the mobile layout via the existing footer stack. `autoCapitalize="characters"` on the confirmation input reduces mobile misfires.
 
-## 18. Accessibility implications
-The proof result now has one visible heading for the dominant verdict headline and keeps button labels concrete.
+## 17. Accessibility implications
+Confirmation `Label` is associated with the input via `htmlFor`. Destructive action is a real `AlertDialogAction` (keyboard-reachable, focus-trapped by Radix), not a raw `Button`.
 
-## 19. Analytics implications
-No new analytics events. Existing CTA logging remains in place.
+## 18. Analytics implications
+No new events. Existing `EVENTS.account_deletion_requested` still fires immediately before the function call.
 
-## 20. Acceptance criteria
-1. Raw enum literals are not directly rendered in proof result JSX.
-2. Infrastructure-flavoured proof result copy is translated or removed.
-3. Proof result surfaces show one dominant verdict headline.
-4. Loading/error/resubmission states suppress stale verdict output.
-5. Judgment logic and proof scoring remain unchanged.
-6. `npx tsc --noEmit`, targeted copy tests, `npm run test`, `npx vite build`, and Phase 0 bundle scan are recorded.
+## 19. Acceptance criteria
+1. `delete-account` cancels active Stripe subscriptions before auth-user delete.
+2. `delete-account` paginates storage purge.
+3. `delete-account` no longer maintains a manual table delete loop.
+4. `Settings.tsx` uses `AlertDialog`; destructive button disabled until `DELETE` typed.
+5. `npx tsgo --noEmit` clean.
+6. `npm run test` green.
+7. `npx vite build` green.
+8. Phase 0 bundle rescan: `rg -a -n 'vs_[A-Za-z0-9]{6,}|gpt-[0-9]|openai/|EBLOCKI_VECTOR_STORE_ID' dist` → no matches.
+9. Playwright evidence at 390 px and 1280 px of dialog open, disabled state, enabled state — no actual submission.
+10. Ledger + current-work-package updated. WP-004 flipped to VERIFIED COMPLETE only after criteria 1-9 recorded with exact commands.
 
-## 21. Verification and evidence
-- `npx tsc --noEmit`: PASS, final run exited 0 with no output.
-- Targeted tests: PASS, `npm run test -- src/lib/eblocki/__tests__/user-facing-copy.test.ts src/lib/eblocki/__tests__/proof-scoring.test.ts src/lib/eblocki/__tests__/proof-check.test.ts src/lib/eblocki/__tests__/display-labels.test.ts` → 3 files, 29 tests passed. `display-labels.test.ts` does not exist, so Vitest ran the existing matching proof suites.
-- `npm run test`: PASS, 39 files and 306 tests passed.
-- `npx vite build`: PASS. Initial build failed because declared font dependencies were absent from `package-lock.json`/`node_modules`; `npm install` synced the existing `package.json` declarations, then build passed. Final build after screenshot-driven raw-metadata patch also passed.
-- Phase 0 bundle rescan: `rg -a -n 'vs_[A-Za-z0-9]{6,}|gpt-[0-9]|openai/|EBLOCKI_VECTOR_STORE_ID' dist` produced no output and `rg_exit=1`, interpreted as no matches.
-- Raw enum search: remaining matches are internal mapping keys, imports/types, product terms such as Momentum/Recovery, admin/debug pages, tests, or non-verdict surfaces; no WP-003 proof result JSX renders raw enum tokens directly. Fresh proof-metadata search `rg -n -S "EBLOCKI_PRODUCT_REVIEW|\bOTHER\b" src/pages src/components/eblocki` produced no output and `rg_exit=1`.
-- Infrastructure vocabulary search: remaining matches are admin/audit panels, legal disclosure, browser/PWA API method names, query-param variable names, product "freeze token" wording, or non-rendered implementation references; proof result surfaces are clean.
-- Playwright/browser QA: BLOCKED for automated local proof QA. `LOVABLE_BROWSER_SUPABASE_STORAGE_KEY`, `LOVABLE_BROWSER_SUPABASE_SESSION_JSON`, and `LOVABLE_BROWSER_SUPABASE_COOKIES_JSON` are missing. `npx playwright test --list` found 4 existing System Forge tests and no proof-result harness; `npx playwright test` exited 0 with 4 skipped because the auth fixture self-skips without an injected Supabase session.
-- Manual Lovable-preview mobile QA: FAILED against the user-supplied preview screenshots. Tristan subsequently reported Lovable is up to date, so these screenshots are retained as last-observed failed evidence, not proof of the current deployed state. Fresh authenticated QA is still required. Evidence files:
-  - `docs/release/evidence/wp-003/manual-mobile-01-form-top.jpg`
-  - `docs/release/evidence/wp-003/manual-mobile-02-standard.jpg`
-  - `docs/release/evidence/wp-003/manual-mobile-03-standard-detail.jpg`
-  - `docs/release/evidence/wp-003/manual-mobile-04-result-failed.jpg`
-  - `docs/release/evidence/wp-003/manual-mobile-05-verdict-details.jpg`
-  - `docs/release/evidence/wp-003/manual-mobile-06-identity-feedback.jpg`
-  - `docs/release/evidence/wp-003/manual-mobile-07-duplicate-feedback.jpg`
-  - `docs/release/evidence/wp-003/manual-mobile-08-completed-artifacts.jpg`
-  - `docs/release/evidence/wp-003/manual-mobile-09-today-closed.jpg`
-- Manual QA findings from those screenshots:
-  - Deployed preview still shows pre-WP-003 result copy: `Proof saved.` and `Counted as Elite Proof.`
-  - Deployed preview duplicates the feedback block: two `Was this judgment useful?` sections appear in one result view.
-  - Deployed preview exposes raw `EBLOCKI_PRODUCT_REVIEW` in selected-standard/completed-artifact surfaces.
-  - Deployed preview shows raw lower-case strength copy in details: `Scored 10/10 (elite).`
-  - Screenshots are mobile only; no 1280px desktop proof-result evidence was provided.
-- Fresh authenticated mobile QA after the Lovable update:
-  - Evidence files:
-    - `docs/release/evidence/wp-003/fresh-mobile-01-moderate-result.jpg`
-    - `docs/release/evidence/wp-003/fresh-mobile-02-strong-result.jpg`
-    - `docs/release/evidence/wp-003/fresh-mobile-03-verdict-details-top.jpg`
-    - `docs/release/evidence/wp-003/fresh-mobile-04-identity-feedback.jpg`
-    - `docs/release/evidence/wp-003/fresh-mobile-05-feedback-and-artifacts-raw-enum.jpg`
-    - `docs/release/evidence/wp-003/fresh-mobile-06-dashboard-closed.jpg`
-  - Result-card copy is materially improved: one visible dominant headline, clear count/today status, no duplicate feedback block in the fresh result screenshots, and Dashboard closed-card copy is concise.
-  - Remaining defect found in `fresh-mobile-05-feedback-and-artifacts-raw-enum.jpg`: Completed Proof Artifacts exposed `EBLOCKI_PRODUCT_REVIEW - OTHER - 2026-07-10`.
-  - Corrective source patch: `src/pages/Proof.tsx` now renders pending/completed proof metadata through `humaniseModeId`/proof display helpers and no longer applies machine-style uppercase to those dynamic metadata values.
-  - Post-fix authenticated browser evidence is still required; no 1280px desktop proof-result screenshot has been observed.
-- Updated-preview recheck: direct unauthenticated curl still reaches Lovable auth-bridge and headless Playwright still lands on `lovable.dev/login`; Codex has not observed the updated authenticated proof result state.
-- Supabase export deployment/archive inspection: BLOCKED. `supabase` CLI is not available in this environment, and no safe test export account/JWT is present.
+## 20. External-verification gate
+End-to-end Stripe cancellation validation requires a disposable Stripe test-mode account (create test subscription → delete account → verify cancelled in Stripe test dashboard). Recorded as `WP-004-EXTERNAL` and left `BLOCKED — EXTERNAL ACCESS REQUIRED`, mirroring WP-001's pattern.
 
-## 22. Rollback / fallback and next control
-Rollback: revert the WP-003 code/doc changes. No data migration or scoring change is involved.
+## 21. Rollback
+Revert `supabase/functions/delete-account/index.ts` and `src/pages/Settings.tsx`; remove `src/components/eblocki/DeleteAccountDialog.tsx`. No schema/data changes to unwind.
 
-Manual browser QA procedure:
-1. Start the app with authenticated Supabase session available: `npm run dev -- --host 127.0.0.1 --port 8080`.
-2. Open `/proof` at 390px and 1280px.
-3. Submit one weak or moderate proof, then submit another proof immediately.
-4. Confirm one dominant result headline, no duplicate toast/card verdict copy, no raw enum, no infrastructure wording, no stale previous verdict while processing, and mobile containment.
-5. Save screenshots under `docs/release/evidence/wp-003/` if browser evidence is required.
+## 22. Next work package after WP-004
+**P1-PAY-ENV** verification: confirm `PaymentTestModeBanner` never renders when `getStripeEnvironment() === 'live'` and `create-checkout` refuses cross-env price mismatches. **P1-PRICING-SOT** remains `NEEDS MANUAL DECISION` pending Tristan-approved public prices, Founder terms, and refund rules.
 
-Manual export verification:
-1. `supabase link --project-ref <project-ref>`
-2. `supabase functions deploy export-data`
-3. `curl -sS -H "Authorization: Bearer <test-user-jwt>" "https://<project-ref>.functions.supabase.co/export-data" -o /tmp/eblocki-export.json`
-4. `jq '.performance_os_config[] | has("model"), has("vector_store_id")' /tmp/eblocki-export.json`
-5. Expected output: only `false` values.
+---
 
-Next strict action: rerun authenticated proof-result QA after the raw-metadata patch is deployed at 390px and 1280px. After WP-003 browser QA passes, the next strict work package is P1-ACCOUNT-DELETE review; P1-PAY-ENV verification follows. P1-PRICING-SOT remains blocked pending Tristan's manual pricing decision.
+## Historical: WP-003 archive
 
-## 23. E2E Test Infrastructure (supporting WP-003 verification)
-
-Added to unblock authenticated browser QA without relying on Lovable-injected session variables.
-
-Files created:
-- `scripts/seed-e2e-test-user.mjs` — idempotent "Alex Morgan" average-user provisioning
-- `tests/e2e/fixtures/average-user-auth.ts` — Playwright fixture using real `signInWithPassword`
-- `tests/e2e/wp-003-verdict-copy-qa.spec.ts` — 390px + 1280px viewport QA spec
-- `docs/testing/permanent-average-user.md` — full documentation
-- `.env.example` — placeholder env vars
-
-Package scripts added:
-- `npm run test:user:seed` — provision the test user
-- `npm run test:e2e:auth` — run WP-003 authenticated QA
-- `npm run test:e2e:reset-user` — reset test user state
-
-Authentication flow:
-1. Seed script creates user via `supabase.auth.admin.createUser` (service-role, server only)
-2. Playwright fixture authenticates via `supabase.auth.signInWithPassword` (anon key)
-3. Session injected into browser localStorage
-4. Storage state cached to `playwright/.auth/average-user.json` (gitignored, 30-min TTL)
-
-Status: INFRASTRUCTURE READY — BLOCKED on environment credentials.
-
-Blocker: `E2E_TEST_USER_EMAIL`, `E2E_TEST_USER_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY` are not available in the current CI/sandbox environment. These must be configured as repository secrets or provided via `.env` in a local development session.
-
-To execute WP-003 browser QA:
-1. Configure the environment variables in `.env` (see `.env.example`)
-2. `npm run test:user:seed`
-3. `npm run test:e2e:auth`
-4. Screenshots saved to `docs/release/evidence/wp-003/`
+WP-003 (P1-VERDICT-COPY) was flipped to VERIFIED COMPLETE 2026-07-11 after authenticated Playwright reobservation at 390 px and 1280 px. Full record retained in `docs/release/elite-master-execution-ledger.md` and evidence archived under `docs/release/evidence/wp-003/post-fix/`.

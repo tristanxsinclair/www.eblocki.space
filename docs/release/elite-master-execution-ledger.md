@@ -4,8 +4,8 @@
 - Master plan: `Eblocki Elite Product Standard Complete` (uploaded 2026-07-10)
 - Stack: React 18 + Vite + TS + React Router + Tailwind/shadcn + Supabase + PostHog + Capacitor + Stripe
 - Current active phase: **Phase 1 — Trust and release blockers**
-- Current release gate: WP-003 code/test/build complete; post-fix browser QA and export deployment remain external-verification gates
-- Ledger last updated: 2026-07-11
+- Current release gate: WP-004 (P1-ACCOUNT-DELETE) code/test/build complete; live Stripe cancellation end-to-end remains an external-verification gate (`WP-004-EXTERNAL`)
+- Ledger last updated: 2026-07-12
 
 ## E2E Test Infrastructure (WP-003 supporting)
 
@@ -71,7 +71,8 @@ audit completion.
 | P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | VERIFIED COMPLETE (2026-07-11) | — |
 | P1-BILLING-PORTAL | 1 | P1 | Billing portal reachable from Settings | `BillingCard`, `create-portal-session` | VERIFIED COMPLETE (prior turn) | — |
 | P1-ACCOUNT-EXPORT | 1 | P1 | Account data export | `export-data` | VERIFIED COMPLETE after WP-001 | — |
-| P1-ACCOUNT-DELETE | 1 | P1 | Account deletion | `delete-account` | NOT VERIFIED THIS PASS | Inspect next |
+| P1-ACCOUNT-DELETE | 1 | P1 | Account deletion | `delete-account`, `Settings.tsx`, `DeleteAccountDialog.tsx` | VERIFIED COMPLETE (2026-07-12, code) — external live-Stripe end-to-end BLOCKED | — |
+| WP-004-EXTERNAL | 1 | P1 | Live Stripe cancellation E2E on delete | Stripe test-mode account | BLOCKED — EXTERNAL ACCESS REQUIRED | Provision disposable Stripe test-mode subscription and verify cancellation on account delete |
 | P3-MOBILE-REMEDIATION | 3 | P1 | Remaining mobile defects | multiple pages | NOT STARTED | Deferred to Phase 3 |
 | P4-RETENTION | 4 | P2 | Retention validation | — | NOT STARTED | Gated by Phase 1 |
 | P5-MONETISATION | 5 | P2 | Monetisation validation | — | NOT STARTED | Gated by P1-PRICING-SOT |
@@ -94,6 +95,90 @@ audit completion.
    **P1-ACCOUNT-DELETE** review. **P1-PAY-ENV** verification follows.
    **P1-PRICING-SOT** is blocked pending Tristan-approved public prices,
    Founder terms, refund rules.
+4. WP-004 shipped 2026-07-12 (see the WP-004 evidence section below).
+   Next executable strict WP is **P1-PAY-ENV** verification.
+
+## WP-004 evidence (P1-ACCOUNT-DELETE)
+Date: 2026-07-12.
+
+Objective:
+- Cancel any active Stripe subscription before deleting the auth user.
+- Paginate the storage purge so users with >1000 attachments are not truncated.
+- Remove the manual table-delete loop and rely on the existing `ON DELETE CASCADE`
+  contract from `auth.users` on every user-scoped public table.
+- Replace the `window.prompt` destructive confirmation with a shadcn `AlertDialog`
+  that keeps the destructive button disabled until the user types `DELETE`.
+
+Root cause:
+- `supabase/functions/delete-account/index.ts` never called `stripe.subscriptions.cancel`,
+  so a deleted Eblocki account could remain billed by Stripe with no in-app record.
+- Storage purge used `list({ limit: 1000 })` with no pagination.
+- The function maintained a hard-coded table list that was already a proper subset of
+  the actual user-scoped public tables — leading to drift as tables like `subscriptions`,
+  `custom_systems`, `system_reps`, `momentum_state`, `xp_events`, `domain_levels`,
+  `operator_level`, `identity_ledger`, `court_verdicts`, and `notification_preferences`
+  were added over time. All of these already carry `ON DELETE CASCADE REFERENCES
+  auth.users(id)`, so the manual loop was both redundant and drift-prone.
+- `src/pages/Settings.tsx` line 174 used `window.prompt` for a destructive action —
+  inconsistent with the design system and prone to mobile misfires.
+
+Files inspected:
+- `supabase/functions/delete-account/index.ts`
+- `supabase/functions/_shared/stripe.ts`
+- `supabase/functions/payments-webhook/index.ts`
+- `supabase/functions/create-checkout/index.ts`
+- `supabase/migrations/*.sql` (FK cascade verification)
+- `src/pages/Settings.tsx`
+- `src/components/ui/alert-dialog.tsx`
+
+Files changed:
+- `supabase/functions/delete-account/index.ts`
+- `src/pages/Settings.tsx`
+- `src/components/eblocki/DeleteAccountDialog.tsx` (new)
+- `docs/release/elite-current-work-package.md`
+- `docs/release/elite-master-execution-ledger.md`
+
+Data / schema implications: none. Every user-scoped public table already declares
+`ON DELETE CASCADE REFERENCES auth.users(id)`, so `admin.auth.admin.deleteUser(uid)`
+drops the rest.
+
+Security implications: no new client-exposed secrets. Stripe calls remain
+server-side via `createStripeClient(env)`. Failure modes are documented in the
+function header — subscription-cancel and storage-purge errors are logged with
+`console.warn` and do not abort auth-user deletion.
+
+Acceptance evidence:
+- `npx tsgo --noEmit` → PASS, exit 0, no output.
+- `npm run test` → PASS, 39 files, 306 tests, exit 0 (duration 12.46 s).
+- `npx vite build` → PASS, built in 6.37 s, exit 0.
+- Phase 0 bundle rescan:
+  `rg -a -n 'vs_[A-Za-z0-9]{6,}|gpt-[0-9]|openai/|EBLOCKI_VECTOR_STORE_ID' dist`
+  → no output, `rg_exit=1`. Confinement not regressed.
+- Playwright at 390 px and 1280 px on `/settings` (managed session, `LOVABLE_BROWSER_AUTH_STATUS=injected`):
+  - `docs/release/evidence/wp-004/mobile-390-01-account-card.png`
+  - `docs/release/evidence/wp-004/mobile-390-02-dialog-open-disabled.png`
+  - `docs/release/evidence/wp-004/mobile-390-03-wrong-phrase-still-disabled.png`
+  - `docs/release/evidence/wp-004/mobile-390-04-correct-phrase-enabled.png`
+  - `docs/release/evidence/wp-004/mobile-390-05-dialog-closed.png`
+  - `docs/release/evidence/wp-004/desktop-1280-01-account-card.png`
+  - `docs/release/evidence/wp-004/desktop-1280-02-dialog-open-disabled.png`
+  - `docs/release/evidence/wp-004/desktop-1280-03-wrong-phrase-still-disabled.png`
+  - `docs/release/evidence/wp-004/desktop-1280-04-correct-phrase-enabled.png`
+  - `docs/release/evidence/wp-004/desktop-1280-05-dialog-closed.png`
+  Visual confirmation on both viewports: on dialog open the destructive
+  `Delete account` button renders in the disabled/dim state; typing the wrong
+  phrase (`delete`) keeps it disabled; typing the exact phrase (`DELETE`)
+  transitions it to the bright destructive state with the input showing a
+  focus ring; the destructive submission was **not** executed to preserve the
+  test account.
+
+External-verification gate: `WP-004-EXTERNAL` — end-to-end Stripe cancellation on
+delete requires a disposable Stripe test-mode account. BLOCKED — EXTERNAL ACCESS
+REQUIRED. Verification procedure:
+1. Create a test-mode Stripe subscription for a seeded test user.
+2. Trigger delete-account via authenticated call.
+3. Confirm the subscription is `canceled` in the Stripe test dashboard.
+4. Confirm the `subscriptions` row is dropped (CASCADE).
 
 ## WP-002 evidence (P0-CONFINE-AI-BUNDLE-SCAN)
 Built with `npx vite build` (2026-07-10). Scans across `dist/`:
