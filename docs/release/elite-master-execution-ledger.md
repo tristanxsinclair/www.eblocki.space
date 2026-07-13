@@ -83,6 +83,7 @@ audit completion.
 | P0-CONFINE-AI-BUNDLE-SCAN | 0 | P0 | Search built client bundle for `vs_`, model IDs | build output | VERIFIED COMPLETE (WP-002) | — |
 | WP-005B / P1-PRICING-SOT | 1 | P0 | Pricing source of truth (Stripe + display) | `src/lib/stripe.ts`, Pricing, UpgradeCard | BLOCKED — MANUAL COMMERCIAL DECISION REQUIRED | Await Tristan decisions: Pro monthly, Pro annual, annual discount, Founder price/model, lifetime wording, refund wording |
 | WP-005A / P1-PAY-ENV | 1 | P0 | Payment env verification (sandbox vs live surfacing + routing) | `PaymentTestModeBanner`, `stripe.ts`, `create-checkout`, `payments-webhook`, `create-portal-session`, `useSubscription` | READY / EXECUTABLE | Verify banner/env partitioning and checkout mismatch rejection without changing prices/terms |
+| WP-IMPROVEMENT-LOOP-01 | Draft | P2 | Verdict, Gap, and Correction Surface v1 | Proof result surface | PARTIALLY COMPLETE — code/test/build complete, browser QA blocked | Draft PR only; do not merge before WP-005A release gate or without authenticated proof-result browser evidence |
 | P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | VERIFIED COMPLETE (2026-07-11) | — |
 | P1-BILLING-PORTAL | 1 | P1 | Billing portal reachable from Settings | `BillingCard`, `create-portal-session` | VERIFIED COMPLETE (prior turn) | — |
 | P1-ACCOUNT-EXPORT | 1 | P1 | Account data export | `export-data` | VERIFIED COMPLETE after WP-001 | — |
@@ -112,6 +113,141 @@ audit completion.
    prices, Founder terms, and refund rules.
 4. WP-004 shipped 2026-07-12 (see the WP-004 evidence section below).
    Next executable strict WP is **WP-005A / P1-PAY-ENV VERIFICATION**.
+5. WP-IMPROVEMENT-LOOP-01 was implemented as an out-of-sequence draft
+   product-refinement slice. It must not merge ahead of WP-005A unless Tristan
+   explicitly changes release order. Browser proof-result QA remains blocked
+   because no authenticated E2E credentials or local session are available.
+
+## WP-IMPROVEMENT-LOOP-01 evidence (Verdict, Gap, and Correction Surface v1)
+Date: 2026-07-13.
+
+Objective:
+- Make the proof-result experience clearly answer what the evidence proves,
+  the main available gap, the next correction, and what artifact should test
+  that correction.
+- Preserve existing proof scoring, persistence, routes, schemas, billing,
+  Coach, GameForge, System Forge, XP, identity progression, and forecasts.
+
+Root cause:
+- WP-003 centralized verdict headline/count/today copy, but the gap remained
+  in `ProofVerdictDetails` as `missingStandard` while correction stayed in the
+  primary card as a generic next command.
+- Available gap data is standard-level (`missingStandard` / `requiredEvidence`)
+  rather than a detected per-criterion missing element, so the UI needed honest
+  null/fallback states.
+- Correction data is `nextUpgrade`; it can be user-entered, scoring fallback,
+  or absent.
+- Mode/proof-type context existed during submission but was not carried into
+  the local verdict object for a corrected-attempt continuation.
+
+Implementation:
+- Added `buildImprovementLoopPresentation()` in
+  `src/lib/eblocki/user-facing-copy.ts`.
+- The helper returns one canonical presentation object with:
+  - verdict headline/classification/summary,
+  - nullable gap,
+  - nullable correction and expected next artifact,
+  - details labels,
+  - safe corrected-attempt href using existing `/proof`, `mode`, and `contract`
+    query parameters only.
+- Updated `src/pages/Proof.tsx` result UI to show:
+  - `What this proves`,
+  - `The main gap`,
+  - `What to do next`,
+  - `What to submit next`,
+  - collapsed `Verdict details`.
+- The result card now receives focus after verdict creation; loading uses a
+  short polite status line; previous verdict is still cleared before a new
+  submission.
+
+Files inspected:
+- `docs/release/elite-master-execution-ledger.md`
+- `docs/release/elite-current-work-package.md`
+- `docs/release/eblocki-repository-reconciliation-product-verdict.md`
+- `src/App.tsx`
+- `src/pages/Proof.tsx`
+- `src/pages/ProofWeek.tsx`
+- `src/pages/Dashboard.tsx`
+- `src/components/eblocki/ProofClosureCard.tsx`
+- `src/components/eblocki/ProofStandardPreviewPanel.tsx`
+- `src/components/eblocki/motion/MotionVerdictCard.tsx`
+- `src/lib/eblocki/user-facing-copy.ts`
+- `src/lib/eblocki/display-labels.ts`
+- `src/lib/eblocki/proof-scoring.ts`
+- `src/lib/eblocki/proof-check.ts`
+- `src/lib/eblocki/proof-standard-preview.ts`
+- `src/lib/eblocki/domain-standards.ts`
+- `src/lib/eblocki/first-proof.ts`
+- `src/lib/eblocki/temporal-proof-link.ts`
+- `src/lib/eblocki/analytics.ts`
+- `src/lib/eblocki/__tests__/user-facing-copy.test.ts`
+- `tests/e2e/wp-003-verdict-copy-qa.spec.ts`
+- `tests/e2e/fixtures/average-user-auth.ts`
+- `package.json`
+- `playwright.config.ts`
+
+Files changed:
+- `src/lib/eblocki/user-facing-copy.ts`
+- `src/pages/Proof.tsx`
+- `src/lib/eblocki/__tests__/user-facing-copy.test.ts`
+- `docs/release/elite-current-work-package.md`
+- `docs/release/elite-master-execution-ledger.md`
+
+Data / schema implications: none. No migrations, new tables, enum renames, or
+stored-data changes.
+
+Scoring implications: none. `scoreProofArtifact`, proof thresholds, persistence,
+and `proof_artifacts` writes are unchanged.
+
+Security implications:
+- No new network request or AI call.
+- No raw artifact content, verdict explanation, or correction text is logged.
+- Corrected-attempt analytics reuse existing whitelisted CTA properties only.
+
+Acceptance evidence:
+- `git diff --check` -> PASS, exit 0.
+- `npx tsc --noEmit` -> PASS, exit 0, no output.
+- `npm run test -- src/lib/eblocki/__tests__/user-facing-copy.test.ts`
+  -> PASS, 22 tests.
+- `npm run test` -> PASS, 39 files, 318 tests.
+- `npx vite build` -> PASS, existing large chunk warning remains.
+- Bundle confinement scan:
+  `rg -a -n 'vs_[A-Za-z0-9]{6,}|gpt-[0-9]|openai/|EBLOCKI_VECTOR_STORE_ID' dist`
+  -> no output, `rg_exit=1`; interpreted as no matches.
+- Source vocabulary scan:
+  `rg -n -iS '\b(model|vector|embedding|retrieval|prompt|llm|openai|token)\b' src/pages src/components/eblocki`
+  -> remaining matches are legal/admin/model-audit copy, PWA install APIs,
+  coach query params/quick prompts, `dashboard-view-model` imports, product
+  "freeze token" wording, and temporal trajectory implementation labels. No
+  new proof-result primary copy match from WP-IMPROVEMENT-LOOP-01.
+- Raw enum scan:
+  `rg -n -S 'EBLOCKI_[A-Z_]+|GENERAL_EXECUTION|accepted_strong|accepted_useful|accepted_minimum|elite_evidence|evidence_strength|proof_tier|quality_score|artifact_type|low_energy|hype_drift|academic_displacement|strategic_build|locked_in' src/pages/Proof.tsx src/components/eblocki src/lib/eblocki/user-facing-copy.ts`
+  -> remaining matches are internal DB column names, internal enum translation
+  maps, badge/style maps, tests, and source constants. No new primary
+  proof-result text renders raw enum values.
+
+Browser evidence:
+- In-app Browser at 390 px, local `/proof` -> redirected to `/auth`, title
+  `Sign in | EBLOCKI`; no proof result visible.
+- In-app Browser at 1280 px, local `/proof` -> redirected to `/auth`, title
+  `Sign in | EBLOCKI`; no proof result visible; auth page horizontal overflow
+  check returned false.
+- `npx playwright test tests/e2e/wp-003-verdict-copy-qa.spec.ts` -> PASS exit
+  0 with 3 skipped because E2E credentials/storage state are not configured.
+- No screenshots were created for this package. Do not report mobile or
+  desktop proof-result browser QA as passed.
+
+Status:
+- **PARTIALLY COMPLETE** — code/test/build/scans complete; authenticated browser
+  proof-submission/result QA blocked.
+- Draft PR required. Merge blocked by WP-005A release gate and by missing
+  proof-result browser evidence unless Tristan explicitly approves a partially
+  verified PR.
+
+Rollback:
+- Revert `src/lib/eblocki/user-facing-copy.ts`,
+  `src/pages/Proof.tsx`, `src/lib/eblocki/__tests__/user-facing-copy.test.ts`,
+  and this release-documentation update. No data rollback required.
 
 ## WP-004 evidence (P1-ACCOUNT-DELETE)
 Date: 2026-07-12.
