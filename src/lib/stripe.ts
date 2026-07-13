@@ -1,16 +1,27 @@
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 
-type StripeEnv = "sandbox" | "live";
+export type StripeEnv = "sandbox" | "live";
 
 const clientToken = import.meta.env.VITE_PAYMENTS_CLIENT_TOKEN as string | undefined;
+const paymentsNotConfiguredMessage =
+  "Payments are not configured for this build. " +
+  "Complete go-live in the Payments tab to enable production checkout.";
+
+export type StripeClientConfigStatus =
+  | { configured: true; environment: StripeEnv }
+  | { configured: false; reason: "missing" | "invalid" };
+
+export function getStripeClientConfigStatus(): StripeClientConfigStatus {
+  if (!clientToken) return { configured: false, reason: "missing" };
+  if (clientToken.startsWith("pk_test_")) return { configured: true, environment: "sandbox" };
+  if (clientToken.startsWith("pk_live_")) return { configured: true, environment: "live" };
+  return { configured: false, reason: "invalid" };
+}
 
 function paymentsEnvironment(): StripeEnv {
-  if (clientToken?.startsWith("pk_test_")) return "sandbox";
-  if (clientToken?.startsWith("pk_live_")) return "live";
-  throw new Error(
-    "Payments are not configured for this build. " +
-      "Complete go-live in the Payments tab to enable production checkout.",
-  );
+  const status = getStripeClientConfigStatus();
+  if (status.configured) return status.environment;
+  throw new Error(paymentsNotConfiguredMessage);
 }
 
 let stripePromise: Promise<Stripe | null> | null = null;
@@ -28,10 +39,7 @@ export function getStripeEnvironment(): StripeEnv {
 }
 
 export function isPaymentsConfigured(): boolean {
-  return (
-    clientToken?.startsWith("pk_test_") === true ||
-    clientToken?.startsWith("pk_live_") === true
-  );
+  return getStripeClientConfigStatus().configured;
 }
 
 /** Human-readable price IDs. Stable across sandbox and live. */

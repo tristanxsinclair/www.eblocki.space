@@ -4,8 +4,8 @@
 - Master plan: `Eblocki Elite Product Standard Complete` (uploaded 2026-07-10)
 - Stack: React 18 + Vite + TS + React Router + Tailwind/shadcn + Supabase + PostHog + Capacitor + Stripe
 - Current active phase: **Phase 1 — Trust and release blockers**
-- Current release gate: WP-004 (P1-ACCOUNT-DELETE) code/test/build complete; live Stripe cancellation end-to-end remains an external-verification gate (`WP-004-EXTERNAL`)
-- Ledger last updated: 2026-07-12
+- Current release gate: WP-005A (P1-PAY-ENV) code/test/build complete on branch; Stripe/Supabase dashboard and live payment-flow verification remain external-access gates
+- Ledger last updated: 2026-07-13
 
 ## Reconciliation closeout (2026-07-12)
 
@@ -19,7 +19,7 @@
   - force-push blocked, branch deletion blocked, admins enforced
   - deployment policy: Pages + Datadog remain post-merge/post-deploy release signals
 - WP split enforced:
-  - `WP-005A / P1-PAY-ENV` = READY / EXECUTABLE (no pricing/term changes)
+  - `WP-005A / P1-PAY-ENV` = PARTIALLY COMPLETE on branch — code/test/build verified; external dashboard/payment-flow evidence still required (no pricing/term changes)
   - `WP-005B / P1-PRICING-SOT` = BLOCKED — MANUAL COMMERCIAL DECISION REQUIRED (Tristan-owned decisions)
 
 ## E2E Test Infrastructure (WP-003 supporting)
@@ -82,7 +82,7 @@ audit completion.
 | P0-CONFINE-AI-EXPORT | 0 | P0 | Strip `model`/`vector_store_id` from export-data archive | `supabase/functions/export-data` | BLOCKED — EXTERNAL ACCESS REQUIRED | Deploy function and inspect one real export archive |
 | P0-CONFINE-AI-BUNDLE-SCAN | 0 | P0 | Search built client bundle for `vs_`, model IDs | build output | VERIFIED COMPLETE (WP-002) | — |
 | WP-005B / P1-PRICING-SOT | 1 | P0 | Pricing source of truth (Stripe + display) | `src/lib/stripe.ts`, Pricing, UpgradeCard | BLOCKED — MANUAL COMMERCIAL DECISION REQUIRED | Await Tristan decisions: Pro monthly, Pro annual, annual discount, Founder price/model, lifetime wording, refund wording |
-| WP-005A / P1-PAY-ENV | 1 | P0 | Payment env verification (sandbox vs live surfacing + routing) | `PaymentTestModeBanner`, `stripe.ts`, `create-checkout`, `payments-webhook`, `create-portal-session`, `useSubscription` | READY / EXECUTABLE | Verify banner/env partitioning and checkout mismatch rejection without changing prices/terms |
+| WP-005A / P1-PAY-ENV | 1 | P0 | Payment env verification (sandbox vs live surfacing + routing) | `PaymentTestModeBanner`, `stripe.ts`, `create-checkout`, `payments-webhook`, `create-portal-session`, `useSubscription` | PARTIALLY COMPLETE — CODE/TEST/BUILD VERIFIED; EXTERNAL ACCESS REQUIRED | Deploy/configure function secrets; verify Stripe dashboard mode, sandbox checkout, webhook, portal, and entitlement writes |
 | P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | VERIFIED COMPLETE (2026-07-11) | — |
 | P1-BILLING-PORTAL | 1 | P1 | Billing portal reachable from Settings | `BillingCard`, `create-portal-session` | VERIFIED COMPLETE (prior turn) | — |
 | P1-ACCOUNT-EXPORT | 1 | P1 | Account data export | `export-data` | VERIFIED COMPLETE after WP-001 | — |
@@ -111,7 +111,151 @@ audit completion.
    **WP-005B / P1-PRICING-SOT** is blocked pending Tristan-approved public
    prices, Founder terms, and refund rules.
 4. WP-004 shipped 2026-07-12 (see the WP-004 evidence section below).
-   Next executable strict WP is **WP-005A / P1-PAY-ENV VERIFICATION**.
+5. WP-005A code/test/build verification completed 2026-07-13 on branch
+   `codex/wp-005a-pay-env-verification`; external Stripe/Supabase dashboard
+   and actual payment-flow verification remain blocked by access.
+
+## WP-005A evidence (P1-PAY-ENV)
+Date: 2026-07-13.
+
+Objective:
+- Verify and harden Stripe environment separation so sandbox/test and live
+  payment resources cannot be crossed accidentally.
+- Ensure checkout, webhooks, portal sessions, return page, and subscription
+  reads agree on the intended payment environment.
+- Keep pricing, Founder terms, refund wording, schema, subscriptions, and
+  product modules unchanged.
+
+Environment model:
+- Local: app URL `http://127.0.0.1:8080`, Supabase project id
+  `imeghpjrqlmifkltuqdx` from `supabase/config.toml`, expected Stripe mode
+  `sandbox`. `.env.development` contains a public test publishable token; no
+  server payment secrets are present locally.
+- Preview: not discoverable from repo state. Expected to use `sandbox` unless
+  owner-provided deployment config says otherwise. BLOCKED — ACCESS REQUIRED.
+- Staging: no staging environment found in repo. NOT CONFIGURED.
+- Production: app URL `https://www.eblocki.space`, expected Stripe mode `live`.
+  Supabase/Stripe dashboard verification not available in this session.
+  BLOCKED — ACCESS REQUIRED.
+
+Root cause:
+- Browser code derived payment mode from the public publishable key, but
+  server functions trusted a client-supplied or query-string environment.
+- Checkout accepted any identifier-shaped lookup key before asking Stripe.
+- Webhook mutation paths did not compare Stripe event/resource `livemode`
+  with the endpoint environment before writing subscription rows.
+- Operational error logging could include raw Stripe object identifiers.
+
+Files inspected:
+- `.env.example`
+- `.github/workflows/ci.yml`
+- `.github/workflows/eblocki-verify.yml`
+- `package.json`
+- `src/components/PaymentTestModeBanner.tsx`
+- `src/components/StripeEmbeddedCheckout.tsx`
+- `src/components/eblocki/BillingCard.tsx`
+- `src/components/eblocki/UpgradeCard.tsx`
+- `src/hooks/useEntitlement.ts`
+- `src/hooks/useSubscription.ts`
+- `src/lib/stripe.ts`
+- `src/pages/CheckoutReturn.tsx`
+- `src/pages/Pricing.tsx`
+- `supabase/config.toml`
+- `supabase/functions/_shared/stripe.ts`
+- `supabase/functions/create-checkout/index.ts`
+- `supabase/functions/create-portal-session/index.ts`
+- `supabase/functions/delete-account/index.ts`
+- `supabase/functions/payments-webhook/index.ts`
+- `supabase/migrations/20260708161151_d975c7ae-9012-4aa7-897d-cf01baa694e5.sql`
+- `supabase/migrations/20260710190000_profiles_subscription_columns.sql`
+
+Files changed:
+- `.env.example`
+- `src/components/PaymentTestModeBanner.tsx`
+- `src/lib/stripe.ts`
+- `src/pages/CheckoutReturn.tsx`
+- `supabase/functions/_shared/stripe.ts`
+- `supabase/functions/_shared/stripe-config.ts` (new)
+- `supabase/functions/create-checkout/index.ts`
+- `supabase/functions/create-portal-session/index.ts`
+- `supabase/functions/delete-account/index.ts`
+- `supabase/functions/payments-webhook/index.ts`
+- `src/lib/eblocki/__tests__/stripe-environment.test.ts` (new)
+- `docs/release/elite-current-work-package.md`
+- `docs/release/elite-master-execution-ledger.md`
+- `docs/release/evidence/wp-005a/pricing-payment-env-390.png`
+- `docs/release/evidence/wp-005a/pricing-payment-env-1280.png`
+
+Implementation:
+- Added `supabase/functions/_shared/stripe-config.ts`, a pure guard for
+  explicit deployment environment, key-prefix mismatch detection, allowed
+  return origins, allowed price lookup keys, Stripe `livemode` checks, and
+  redacted operational errors.
+- `create-checkout` now rejects unknown lookup keys before Stripe calls,
+  validates `PAYMENTS_EXPECTED_ENV`, validates allowed return origins, and
+  confirms the resolved Price `livemode` before session creation.
+- `create-portal-session` now validates deployment environment, allowed return
+  origin, and customer `livemode` before creating a portal session.
+- `payments-webhook` now validates `PAYMENTS_EXPECTED_ENV`, verifies the
+  webhook signature, confirms event/resource `livemode`, rejects unknown
+  lookup keys, and only grants one-time Founder access for paid
+  `founder_lifetime` payment sessions.
+- Checkout return remains read-only and now displays only a redacted reference.
+- `PaymentTestModeBanner` and `src/lib/stripe.ts` share one client-side
+  publishable-token interpretation.
+
+Acceptance evidence:
+- `git diff --check` -> PASS.
+- `npx tsc --noEmit` -> PASS.
+- `npm run test -- src/lib/eblocki/__tests__/stripe-environment.test.ts`
+  -> PASS, 12 tests.
+- `npm run test` -> PASS, 40 files and 318 tests.
+- `npx vite build` -> PASS.
+- `npm run lint` -> PASS, 0 errors and 14 pre-existing warnings.
+- Bundle confinement scan:
+  `rg -a -n 'vs_[A-Za-z0-9]{6,}|gpt-[0-9]|openai/|EBLOCKI_VECTOR_STORE_ID' dist`
+  -> no matches, `rg_exit=1`.
+- Client secret scan:
+  `rg -a -o -n '(sk|rk)_(test|live)_[A-Za-z0-9]|whsec_[A-Za-z0-9]|SUPABASE_SERVICE_ROLE_KEY|STRIPE_(SANDBOX|LIVE)_API_KEY|PAYMENTS_(SANDBOX|LIVE)_WEBHOOK_SECRET|LOVABLE_API_KEY' dist`
+  -> no matches, `rg_exit=1`.
+- Source secret scan:
+  `rg -n -o -S '\b(sk|rk)_(test|live)_[A-Za-z0-9]|\bwhsec_[A-Za-z0-9]|\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\b|\b(cus|sub|price|prod)_[A-Za-z0-9]{12,}\b' src supabase .github .env.example`
+  -> no matches, `rg_exit=1`.
+- Privileged `VITE_` scan:
+  `rg -n -S 'import\.meta\.env\.VITE_[A-Z0-9_]*(SERVICE_ROLE|WEBHOOK|SECRET|STRIPE_(SANDBOX|LIVE)|API_KEY|LOVABLE_API_KEY)' src supabase .github .env.example`
+  -> no matches, `rg_exit=1`.
+- Supabase/Stripe CLI availability:
+  `command -v supabase` -> no output, exit 1.
+  `command -v stripe` -> no output, exit 1.
+- Local env presence scan (redacted/mode-only):
+  `.env` present but missing all payment variables checked.
+  `.env.development` present with public test publishable token only; missing
+  server payment guard and secret variables.
+- Browser viewport QA on local `/pricing`:
+  - 390px: `Pricing — Eblocki`, test-mode banner visible, no framework overlay,
+    no horizontal overflow, Yearly toggle interaction worked.
+  - 1280px: `Pricing — Eblocki`, test-mode banner visible, no framework overlay,
+    no horizontal overflow, Yearly toggle interaction worked.
+  - Console: no app errors; existing React Router future-flag warnings only.
+  - Screenshots:
+    - `docs/release/evidence/wp-005a/pricing-payment-env-390.png`
+    - `docs/release/evidence/wp-005a/pricing-payment-env-1280.png`
+
+External verification still required:
+1. Inspect Supabase function secrets in each deployment environment.
+2. Inspect Stripe dashboard sandbox/live Products, Prices, Customer Portal, and
+   webhook endpoints without exposing secret values.
+3. Execute a sandbox checkout and confirm only a sandbox subscription row is
+   written.
+4. Replay the same webhook event and confirm duplicate handling is safe.
+5. Execute failed/incomplete checkout and confirm no entitlement write.
+6. Open the portal for a paid sandbox user and confirm matching customer mode.
+7. Verify production live configuration before enabling live checkout.
+
+Status:
+- **PARTIALLY COMPLETE — CODE/TEST/BUILD VERIFIED; EXTERNAL ACCESS REQUIRED.**
+- Do not mark WP-005A VERIFIED COMPLETE until dashboard and real safe
+  payment-flow evidence is recorded.
 
 ## WP-004 evidence (P1-ACCOUNT-DELETE)
 Date: 2026-07-12.
