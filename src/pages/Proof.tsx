@@ -40,7 +40,11 @@ import { summariseArtifactContent } from "@/lib/eblocki/mobile-disclosure";
 import { extractNextUpgrade } from "@/lib/eblocki/next-upgrade-extract";
 import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { plainEvidenceStrength, proofResultCopy } from "@/lib/eblocki/user-facing-copy";
+import {
+  buildImprovementLoopPresentation,
+  plainEvidenceStrength,
+  type ImprovementLoopPresentation,
+} from "@/lib/eblocki/user-facing-copy";
 import {
   FIRST_PROOF_COPY,
   FIRST_PROOF_DEFAULTS,
@@ -71,6 +75,10 @@ const ARTIFACT_TYPES = [
 ];
 
 interface Verdict {
+  title: string;
+  modeId: string;
+  artifactType: string;
+  linkedContractId: string | null;
   qualityScore: number;
   evidenceStrength: "weak" | "moderate" | "strong" | "elite";
   feedback: string;
@@ -267,6 +275,7 @@ export default function Proof() {
   const [transferFlag, setTransferFlag] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
 
   const activeModes = useMemo(
     () => userModes.filter((m) => m.is_active !== false),
@@ -310,6 +319,11 @@ export default function Proof() {
       verdictStrength: verdict.evidenceStrength,
     });
   }, [verdict, firstProofMode]);
+
+  useEffect(() => {
+    if (!verdict || submitting) return;
+    resultRef.current?.focus();
+  }, [verdict, submitting]);
 
   // Honour ?mode=... and ?contract=... deep links
   useEffect(() => {
@@ -576,6 +590,10 @@ export default function Proof() {
       });
 
       setVerdict({
+        title: title.trim(),
+        modeId,
+        artifactType: effectiveArtifactType,
+        linkedContractId: linkedContract?.id ?? null,
         qualityScore: score.qualityScore,
         evidenceStrength: score.evidenceStrength,
         feedback: score.feedback,
@@ -773,6 +791,26 @@ export default function Proof() {
 
   const strengthCount = (k: string) =>
     filteredCompleted.filter((c) => c.evidence_strength === k).length;
+
+  const verdictPresentation = useMemo(() => verdict
+    ? buildImprovementLoopPresentation({
+        status: submitting ? "loading" : "ready",
+        strength: verdict.evidenceStrength,
+        score: verdict.qualityScore,
+        feedback: verdict.feedback,
+        nextUpgrade: verdict.nextUpgrade,
+        missingStandard: verdict.missingStandard,
+        selectedStandard: verdict.selectedStandard,
+        requiredEvidence: verdict.requiredEvidence,
+        artifactType: verdict.artifactType,
+        modeId: verdict.modeId,
+        contractId: verdict.linkedContractId,
+        firstProofMode,
+        contractClosed: verdict.contractClosed,
+      })
+    : null,
+    [firstProofMode, submitting, verdict],
+  );
 
   return (
     <AppShell>
@@ -1558,17 +1596,49 @@ export default function Proof() {
           <Card className="panel p-4 border-primary/30 bg-primary/5 max-w-full overflow-hidden">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <ScanLine className="h-4 w-4 text-primary animate-pulse" />
-              <span>Evaluating this proof...</span>
+              <span role="status" aria-live="polite">Evaluating this proof...</span>
             </div>
           </Card>
         )}
 
-        {verdict && (
-          <MotionVerdictCard className="panel p-4 md:p-5 max-w-full overflow-hidden" id="feedback">
+        {verdict && verdictPresentation && (
+          <MotionVerdictCard
+            ref={resultRef}
+            className="panel p-4 md:p-5 max-w-full overflow-hidden"
+            id="feedback"
+            tabIndex={-1}
+            aria-labelledby="proof-result-heading"
+          >
             <ProofVerdictSummaryCard
               verdict={verdict}
+              presentation={verdictPresentation}
               firstProofMode={firstProofMode}
-              onImprove={() => { setVerdict(null); setSubmittedStudyClassification(null); setDetailOpen(false); }}
+              onCorrectedAttempt={(presentation) => {
+                setVerdict(null);
+                setSubmittedStudyClassification(null);
+                setDetailOpen(true);
+                setSelectedModeId(verdict.modeId);
+                setArtifactType(verdict.artifactType);
+                if (verdict.linkedContractId && !verdict.contractClosed) {
+                  setLinkedContractId(verdict.linkedContractId);
+                }
+                setTitle(verdict.title ? `Corrected attempt: ${verdict.title}` : "");
+                setNextUpgrade(presentation.correction?.action ?? "");
+                void logEvent(firstProofMode ? "activation_verdict_cta_clicked" : "proof_verdict_cta_clicked", {
+                  route: "/proof",
+                  source: firstProofMode ? "first_proof" : "proof",
+                  ctaName: "submit_corrected_attempt",
+                  destination: presentation.correctedAttemptHref,
+                });
+                window.requestAnimationFrame(() => {
+                  document.getElementById("proof-title")?.focus();
+                });
+              }}
+              onNewProof={() => {
+                setVerdict(null);
+                setSubmittedStudyClassification(null);
+                setDetailOpen(false);
+              }}
             />
             {verdict.attachmentUrl && (
               <div className="mt-3 rounded-sm border border-border p-2.5 text-xs flex items-center gap-2">
@@ -1581,6 +1651,7 @@ export default function Proof() {
             )}
             <ProofVerdictDetails
               verdict={verdict}
+              presentation={verdictPresentation}
               firstProofMode={firstProofMode}
             />
             {!firstProofMode && <VerdictFeedback artifactId={verdict.artifactId} />}
@@ -1711,54 +1782,92 @@ function VerdictRow({ label, value }: { label: string; value: string }) {
 
 function ProofVerdictSummaryCard({
   verdict,
+  presentation,
   firstProofMode,
-  onImprove,
+  onCorrectedAttempt,
+  onNewProof,
 }: {
   verdict: Verdict;
+  presentation: ImprovementLoopPresentation;
   firstProofMode: boolean;
-  onImprove: () => void;
+  onCorrectedAttempt: (presentation: ImprovementLoopPresentation) => void;
+  onNewProof: () => void;
 }) {
-  const copy = proofResultCopy({
-    strength: verdict.evidenceStrength,
-    score: verdict.qualityScore,
-    nextUpgrade: verdict.nextUpgrade,
-    contractClosed: verdict.contractClosed,
-    firstProofMode,
-  });
   return (
     <div className="rounded-sm border border-primary/35 bg-primary/5 p-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof result</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">What this proves</span>
           </div>
-          <h2 className="mt-2 text-lg font-semibold leading-snug break-words">{copy.headline}</h2>
+          <h2 id="proof-result-heading" className="mt-2 text-lg font-semibold leading-snug break-words">
+            {presentation.verdict.headline}
+          </h2>
+          {presentation.verdict.summary && (
+            <p className="mt-2 text-sm text-muted-foreground leading-6 break-words">
+              {presentation.verdict.summary}
+            </p>
+          )}
         </div>
         <EvidenceStrengthBadge strength={verdict.evidenceStrength} score={verdict.qualityScore} />
       </div>
-      <div className="mt-3 grid gap-3 text-sm">
-        <VerdictRow label="Count status" value={copy.countStatus} />
-        <VerdictRow label="Today status" value={copy.todayStatus} />
+      <div className="mt-3 grid gap-3 text-sm md:grid-cols-3">
+        <VerdictRow label="Classification" value={presentation.verdict.classification} />
+        <VerdictRow label="Count status" value={presentation.details.countStatus} />
+        <VerdictRow label="Today status" value={presentation.details.todayStatus} />
       </div>
-      {copy.nextCommand ? (
-        <div className="mt-3 rounded-sm border border-primary/30 bg-background/50 p-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">One next command</div>
-          <p className="mt-2 text-base font-medium leading-6 break-words">{copy.nextCommand}</p>
-          {copy.nextCommandReason && (
-            <p className="mt-2 text-xs text-muted-foreground leading-5 break-words">{copy.nextCommandReason}</p>
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <section className="rounded-sm border border-border bg-background/50 p-4 min-w-0">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">The main gap</div>
+          {presentation.gap ? (
+            <>
+              <h3 className="mt-2 text-base font-semibold leading-snug break-words">{presentation.gap.label}</h3>
+              {presentation.gap.explanation && (
+                <p className="mt-2 text-xs text-muted-foreground leading-5 break-words">{presentation.gap.explanation}</p>
+              )}
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground leading-5 break-words">
+              A specific improvement gap was not identified for this artifact.
+            </p>
           )}
-        </div>
-      ) : (
-        <div className="mt-3 rounded-sm border border-border bg-background/50 p-4 text-sm text-muted-foreground">
-          No next command is available yet. Submit the proof again after checking the required fields.
-        </div>
-      )}
+        </section>
+        <section className="rounded-sm border border-primary/30 bg-background/50 p-4 min-w-0">
+          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">What to do next</div>
+          {presentation.correction ? (
+            <>
+              <p className="mt-2 text-base font-medium leading-6 break-words">{presentation.correction.action}</p>
+              {presentation.correction.expectedArtifact && (
+                <div className="mt-3 rounded-sm border border-border/80 bg-card/50 p-3">
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    What to submit next
+                  </div>
+                  <p className="mt-1 text-sm text-foreground leading-5 break-words">
+                    {presentation.correction.expectedArtifact}
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-muted-foreground leading-5 break-words">
+              The evidence was not detailed enough to identify the next correction. Submit a more specific artifact to receive targeted feedback.
+            </p>
+          )}
+        </section>
+      </div>
       <div className="mt-4 flex flex-col sm:flex-row gap-2">
-        {copy.primaryAction === "improve" ? (
-          <Button size="sm" className="w-full sm:w-auto min-h-[44px] native-tap" onClick={onImprove}>
-            {copy.primaryLabel}
-          </Button>
+        {presentation.primaryAction === "corrected_attempt" ? (
+          <Link to={presentation.correctedAttemptHref} className="w-full sm:w-auto">
+            <Button
+              size="sm"
+              className="w-full sm:w-auto min-h-[44px] native-tap"
+              onClick={() => onCorrectedAttempt(presentation)}
+            >
+              <Gavel className="h-3.5 w-3.5 mr-1.5" />
+              {presentation.primaryLabel}
+            </Button>
+          </Link>
         ) : (
           <Link to="/dashboard" className="w-full sm:w-auto">
             <Button
@@ -1773,7 +1882,7 @@ function ProofVerdictSummaryCard({
                 });
               }}
             >
-              {copy.primaryLabel}
+              {presentation.primaryLabel}
             </Button>
           </Link>
         )}
@@ -1781,7 +1890,7 @@ function ProofVerdictSummaryCard({
           size="sm"
           variant="outline"
           className="w-full sm:w-auto min-h-[44px] native-tap"
-          onClick={onImprove}
+          onClick={onNewProof}
         >
           Submit another proof
         </Button>
@@ -1792,9 +1901,11 @@ function ProofVerdictSummaryCard({
 
 function ProofVerdictDetails({
   verdict,
+  presentation,
   firstProofMode,
 }: {
   verdict: Verdict;
+  presentation: ImprovementLoopPresentation;
   firstProofMode: boolean;
 }) {
   const impact = verdictIdentityImpact(verdict.evidenceStrength);
@@ -1820,8 +1931,8 @@ function ProofVerdictDetails({
           label={firstProofMode ? "What was weak or missing" : "Missing standard"}
           value={verdict.evidenceStrength === "elite" ? "Nothing major - this meets the selected standard." : verdict.missingStandard}
         />
-        <VerdictRow label="Required evidence" value={verdict.requiredEvidence.join(" / ")} />
-        <VerdictRow label="Selected standard" value={verdict.selectedStandard} />
+        <VerdictRow label="Required evidence" value={presentation.details.requiredEvidence.join(" / ") || "No required-evidence list was available."} />
+        <VerdictRow label="Selected standard" value={presentation.details.standardLabel ?? "No selected standard was available."} />
         <VerdictRow label="Elite version" value={verdict.eliteVersion} />
         <VerdictRow label="Proof contract completed" value={verdict.contractClosed ? "Yes - linked Proof Contract marked completed." : "No - no linked contract was completed by this artifact."} />
         <VerdictRow label="Contract alignment" value={verdict.contractAlignment} />
