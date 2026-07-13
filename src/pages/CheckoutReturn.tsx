@@ -34,6 +34,7 @@ export default function CheckoutReturn() {
       ? "Lifetime access unlocked. All current and future Eblocki software is yours."
       : "Pro unlocked. Court of Evidence, Identity Ledger, Sentinel, and adaptive coaching are live."
     : "Stripe is delivering the confirmation. This usually takes a few seconds.";
+  const paymentReference = sessionId ? sessionId.slice(-6) : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex items-center justify-center px-6">
@@ -48,9 +49,9 @@ export default function CheckoutReturn() {
             <Link to="/settings">Manage billing</Link>
           </Button>
         </div>
-        {sessionId && (
+        {paymentReference && (
           <p className="text-[10px] text-muted-foreground/60 font-mono mt-8 break-all">
-            ref {sessionId}
+            ref ...{paymentReference}
           </p>
         )}
       </div>
