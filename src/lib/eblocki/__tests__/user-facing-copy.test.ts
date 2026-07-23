@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildImprovementLoopPresentation,
   compressForecastSummary,
   hasProofOnDate,
   plainCourtVerdict,
@@ -86,5 +87,186 @@ describe("user-facing-copy", () => {
     expect(summary).toContain("Main risk:");
     expect(summary).toContain("Next proof:");
     expect(summary).not.toContain("accepted_strong");
+  });
+
+  it("builds a strong verdict with a specific gap and correction", () => {
+    const result = buildImprovementLoopPresentation({
+      status: "ready",
+      strength: "strong",
+      score: 8,
+      feedback: "Strong evidence against Product System Review Standard. The artifact shows applied skill.",
+      missingStandard: "Missing product-system standard: actual output evidence, corrected logic, implementation path, measurable test, and next upgrade.",
+      nextUpgrade: "Run verification and document the before/after behavior.",
+      selectedStandard: "Product System Review Standard",
+      requiredEvidence: ["evidence from actual output/screen"],
+      artifactType: "product system review",
+      modeId: "EBLOCKI_PRODUCT_REVIEW",
+    });
+
+    expect(result?.verdict.headline).toBe("This artifact supports strong proof.");
+    expect(result?.verdict.summary).toContain("Strong evidence under Product System Review Standard");
+    expect(result?.gap?.label).toBe("product-system standard gap");
+    expect(result?.correction?.action).toBe("Run verification and document the before/after behavior.");
+    expect(result?.correction?.expectedArtifact).toBe("A corrected product system review that shows evidence from actual output/screen.");
+  });
+
+  it("builds a moderate verdict with a gap and correction", () => {
+    const result = buildImprovementLoopPresentation({
+      status: "ready",
+      strength: "moderate",
+      score: 6,
+      feedback: "Moderate evidence against General Proof Standard.",
+      missingStandard: "Missing general proof standard: visible artifact, applied detail, feedback awareness, and next upgrade.",
+      nextUpgrade: "Add one concrete example and the correction you will test next.",
+      selectedStandard: "General Proof Standard",
+      requiredEvidence: ["visible artifact"],
+      artifactType: "written answer",
+    });
+
+    expect(result?.verdict.headline).toBe("This artifact shows a partial proof.");
+    expect(result?.details.countStatus).toBe("Needs upgrade");
+    expect(result?.gap?.explanation).toContain("visible artifact");
+    expect(result?.correction?.expectedArtifact).toBe("A corrected written answer that shows visible artifact.");
+  });
+
+  it("builds an honest weak or rejected proof gap", () => {
+    const result = buildImprovementLoopPresentation({
+      status: "ready",
+      strength: "rejected",
+      score: 1,
+      missingStandard: "Missing general proof standard: visible artifact, applied detail, feedback awareness, and next upgrade.",
+      selectedStandard: "General Proof Standard",
+    });
+
+    expect(result?.verdict.headline).toBe("This artifact does not count yet.");
+    expect(result?.details.countStatus).toBe("Did not count yet");
+    expect(result?.gap?.label).toBe("general proof standard gap");
+  });
+
+  it("returns no gap when verdict data has no reliable gap", () => {
+    const result = buildImprovementLoopPresentation({
+      status: "ready",
+      strength: "strong",
+      score: 8,
+      selectedStandard: "General Proof Standard",
+      nextUpgrade: "Repeat the standard tomorrow.",
+    });
+
+    expect(result?.gap).toBeNull();
+    expect(result?.correction?.action).toBe("Repeat the standard tomorrow.");
+  });
+
+  it("returns a gap without fabricating a correction", () => {
+    const result = buildImprovementLoopPresentation({
+      status: "ready",
+      strength: "moderate",
+      score: 5,
+      missingStandard: "Missing general proof standard: visible artifact and next upgrade.",
+      selectedStandard: "General Proof Standard",
+    });
+
+    expect(result?.gap?.label).toBe("general proof standard gap");
+    expect(result?.correction).toBeNull();
+  });
+
+  it("returns null for an empty result", () => {
+    expect(buildImprovementLoopPresentation({ status: "ready" })).toBeNull();
+  });
+
+  it("suppresses stale result presentation while loading", () => {
+    expect(buildImprovementLoopPresentation({
+      status: "loading",
+      strength: "strong",
+      score: 8,
+      nextUpgrade: "Repeat the standard.",
+    })).toBeNull();
+  });
+
+  it("suppresses stale result presentation on error", () => {
+    expect(buildImprovementLoopPresentation({
+      status: "error",
+      strength: "strong",
+      score: 8,
+      nextUpgrade: "Repeat the standard.",
+    })).toBeNull();
+  });
+
+  it("humanises internal enum values in user-visible presentation fields", () => {
+    const result = buildImprovementLoopPresentation({
+      status: "ready",
+      strength: "accepted_strong",
+      score: 8,
+      feedback: "accepted_strong result for EBLOCKI_PRODUCT_REVIEW.",
+      missingStandard: "Missing accepted_strong standard: EBLOCKI_PRODUCT_REVIEW.",
+      nextUpgrade: "Submit an accepted_strong artifact.",
+      selectedStandard: "EBLOCKI_PRODUCT_REVIEW",
+      modeId: "EBLOCKI_PRODUCT_REVIEW",
+    });
+    const rendered = JSON.stringify({
+      verdict: result?.verdict,
+      gap: result?.gap,
+      correction: result?.correction,
+      details: result?.details,
+    });
+
+    expect(result?.details.standardLabel).toBe("Eblocki Product Review");
+    expect(rendered).not.toContain("accepted_strong");
+    expect(rendered).not.toContain("EBLOCKI_PRODUCT_REVIEW");
+  });
+
+  it("does not render infrastructure terms from source fields", () => {
+    const result = buildImprovementLoopPresentation({
+      status: "ready",
+      strength: "moderate",
+      score: 5,
+      feedback: "Tune the model prompt.",
+      missingStandard: "Missing prompt detail.",
+      nextUpgrade: "Rewrite the OpenAI retrieval prompt.",
+      selectedStandard: "General Proof Standard",
+    });
+    const rendered = JSON.stringify(result).toLowerCase();
+
+    expect(result?.verdict.summary).toContain("General Proof Standard");
+    expect(result?.gap).toBeNull();
+    expect(result?.correction).toBeNull();
+    expect(rendered).not.toMatch(/\b(model|vector|embedding|retrieval|prompt|llm|openai|token)\b/);
+  });
+
+  it("does not duplicate the dominant verdict headline across presentation fields", () => {
+    const result = buildImprovementLoopPresentation({
+      status: "ready",
+      strength: "strong",
+      score: 8,
+      selectedStandard: "General Proof Standard",
+      nextUpgrade: "Repeat the standard.",
+    });
+    const values = [
+      result?.verdict.headline,
+      result?.verdict.summary,
+      result?.gap?.label,
+      result?.gap?.explanation,
+      result?.correction?.action,
+      result?.correction?.expectedArtifact,
+    ];
+
+    expect(values.filter((value) => value === result?.verdict.headline)).toHaveLength(1);
+  });
+
+  it("uses the existing proof route safely for corrected attempts", () => {
+    const result = buildImprovementLoopPresentation({
+      status: "ready",
+      strength: "moderate",
+      score: 6,
+      nextUpgrade: "Add one visible correction.",
+      modeId: "GENERAL_EXECUTION",
+      contractId: "contract-123",
+      artifactType: "written answer",
+    });
+
+    expect(result?.primaryAction).toBe("corrected_attempt");
+    expect(result?.primaryLabel).toBe("Submit corrected attempt");
+    expect(result?.correctedAttemptHref).toBe("/proof?mode=GENERAL_EXECUTION&contract=contract-123");
+    expect(result?.correctedAttemptHref).not.toContain("correction=");
+    expect(result?.correctedAttemptHref).not.toContain("artifact=");
   });
 });
