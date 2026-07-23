@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { EvidenceStrength } from "@/lib/eblocki/proof-scoring";
-import {
-  isEvidenceStrength,
-  verdictIdentityImpact,
-} from "@/lib/eblocki/verdict-identity-impact";
+import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -16,7 +13,6 @@ import { EvidenceStrengthBadge, ModeBadge, StateBadge } from "@/components/ebloc
 import {
   ArrowRight,
   CircleDot,
-  Crosshair,
   FileText,
   Gavel,
   Layers,
@@ -50,6 +46,14 @@ import {
 } from "@/lib/eblocki/dashboard-view-model";
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
+import { buildProofEntryHref } from "@/lib/eblocki/first-proof";
+import { isSameLocalDay, localDayKey } from "@/lib/eblocki/local-day";
+import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
+import { ProofClosureCard } from "@/components/eblocki/ProofClosureCard";
+import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useEntitlement } from "@/hooks/useEntitlement";
+import { hasProofOnDate, plainEvidenceStrength } from "@/lib/eblocki/user-facing-copy";
 
 const EVIDENCE_STRENGTHS: EvidenceStrength[] = ["weak", "moderate", "strong", "elite"];
 
@@ -61,7 +65,9 @@ function isEvidenceStrength(value: string | null | undefined): value is Evidence
 }
 
 export default function Dashboard() {
+  const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { accessLevel } = useEntitlement();
   const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
   const [today, setToday] = useState<DashboardDailySheetRow | null>(null);
   const [pending, setPending] = useState<DashboardCommitmentRow[]>([]);
@@ -78,7 +84,19 @@ export default function Dashboard() {
   const [queryFailed, setQueryFailed] = useState(false);
   const [dashboardLoaded, setDashboardLoaded] = useState(false);
 
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = localDayKey();
+  const artifactDates = useMemo(
+    () => allArtifacts.map((artifact) => artifact.created_at).filter((value): value is string => !!value),
+    [allArtifacts],
+  );
+  const proofToday = useMemo(
+    () => hasProofOnDate(allArtifacts, todayISO),
+    [allArtifacts, todayISO],
+  );
+  const todayArtifact = useMemo(
+    () => allArtifacts.find((artifact) => isSameLocalDay(artifact.created_at, todayISO)) ?? null,
+    [allArtifacts, todayISO],
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -147,8 +165,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user || allArtifacts.length === 0) return;
-    const latestCreatedAt = allArtifacts[0]?.created_at?.slice(0, 10);
-    if (!latestCreatedAt || latestCreatedAt === todayISO) return;
+    const latestCreatedAt = allArtifacts[0]?.created_at;
+    if (!latestCreatedAt || isSameLocalDay(latestCreatedAt, todayISO)) return;
     void logEvent("activation_day_2_return_seen", {
       route: "/dashboard",
       source: "today",
@@ -187,6 +205,11 @@ export default function Dashboard() {
     temporalResult,
     queryFailed,
   }), [today, pending, recent, allArtifacts, recentCoach, activeDomains.length, temporalResult, queryFailed]);
+  const hasProofToday = view.evidenceSummary.proofsTodayCount > 0;
+  const submitProofHref = buildProofEntryHref({
+    firstProof: allArtifacts.length === 0,
+    uglyStart: !hasProofToday,
+  });
 
   const handleCheckIn = () => {
     if (!quick.trim()) return;
@@ -213,59 +236,93 @@ export default function Dashboard() {
       <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-5">
         <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">
           <div className="min-w-0">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Today
+            <span className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+              {new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
             </span>
-            <h1 className="text-2xl md:text-3xl font-semibold mt-1">
+            <h1 className="text-2xl md:text-4xl font-semibold mt-1.5 tracking-tight">
               Today
             </h1>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <Link to="/proof"><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit proof</Button></Link>
-            {allArtifacts.length > 0 && (
-              <>
-                <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
-                <Link to="/start-today?plan=1"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Plan</Button></Link>
-                <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
-              </>
-            )}
-          </div>
+          {!isMobile && (
+            <div className="flex gap-2 flex-wrap">
+              <Link to={submitProofHref}><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit proof</Button></Link>
+              {hasProofToday && allArtifacts.length > 0 && (
+                <>
+                  <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
+                  <Link to="/start-today?plan=1"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Plan</Button></Link>
+                  <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
+                </>
+              )}
+            </div>
+          )}
         </header>
 
-        {activeDomains.length === 0 && (
-          <Card className="panel p-4 border-primary/30 bg-primary/5">
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Modes not set up</div>
-                <p className="text-sm mt-1 text-muted-foreground">Add at least one mode so proof routes to the right standard.</p>
-              </div>
-              <Link to="/modes"><Button size="sm">Set up modes</Button></Link>
-            </div>
-          </Card>
+        {isMobile && (
+          <ProofClosureCard
+            view={view}
+            proofToday={proofToday}
+            hasAnyProof={allArtifacts.length > 0}
+            todayArtifact={todayArtifact}
+            todayISO={todayISO}
+          />
         )}
 
-        {allArtifacts.length > 0 && <CommandHero view={view} state={currentState} latestEvidenceStrength={latestArtifact?.evidence_strength} />}
+        {activeDomains.length === 0 && (
+          isMobile ? (
+            <MobileCollapse
+              eyebrow="Setup"
+              label="Modes not set up"
+              trackId="dashboard_modes_setup"
+            >
+              <Card className="panel rounded-2xl p-5 border-primary/25 bg-primary/[0.06] mobile-safe-card min-w-0 max-w-full">
+                <p className="text-sm leading-relaxed text-muted-foreground break-words">
+                  Add at least one mode so proof routes to the right standard. You can still submit proof now.
+                </p>
+                <Link to="/modes" className="mt-3 inline-block w-full">
+                  <Button size="default" variant="outline" className="w-full min-h-[44px] native-tap rounded-xl">
+                    Set up modes
+                  </Button>
+                </Link>
+              </Card>
+            </MobileCollapse>
+          ) : (
+            <Card className="panel rounded-2xl p-5 border-primary/25 bg-primary/[0.06]">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">Modes not set up</div>
+                  <p className="text-sm mt-2 leading-relaxed text-muted-foreground">Add at least one mode so proof routes to the right standard.</p>
+                </div>
+                <Link to="/modes"><Button size="sm" className="rounded-xl">Set up modes</Button></Link>
+              </div>
+            </Card>
+          )
+        )}
 
-        {allArtifacts.length === 0 && (
-          <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
-              Start here
+        {!isMobile && allArtifacts.length > 0 && (
+          <CommandHero view={view} state={currentState} latestEvidenceStrength={latestArtifact?.evidence_strength} />
+        )}
+
+        {!isMobile && allArtifacts.length === 0 && (
+          <Card className="panel rounded-2xl p-6 md:p-8 border-primary/30 bg-primary/[0.05] mobile-safe-card">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">Start here</span>
             </div>
-            <h2 className="mt-2 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">
+            <h2 className="mt-4 text-2xl md:text-3xl font-semibold leading-tight tracking-tight text-wrap-safe">
               Submit your first proof.
             </h2>
-            <p className="mt-2 text-sm text-muted-foreground text-wrap-safe">
+            <p className="mt-3 text-sm md:text-base leading-relaxed text-muted-foreground text-wrap-safe max-w-xl">
               Eblocki will tell you what counted, what was weak, and what to do next.
             </p>
-            <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
-              <Link to="/proof?first=1" className="w-full sm:w-auto">
+            <div className="mt-6 flex flex-col sm:flex-row gap-2 sm:flex-wrap">
+              <Link to={submitProofHref} className="w-full sm:w-auto">
                 <Button
                   size="sm"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto rounded-xl"
                   onClick={() => {
                     void logEvent("activation_landing_primary_cta_clicked", {
                       route: "/dashboard",
-                      destination: "/proof?first=1",
+                      destination: submitProofHref,
                       ctaName: "dashboard_submit_first_proof",
                     });
                   }}
@@ -278,7 +335,7 @@ export default function Dashboard() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto rounded-xl"
                   onClick={() => {
                     void logEvent("activation_landing_primary_cta_clicked", {
                       route: "/dashboard",
@@ -294,7 +351,37 @@ export default function Dashboard() {
           </Card>
         )}
 
+        {isMobile ? (
+          <MobileCollapse
+            eyebrow="Proof Week"
+            label="7-day proof challenge"
+            trackId="proof_week_panel"
+          >
+            <ProofWeekPanel artifactDates={artifactDates} />
+          </MobileCollapse>
+        ) : (
+          <ProofWeekPanel artifactDates={artifactDates} />
+        )}
+
         {allArtifacts.length > 0 && (
+          isMobile ? (
+            <MobileCollapse
+              eyebrow="Advanced"
+              label="Forecast, stats, diagnostics"
+              trackId="dashboard_advanced"
+              onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "dashboard_advanced" })}
+            >
+              <div className="space-y-5">
+                <EvidenceCommandPanel
+                  view={view}
+                  pending={pending}
+                  recent={recent}
+                  topPending={topPending}
+                  latestArtifact={latestArtifact}
+                />
+              </div>
+            </MobileCollapse>
+          ) : (
           <>
             <EvidenceCommandPanel
               view={view}
@@ -332,17 +419,17 @@ export default function Dashboard() {
                     state={state}
                     onDiagnose={handleCheckIn}
                   />
-                  <Card className="panel p-4 border-border/80 bg-card/50 mobile-safe-card">
+                  <Card className="panel rounded-2xl p-5 border-border/70 bg-card/60 mobile-safe-card">
                     <div className="flex items-center justify-between gap-3 min-w-0">
                       <div className="min-w-0">
-                        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Current setup</div>
-                        <p className="mt-1 text-sm text-muted-foreground text-wrap-safe">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Current setup</div>
+                        <p className="mt-1.5 text-sm text-muted-foreground text-wrap-safe">
                           {currentMode ? `Last coach lens: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
                         </p>
                       </div>
                       {currentState && <StateBadge state={currentState as BehaviouralState} />}
                     </div>
-                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
                       <MetricCell label="Mode count" value={String(view.evidenceSummary.modesCount)} />
                       <MetricCell label="Latest proof" value={view.evidenceSummary.latestProofTitle ?? "none"} />
                       <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
@@ -358,7 +445,7 @@ export default function Dashboard() {
                     <ProductMatchPanel
                       artifacts={allArtifacts}
                       temporal={temporalResult}
-                      accessLevel="free"
+                      accessLevel={accessLevel}
                       operatingProfile={{
                         primaryDomain: activeDomains[0] ?? null,
                         recommendationsAllowed: true,
@@ -371,6 +458,7 @@ export default function Dashboard() {
               }
             />
           </>
+          )
         )}
       </div>
     </AppShell>
@@ -391,35 +479,38 @@ export function CommandHero({
     ? verdictIdentityImpact(latestEvidenceStrength)
     : null;
   return (
-    <Card className="panel p-5 md:p-6 border-primary/40 bg-primary/5 mobile-safe-card">
+    <Card className="panel rounded-2xl p-6 md:p-7 border-primary/30 bg-primary/[0.06] mobile-safe-card">
       <div className="flex items-start justify-between gap-4 flex-wrap min-w-0">
         <div className="min-w-0 max-w-3xl">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Today // Next step</span>
-            <span className="rounded-sm border border-border bg-background/40 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              Today · Next step
+            </span>
+            <span className="rounded-full border border-border bg-background/40 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               {view.dashboardStatus.replace(/_/g, " ")}
             </span>
             {state && <StateBadge state={state} />}
           </div>
-          <h2 className="mt-3 text-xl md:text-2xl font-semibold leading-tight text-wrap-safe">{view.commandSummary.title}</h2>
-          <p className="mt-2 text-sm text-muted-foreground max-w-2xl text-wrap-safe">
+          <h2 className="mt-4 text-2xl md:text-3xl font-semibold leading-tight tracking-tight text-wrap-safe">{view.commandSummary.title}</h2>
+          <p className="mt-3 text-sm md:text-base leading-relaxed text-muted-foreground max-w-2xl text-wrap-safe">
             <span className="text-foreground">After this proof:</span> {view.commandSummary.nextBestAction}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-wrap">
           <Link to={view.commandSummary.primaryHref} className="w-full sm:w-auto">
-            <Button size="sm" className="w-full sm:w-auto">
+            <Button size="sm" className="w-full sm:w-auto rounded-xl">
               Submit proof<ArrowRight className="h-3.5 w-3.5 ml-1.5" />
             </Button>
           </Link>
           <Link to={view.commandSummary.secondaryHref} className="w-full sm:w-auto">
-            <Button size="sm" variant="outline" className="w-full sm:w-auto">
+            <Button size="sm" variant="outline" className="w-full sm:w-auto rounded-xl">
               {secondaryLabel}
             </Button>
           </Link>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <CommandSignal icon={<Target />} label="Proof required" value={view.commandSummary.proofRequired} />
         <CommandSignal icon={<ShieldAlert />} label="Risk if ignored" value={view.commandSummary.highestRisk} />
         <CommandSignal
@@ -451,22 +542,24 @@ function EvidenceCommandPanel({
   const mobileLimit = mobileRecentProofLimit(recent.length, showAllRecent);
   const desktopLimit = Math.min(recent.length, 4);
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
       <SectionHeader eyebrow="Proof" title="Recent proof" detail={`${view.evidenceSummary.weekArtifacts} this week`} />
-      <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 mobile-safe-card">
-        <div className="grid grid-cols-3 gap-2">
+      <Card className="panel rounded-2xl p-5 md:p-6 border-border/70 bg-card/60 mobile-safe-card">
+        <div className="grid grid-cols-3 gap-3">
           <MetricCell label="Artifacts" value={String(view.evidenceSummary.weekArtifacts)} />
           <MetricCell label="Strong+" value={String(view.evidenceSummary.strongCount + view.evidenceSummary.eliteCount)} />
           <MetricCell label="Avg" value={String(view.evidenceSummary.averageScore)} />
         </div>
 
-        <div className="mt-4 grid gap-3">
+        <div className="mt-5 grid gap-3">
           <EvidenceBlock icon={<FileText />} label="Next proof" action="Submit" href="/proof">
             {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open coach to forge one."}
           </EvidenceBlock>
           <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3`}>
             <EvidenceBlock icon={<Gavel />} label="Last verdict" action="Open" href="/proof">
-              {latestArtifact ? `${latestArtifact.title} - ${latestArtifact.evidence_strength ?? "unscored"}` : "No proof yet. Submit one artifact to start the verdict loop."}
+              {latestArtifact
+                ? `${latestArtifact.title} - ${plainEvidenceStrength(latestArtifact.evidence_strength)}`
+                : "No proof yet. Submit one artifact to start the verdict loop."}
             </EvidenceBlock>
             <EvidenceBlock icon={<CircleDot />} label="Weak spot" action="Modes" href="/modes">
               {view.evidenceSummary.strongestDomain
@@ -477,26 +570,29 @@ function EvidenceCommandPanel({
           <button
             type="button"
             onClick={() => setShowSecondary((open) => !open)}
-            className="md:hidden font-mono text-[10px] uppercase tracking-widest text-primary hover:underline self-start"
+            className="md:hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-primary hover:underline self-start"
           >
             {showSecondary ? "Hide last verdict" : "Show last verdict"}
           </button>
         </div>
 
-        <div className="mt-4 grid gap-2">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Recent proof</div>
+        <div className="mt-5 grid gap-2">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Recent proof</div>
           {recent.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No proof logged yet. Submit one artifact to start the record.</p>
+            <div className="rounded-xl border border-dashed border-border/70 bg-background/20 px-4 py-6 text-center">
+              <p className="text-sm text-muted-foreground">No proof logged yet.</p>
+              <p className="mt-1 text-xs text-muted-foreground/70">Submit one artifact to start the record.</p>
+            </div>
           ) : (
             <>
               {recent.slice(0, desktopLimit).map((proof, idx) => (
                 <div
                   key={proof.id}
-                  className={`flex items-center justify-between gap-3 rounded-sm border border-border px-3 py-2 ${idx >= mobileLimit ? "hidden md:flex" : "flex"}`}
+                  className={`items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/25 px-3.5 py-2.5 motion-hover hover:border-border ${idx >= mobileLimit ? "hidden md:flex" : "flex"}`}
                 >
                   <div className="min-w-0">
                     <div className="truncate text-sm">{proof.title}</div>
-                    <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{proof.domain}</div>
+                    <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{proof.domain}</div>
                   </div>
                   {isEvidenceStrength(proof.evidence_strength) && <EvidenceStrengthBadge strength={proof.evidence_strength} score={proof.quality_score ?? undefined} />}
                 </div>
@@ -505,7 +601,7 @@ function EvidenceCommandPanel({
                 <button
                   type="button"
                   onClick={() => setShowAllRecent((open) => !open)}
-                  className="md:hidden mt-1 font-mono text-[10px] uppercase tracking-widest text-primary hover:underline self-start"
+                  className="md:hidden mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary hover:underline self-start"
                 >
                   {showAllRecent ? "Show fewer" : `Show recent proof (${recent.length - mobileLimit} more)`}
                 </button>
@@ -515,7 +611,7 @@ function EvidenceCommandPanel({
         </div>
 
         {pending.length > 1 && (
-          <Link to="/proof" className="mt-3 inline-flex items-center gap-1 text-xs font-mono text-primary hover:underline">
+          <Link to="/proof" className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary hover:underline">
             {pending.length} pending proof contracts <ArrowRight className="h-3 w-3" />
           </Link>
         )}
@@ -538,16 +634,15 @@ function QuickCheckInCard({
   onDiagnose: () => void;
 }) {
   return (
-    <Card className="panel p-4 border-border/80 bg-card/50">
+    <Card className="panel rounded-2xl p-5 border-border/70 bg-card/60">
       <div className="flex items-center gap-2">
-        <Crosshair className="h-4 w-4 text-primary" />
-        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Quick check-in</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Quick check-in</span>
       </div>
       <Textarea
         placeholder="Name the bottleneck. Real input beats polished intent."
         value={quick}
         onChange={(e) => setQuick(e.target.value)}
-        className="mt-3 h-24"
+        className="mt-3 h-24 rounded-xl"
       />
       <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
@@ -555,12 +650,12 @@ function QuickCheckInCard({
           {state && <StateBadge state={state} />}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onDiagnose}>Diagnose</Button>
-          <Link to={`/coach?prompt=${encodeURIComponent(quick)}`}><Button size="sm">Coach</Button></Link>
+          <Button variant="outline" size="sm" className="rounded-xl" onClick={onDiagnose}>Diagnose</Button>
+          <Link to={`/coach?prompt=${encodeURIComponent(quick)}`}><Button size="sm" className="rounded-xl">Coach</Button></Link>
         </div>
       </div>
       {state && (
-        <p className="mt-3 text-xs text-muted-foreground border-t border-border pt-3">
+        <p className="mt-4 text-xs leading-relaxed text-muted-foreground border-t border-border/70 pt-3">
           <span className="text-foreground">{STATE_LABELS[state] ?? state}:</span> {STATE_PRESCRIPTION[state]}
         </p>
       )}
@@ -570,27 +665,27 @@ function QuickCheckInCard({
 
 function SectionHeader({ eyebrow, title, detail }: { eyebrow: string; title: string; detail?: string }) {
   return (
-    <div className="flex items-end justify-between gap-3">
+    <div className="flex items-end justify-between gap-3 px-0.5">
       <div>
-        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{eyebrow}</div>
-        <h2 className="text-sm font-semibold mt-0.5">{title}</h2>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{eyebrow}</div>
+        <h2 className="text-base font-semibold mt-1 tracking-tight">{title}</h2>
       </div>
-      {detail && <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{detail}</span>}
+      {detail && <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{detail}</span>}
     </div>
   );
 }
 
 function CommandSignal({ icon, label, value, hint }: { icon: ReactNode; label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-sm border border-primary/20 bg-background/30 p-3 min-w-0">
+    <div className="rounded-xl border border-primary/20 bg-background/30 p-3.5 min-w-0">
       <div className="flex items-center gap-1.5 text-primary [&_svg]:h-3.5 [&_svg]:w-3.5">
         {icon}
-        <span className="font-mono text-[9px] uppercase tracking-widest">{label}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.2em]">{label}</span>
       </div>
-      <div className="mt-1 text-sm leading-snug line-clamp-2">{value}</div>
+      <div className="mt-1.5 text-sm leading-snug line-clamp-2">{value}</div>
       {hint && (
         <div
-          className="mt-1 text-xs leading-snug text-muted-foreground line-clamp-1 break-words"
+          className="mt-1.5 text-xs leading-snug text-muted-foreground line-clamp-1 break-words"
           data-testid="dashboard-verdict-identity-impact"
         >
           {hint}
@@ -602,36 +697,38 @@ function CommandSignal({ icon, label, value, hint }: { icon: ReactNode; label: s
 
 function MetricCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-sm border border-border bg-background/30 p-2 min-w-0 max-w-full">
-      <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
-      <div className="mt-0.5 truncate text-sm text-foreground">{value}</div>
+    <div className="rounded-xl border border-border/70 bg-background/25 p-3 min-w-0 max-w-full">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
+      <div className="mt-1 truncate text-sm font-medium text-foreground tabular-nums">{value}</div>
     </div>
   );
 }
 
 function EvidenceBlock({ icon, label, action, href, children }: { icon: ReactNode; label: string; action: string; href: string; children: ReactNode }) {
   return (
-    <div className="rounded-sm border border-border bg-background/30 p-3 min-w-0 max-w-full">
+    <div className="rounded-xl border border-border/70 bg-background/25 p-3.5 min-w-0 max-w-full motion-hover hover:border-border">
       <div className="flex items-center justify-between gap-3 min-w-0">
         <div className="flex items-center gap-1.5 text-muted-foreground [&_svg]:h-3.5 [&_svg]:w-3.5">
           {icon}
-          <span className="font-mono text-[9px] uppercase tracking-widest">{label}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em]">{label}</span>
         </div>
-        <Link to={href} className="font-mono text-[10px] uppercase tracking-widest text-primary hover:underline shrink-0">{action}</Link>
+        <Link to={href} className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary hover:underline shrink-0">{action}</Link>
       </div>
-      <div className="mt-1 text-sm leading-snug text-foreground text-wrap-safe">{children}</div>
+      <div className="mt-1.5 text-sm leading-snug text-foreground text-wrap-safe">{children}</div>
     </div>
   );
 }
 
 function EmptyPanel({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
   return (
-    <Card className="panel p-4 border-border/80 bg-card/50">
-      <div className="flex items-start gap-2 text-muted-foreground [&_svg]:h-4 [&_svg]:w-4">
-        {icon}
+    <Card className="panel rounded-2xl p-6 border-border/70 bg-card/60">
+      <div className="flex flex-col items-center text-center gap-3 text-muted-foreground [&_svg]:h-5 [&_svg]:w-5">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-background/40 text-primary/80">
+          {icon}
+        </div>
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-widest">{title}</div>
-          <p className="mt-1 text-sm">{body}</p>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-foreground/80">{title}</div>
+          <p className="mt-1.5 text-sm leading-relaxed max-w-sm mx-auto">{body}</p>
         </div>
       </div>
     </Card>

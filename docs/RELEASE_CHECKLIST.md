@@ -14,6 +14,8 @@ Required CI checks:
 - `npm ci`
 - `npm run test`
 - `npm run build`
+- `npm run perf:bundle-size` (desktop bundle-size guardrail)
+- Lighthouse desktop thresholds via `@lhci/cli` (`lighthouserc.json`)
 - `npm run lint:eblocki`
 - built SPA route smoke check through `npm run smoke:routes`
 - `npm audit --audit-level=moderate`
@@ -24,6 +26,8 @@ Release is blocked when any of these fail:
 
 - tests fail
 - build fails
+- desktop bundle-size guardrail fails (`scripts/bundle-size-guardrail.mjs`) — a chunk or the JS/CSS total exceeded its budget. Fix the regression or, if intentional (new large dependency), raise the specific budget in that file and note the reason here.
+- Lighthouse desktop assertions fail (`lighthouserc.json`) — performance ≥ 0.8, a11y ≥ 0.9, best-practices ≥ 0.9, LCP ≤ 3.5s, TBT ≤ 400ms, CLS ≤ 0.1 on `/`, `/dashboard`, `/proof`.
 - targeted Eblocki lint fails
 - route smoke check fails for `/`, `/dashboard`, `/start-today`, `/proof`, `/coach`, `/gameforge`, `/operator`, `/install`, or `/why`
 - audit reports moderate, high, or critical vulnerabilities that have not been accepted with a documented security decision

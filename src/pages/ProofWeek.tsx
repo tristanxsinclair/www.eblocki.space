@@ -61,6 +61,9 @@ export default function ProofWeek() {
 
   const status = computeProofWeek({ joinedAt, artifactDates });
   const proofHref = status.daysWithProof === 0 ? "/proof?first=1" : "/proof";
+  const closedLabel = status.daysWithProof >= 7
+    ? "Proof Week complete - 7/7"
+    : `Proof Week closed - ${status.daysWithProof}/7 days logged`;
 
   const join = async () => {
     if (!user) return;
@@ -119,12 +122,16 @@ export default function ProofWeek() {
           <Card className="panel p-5 border-primary/40 space-y-3">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Week complete</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-primary">{closedLabel}</span>
             </div>
             <p className="text-sm">
               You logged proof on <span className="text-foreground font-medium">{status.daysWithProof}/7 days</span> ({status.artifactsThisWeek} artifacts).
             </p>
-            <p className="text-sm text-muted-foreground">Verdict time. Tell us if Eblocki exposed fake productivity — and if it is worth paying for.</p>
+            <p className="text-sm text-muted-foreground">
+              {status.daysWithProof >= 7
+                ? "Verdict time. Tell us if Eblocki exposed fake productivity - and if it is worth paying for."
+                : "The 7-day window is closed. Keep logging proof, but do not call this a completed Proof Week."}
+            </p>
             <div className="flex flex-wrap gap-2">
               <Link to="/dashboard"><Button size="sm">Back to Today</Button></Link>
               <Link to="/proof"><Button size="sm" variant="outline">Keep logging proof</Button></Link>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useEntitlement } from "@/hooks/useEntitlement";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,10 @@ import { track, reset as resetAnalytics, EVENTS } from "@/lib/analytics";
 import { BetaFeedback } from "@/components/eblocki/BetaFeedback";
 import { NotificationPreferences } from "@/components/eblocki/NotificationPreferences";
 import { PasswordSecurity } from "@/components/eblocki/PasswordSecurity";
+import { UpgradeCard } from "@/components/eblocki/UpgradeCard";
+import { normaliseAccessLevel } from "@/lib/eblocki/access-level";
+import { BillingCard } from "@/components/eblocki/BillingCard";
+import { DeleteAccountDialog } from "@/components/eblocki/DeleteAccountDialog";
 
 const MODELS = [
   "google/gemini-3-flash-preview",
@@ -29,7 +34,9 @@ const MODELS = [
 export default function Settings() {
   const { user, signOut } = useAuth();
   const nav = useNavigate();
+  const { accessLevel } = useEntitlement();
   const [deleting, setDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [cfg, setCfg] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -50,7 +57,7 @@ export default function Settings() {
       supabase.from("user_onboarding_profiles").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("user_modes").select("*").eq("user_id", user.id).order("created_at", { ascending: true }),
     ]).then(([cfgResult, profileResult, modesResult]) => {
-      setCfg(cfgResult.data ?? { user_id: user.id, model: MODELS[0], default_response_structure: true, strict_verification: true, auto_create_proof_contracts: true, proof_contract_minimum_seriousness: 5 });
+      setCfg(cfgResult.data ?? { user_id: user.id, default_response_structure: true, strict_verification: true, auto_create_proof_contracts: true, proof_contract_minimum_seriousness: 5 });
       setProfile(profileResult.data ?? { user_id: user.id, identity_summary: "", roles: [], goals: [], coaching_style: "direct", strictness_level: 7, prefers_detailed_analysis: true, challenge_avoidance: true, auto_create_proof_contracts: true, completed_onboarding: false });
       setModes(modesResult.data ?? []);
     }).catch((error) => {
@@ -68,6 +75,9 @@ export default function Settings() {
     setSaving(true);
     const payload = { ...cfg, user_id: user!.id };
     delete payload.id; delete payload.created_at; delete payload.updated_at;
+    // AI routing (model, vector store) is server-controlled. Never accept from client.
+    delete payload.model;
+    delete payload.vector_store_id;
     const { error } = await supabase.from("performance_os_config").upsert(payload, { onConflict: "user_id" });
     setSaving(false);
     if (error) toast.error(error.message); else toast.success("Settings saved.");
@@ -173,10 +183,6 @@ export default function Settings() {
 
   const deleteAccount = async () => {
     if (!user) return;
-    const phrase = window.prompt(
-      "Deleting your account erases every artifact, control sheet, mode and attachment. This cannot be undone.\n\nType DELETE to confirm.",
-    );
-    if (phrase !== "DELETE") return;
     setDeleting(true);
     try {
       void track(EVENTS.account_deletion_requested);
@@ -185,6 +191,7 @@ export default function Settings() {
       resetAnalytics();
       await supabase.auth.signOut();
       toast.success("Account deleted.");
+      setDeleteDialogOpen(false);
       nav("/", { replace: true });
     } catch (e: any) {
       toast.error(e?.message || "Delete failed.");
@@ -206,7 +213,7 @@ export default function Settings() {
 
   return (
     <AppShell>
-      <Seo title="Settings | EBLOCKI" description="Operator config — model preferences, profile, and identity claims." path="/settings" />
+      <Seo title="Settings | EBLOCKI" description="Operator config — profile, modes, and identity claims." path="/settings" />
       <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6 min-w-0 max-w-full text-wrap-safe">
         <header className="min-w-0">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Settings</span>
@@ -214,17 +221,6 @@ export default function Settings() {
         </header>
 
         <Card className="panel p-4 md:p-5 space-y-5 max-w-full overflow-hidden">
-          <div>
-            <Label>Preferred model</Label>
-            <select className="mt-1 w-full max-w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={cfg.model ?? MODELS[0]} onChange={(e) => setCfgField("model", e.target.value)}>
-              {MODELS.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
-          <div>
-            <Label>Vector store ID (optional)</Label>
-            <Input value={cfg.vector_store_id ?? ""} onChange={(e) => setCfgField("vector_store_id", e.target.value)} placeholder="vs_..." />
-            <p className="mt-1 text-[10px] text-muted-foreground font-mono">Used when OpenAI Responses API is connected.</p>
-          </div>
           <Toggle label="Default response structure (BLUF / Analysis / System / Upgrade)" checked={!!cfg.default_response_structure} onChange={(v) => setCfgField("default_response_structure", v)} />
           <Toggle label="Strict verification (refuse to fabricate sources)" checked={!!cfg.strict_verification} onChange={(v) => setCfgField("strict_verification", v)} />
           <Toggle label="Auto-create Proof Contracts" checked={!!cfg.auto_create_proof_contracts} onChange={(v) => setCfgField("auto_create_proof_contracts", v)} />
@@ -386,7 +382,12 @@ export default function Settings() {
             <Button variant="outline" onClick={exportAllData} disabled={exporting} className="justify-start">
               <Download className="h-4 w-4 mr-2" /> {exporting ? "Preparing…" : "Export my data (JSON)"}
             </Button>
-            <Button variant="destructive" onClick={deleteAccount} disabled={deleting} className="justify-start">
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+              disabled={deleting}
+              className="justify-start"
+            >
               <Trash2 className="h-4 w-4 mr-2" /> {deleting ? "Deleting…" : "Delete my account"}
             </Button>
           </div>
@@ -398,10 +399,20 @@ export default function Settings() {
           </div>
         </Card>
 
+        <UpgradeCard currentLevel={accessLevel} />
         <NotificationPreferences />
         <PasswordSecurity />
+        <BillingCard />
         <BetaFeedback />
       </div>
+      <DeleteAccountDialog
+        open={deleteDialogOpen}
+        onOpenChange={(o) => {
+          if (!deleting) setDeleteDialogOpen(o);
+        }}
+        deleting={deleting}
+        onConfirm={deleteAccount}
+      />
     </AppShell>
   );
 }

@@ -6,13 +6,13 @@ import { logEvent } from "@/lib/eblocki/analytics";
 import {
   ArrowRight,
   CheckCircle2,
-  Crosshair,
   Flame,
   Gavel,
   ShieldCheck,
   Sparkles,
   Target,
 } from "lucide-react";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
 const STEPS = [
   {
@@ -88,10 +88,7 @@ export default function Landing() {
       <header className="border-b border-border bg-background/95 backdrop-blur safe-top safe-x">
         <div className="container flex flex-wrap items-center justify-between gap-3 py-4">
           <Link to="/" className="flex items-center gap-2 native-tap">
-            <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-primary text-primary-foreground">
-              <Crosshair className="h-4 w-4" />
-            </div>
-            <span className="font-mono text-sm tracking-[0.25em]">EBLOCKI</span>
+            <EblockiLogo variant="compact" size="md" />
           </Link>
           <nav className="flex items-center gap-3">
             <a
@@ -106,6 +103,9 @@ export default function Landing() {
             >
               Join beta
             </a>
+            <Link to="/pricing" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
+              Pricing
+            </Link>
             <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
               Sign in
             </Link>
@@ -115,23 +115,29 @@ export default function Landing() {
 
       <main>
         <section className="grid-bg border-b border-border">
-          <div className="container grid gap-10 py-14 md:grid-cols-[minmax(0,1fr)_minmax(320px,0.82fr)] md:items-center md:py-20 lg:py-24">
+          <div className="container grid gap-8 py-8 md:gap-10 md:py-20 md:grid-cols-[minmax(0,1fr)_minmax(320px,0.82fr)] md:items-center lg:py-24">
             <div className="max-w-3xl">
-              <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-primary">
-                Eblocki Proof Week Beta
-              </p>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-6xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-2.5 py-1">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-primary">
+                  Proof Week · Beta
+                </span>
+              </div>
+              <h1 className="mt-6 text-4xl font-semibold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
                 Submit real study work.
                 <br />
-                See if it actually counts.
+                <span className="italic text-foreground/30">See if it actually counts.</span>
               </h1>
-              <p className="mt-6 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+              <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground md:mt-6 md:text-lg">
                 Eblocki is a student-first proof loop. Paste one real piece of work, get an honest verdict, and leave with one clear next step.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap md:mt-8">
                 <Link
                   to="/proof-week"
-                  className="inline-flex"
+                  className="inline-flex w-full sm:w-auto"
                   onClick={() => {
                     void logEvent("activation_landing_primary_cta_clicked", {
                       route: "/",
@@ -140,13 +146,13 @@ export default function Landing() {
                     });
                   }}
                 >
-                  <Button size="lg">
+                  <Button size="lg" className="w-full sm:w-auto">
                     Start Proof Week
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-                <a href="#how-it-works" className="inline-flex">
-                  <Button size="lg" variant="outline">See How It Works</Button>
+                <a href="#how-it-works" className="inline-flex w-full sm:w-auto">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto">See How It Works</Button>
                 </a>
               </div>
               <p className="mt-4 text-sm text-muted-foreground">
