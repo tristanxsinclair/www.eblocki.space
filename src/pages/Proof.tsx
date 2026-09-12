@@ -898,7 +898,7 @@ export default function Proof() {
   return (
     <AppShell>
       <Seo
-        title={taskSource ? "Log Action | EBLOCKI" : "Proof Check | EBLOCKI"}
+        title="Log your work | Eblocki"
         description={taskSource
           ? "File a real action, attach evidence, and receive an authoritative verdict."
           : "Submit proof artifacts, score evidence strength, and close pending Proof Contracts."}
@@ -908,7 +908,7 @@ export default function Proof() {
         {firstProofMode ? (
           <header className="min-w-0 border-b border-border/80 pb-5">
             <span className="operator-label-signal">
-              Activation · First Proof
+              Your first entry
             </span>
             <h1 className="operator-heading-1 mt-2 break-words">
               {FIRST_PROOF_COPY.title}
@@ -920,15 +920,13 @@ export default function Proof() {
         ) : (
           <header className="min-w-0 border-b border-border/80 pb-5">
             <span className="operator-label">
-              {taskSource ? "Task evidence" : "Proof Check"}
+              Your progress
             </span>
             <h1 className="operator-heading-1 mt-2 break-words">
-              {taskSource ? "Log Action" : "Submit proof"}
+              Log your work
             </h1>
             <p className="mt-1 text-sm text-muted-foreground break-words">
-              {taskSource
-                ? "What did you do? File the artifact before claiming completion."
-                : "One measurable artifact. Standard before submission."}
+              Add what you worked on and the evidence to go with it.
             </p>
           </header>
         )}
@@ -1114,28 +1112,10 @@ export default function Proof() {
           </Card>
         )}
 
-        {!firstProofMode && (
-          <MobileCollapse eyebrow="Definitions" label="Contract vs Artifact" trackId="proof_definitions">
-            <Card className="panel p-4 border-primary/20 max-w-full overflow-hidden">
-              <div className="flex items-start gap-3">
-                <Scale className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
-                    Definitions
-                  </span>
-                  <p className="text-sm text-muted-foreground mt-1 break-words">
-                    A <span className="text-foreground">Proof Contract</span> is a promise of evidence.
-                    A <span className="text-foreground">Proof Artifact</span> is completed evidence. Submitting an artifact below can optionally close a pending contract.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </MobileCollapse>
-        )}
-
         {/* Strength tally */}
         {!firstProofMode && (
-          <MobileCollapse eyebrow="Stats" label="Strength tally & filter" trackId="proof_stats">
+          <details className="border-b border-border pb-3">
+            <summary className="cursor-pointer py-2 text-sm text-muted-foreground">Recent work filters</summary>
             <Card className="panel p-4 max-w-full overflow-hidden">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
@@ -1162,15 +1142,15 @@ export default function Proof() {
                 </div>
               </div>
             </Card>
-          </MobileCollapse>
+          </details>
         )}
 
         {/* Submission form */}
         <Card className="panel p-4 md:p-5 max-w-full overflow-hidden">
           <div className="flex items-center gap-2">
             <Gavel className="h-4 w-4 text-primary" />
-            <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">
-              {firstProofMode ? "Submit your first proof" : taskSource ? "File Action" : "Submit proof"}
+            <h2 className="text-base font-semibold m-0">
+              {firstProofMode ? "Your first entry" : "Work entry"}
             </h2>
           </div>
 
@@ -1178,7 +1158,7 @@ export default function Proof() {
             {!firstProofMode && !isMobile && (
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="proof-mode-select">Domain</Label>
+                  <Label htmlFor="proof-mode-select">Study area</Label>
                   {activeModes.length === 0 ? (
                     <div className="mt-2 text-xs text-muted-foreground">
                       No areas set up yet. <Link to="/modes" className="text-primary hover:underline">Set up areas</Link> so proof routes correctly.
@@ -1199,7 +1179,7 @@ export default function Proof() {
                 </div>
 
                 <div>
-                  <Label htmlFor="proof-contract-link">Link a pending Proof Contract (optional)</Label>
+                  <Label htmlFor="proof-contract-link">Link a planned task (optional)</Label>
                   <select
                     id="proof-contract-link"
                     value={linkedContractId}
@@ -1248,7 +1228,7 @@ export default function Proof() {
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="proof-first-domain">Domain</Label>
+                    <Label htmlFor="proof-first-domain">Study area</Label>
                     <select
                       id="proof-first-domain"
                       value={firstProofDomain}
@@ -1264,7 +1244,7 @@ export default function Proof() {
                     </select>
                   </div>
                   <div>
-                    <Label htmlFor="proof-artifact-type-first">Proof type</Label>
+                    <Label htmlFor="proof-artifact-type-first">Work type</Label>
                     <select
                       id="proof-artifact-type-first"
                       value={artifactType}
@@ -1293,7 +1273,7 @@ export default function Proof() {
                 <div className="grid sm:grid-cols-2 gap-3">
                   {isMobile && (
                     <div>
-                      <Label htmlFor="proof-mode-select-mobile">Domain</Label>
+                      <Label htmlFor="proof-mode-select-mobile">Study area</Label>
                       {activeModes.length === 0 ? (
                         <div className="mt-2 text-xs text-muted-foreground break-words">
                           No areas set up yet. <Link to="/modes" className="text-primary hover:underline">Set up areas</Link>
@@ -1314,7 +1294,7 @@ export default function Proof() {
                     </div>
                   )}
                   <div className={isMobile ? "" : "sm:col-span-2"}>
-                    <Label htmlFor="proof-artifact-type">Proof type</Label>
+                    <Label htmlFor="proof-artifact-type">Work type</Label>
                     <select
                       id="proof-artifact-type"
                       value={artifactType}
@@ -1333,7 +1313,10 @@ export default function Proof() {
 
             {!firstProofMode && (
               hasStandardSelection ? (
-                <ProofStandardPreviewPanel preview={proofPreview} />
+                <details className="border-y border-border py-2">
+                  <summary className="cursor-pointer py-2 text-sm text-muted-foreground">Evidence requirements</summary>
+                  <ProofStandardPreviewPanel preview={proofPreview} />
+                </details>
               ) : (
                 <div className="rounded-sm border border-border bg-background/40 p-3 text-sm text-muted-foreground">
                   No proof standard selected yet. Choose a proof type to see how Eblocki will score it.
@@ -1350,13 +1333,13 @@ export default function Proof() {
 
             <div>
               <Label htmlFor="proof-content">
-                {firstProofMode ? "Paste your work" : taskSource ? "What did you do?" : "Content"}
+                {firstProofMode ? "Paste your work" : "Your work"}
               </Label>
               <Textarea
                 id="proof-content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                rows={8}
+                rows={5}
                 placeholder={firstProofMode
                   ? "Paste the actual paragraph, answer, or notes you wrote."
                   : "Paste the artifact or summarise the completed output."}

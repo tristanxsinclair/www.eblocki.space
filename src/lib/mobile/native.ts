@@ -19,9 +19,9 @@ export async function bootstrapNative(opts: {
   if (!isNative()) return;
 
   try {
-    await StatusBar.setStyle({ style: Style.Dark });
+    await StatusBar.setStyle({ style: Style.Light });
     if (platform() === "android") {
-      await StatusBar.setBackgroundColor({ color: "#0a0e14" });
+      await StatusBar.setBackgroundColor({ color: "#131516" });
     }
   } catch (e) {
     console.warn("[native] status bar", e);

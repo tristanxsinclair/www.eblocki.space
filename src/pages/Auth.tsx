@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Seo } from "@/components/Seo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { logEvent } from "@/lib/eblocki/analytics";
 import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
@@ -96,7 +95,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen grid-bg flex items-center justify-center p-6">
+    <div className="student-app min-h-screen-safe flex items-center justify-center px-6 py-12 safe-y">
       <Seo
         title={showForgot ? "Reset password | EBLOCKI" : "Sign in | EBLOCKI"}
         description="Sign in to your EBLOCKI student proof system — coach, plan, and Proof Check."
@@ -106,10 +105,10 @@ export default function Auth() {
         <Link to="/" className="flex items-center gap-2 mb-6 justify-center">
           <EblockiLogo variant="compact" size="lg" />
         </Link>
-        <Card className="panel p-6">
+        <div className="py-6">
           {showForgot ? (
             <>
-              <h1 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Reset password</h1>
+              <h1 className="text-2xl font-semibold">Reset password</h1>
               <p className="mt-1 text-sm">Enter your email and we’ll send you a reset link.</p>
               {forgotSent ? (
                 <div className="mt-5 space-y-3">
@@ -166,18 +165,18 @@ export default function Auth() {
             </>
           ) : (
             <>
-              <h1 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                {mode === "signin" ? "Sign in" : "Create your account"}
+              <h1 className="text-2xl font-semibold">
+                {mode === "signin" ? "Welcome back" : "Create your account"}
               </h1>
-              <p className="mt-1 text-sm">Sign in to submit real work, get an honest verdict, and see your next step.</p>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{mode === "signin" ? "Your day, your goals, your next step." : "A little more focus for your student day."}</p>
               <form onSubmit={handle} className="mt-5 space-y-3">
                 <div>
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Input id="email" type="email" autoComplete="email" autoCapitalize="none" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div>
                   <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input id="password" type="password" autoComplete={mode === "signin" ? "current-password" : "new-password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 <Button type="submit" disabled={busy} className="w-full">
                   {busy ? "…" : mode === "signin" ? "Sign in" : "Create account"}
@@ -198,12 +197,10 @@ export default function Auth() {
                   Forgot password?
                 </button>
               )}
-              <p className="mt-4 text-[10px] text-muted-foreground font-mono">
-                You will return to the page you were trying to open after sign-in.
-              </p>
+              <div className="mt-6 flex justify-center gap-5 text-xs text-muted-foreground"><Link to="/legal/privacy">Privacy</Link><Link to="/legal/terms">Terms</Link></div>
             </>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   );
