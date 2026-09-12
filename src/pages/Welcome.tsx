@@ -29,7 +29,7 @@ const GOAL_BANK = [
   "Improve study structure",
 ] as const;
 
-const STEPS = ["System", "Arenas", "Targets", "Proof", "Progression"] as const;
+const STEPS = ["System", "Areas", "Targets", "Proof", "Progress"] as const;
 
 export default function Welcome() {
   const { user } = useAuth();
@@ -90,7 +90,7 @@ export default function Welcome() {
       void logEvent(skipped ? "welcome_skipped" : "welcome_completed", {
         count: selectedModes.length,
       });
-      toast.success(skipped ? "Welcome skipped. Start your first quest." : "Your run is ready. Start with proof.");
+      toast.success(skipped ? "Welcome skipped. Start your first task." : "Your run is ready. Start with proof.");
       navigate("/proof?first=1");
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Could not save preferences.";
@@ -102,7 +102,7 @@ export default function Welcome() {
 
   return (
     <div className="operator-surface min-h-screen text-foreground">
-      <Seo title="Build Your Eblocki Run" description="Configure a proof-first life game around the arenas and behavioural targets that matter to you." path="/welcome" />
+      <Seo title="Build Your Eblocki Run" description="Configure a proof-first student system around the areas and behavioural targets that matter to you." path="/welcome" />
 
       <header className="operator-chrome border-b safe-top safe-x">
         <div className="container flex min-h-16 items-center justify-between gap-4">
@@ -151,7 +151,7 @@ export default function Welcome() {
                 </Button>
               ) : (
                 <Button onClick={() => finish(false)} disabled={submitting}>
-                  {submitting ? "Building run…" : "Start first quest"} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                  {submitting ? "Building plan..." : "Start first task"} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                 </Button>
               )}
             </div>
@@ -172,13 +172,13 @@ function SystemStep() {
       </div>
       <div className="space-y-6 p-5 sm:p-8">
         <div>
-          <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">Build a life game that cannot lie to you.</h1>
+          <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">Build a study system that cannot lie to you.</h1>
           <p className="operator-body mt-4 max-w-2xl">
-            Eblocki turns behaviour into evidence, evidence into a verdict, the verdict into a correction, and repeated correction into a character you actually earned.
+            Eblocki turns behaviour into evidence, evidence into a verdict, the verdict into a correction, and repeated correction into a record you actually earned.
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
-          <IntroRule number="01" title="Do the work" body="The quest happens outside Eblocki." />
+          <IntroRule number="01" title="Do the work" body="The task happens outside Eblocki." />
           <IntroRule number="02" title="File the proof" body="No artifact means no progress claim." />
           <IntroRule number="03" title="Raise the standard" body="Strong corrections change what counts next." />
         </div>
@@ -190,9 +190,9 @@ function SystemStep() {
 function ModesStep({ selected, toggle }: { selected: string[]; toggle: (value: string) => void }) {
   return (
     <Card className="operator-panel p-5 sm:p-8">
-      <div className="flex items-center gap-2"><Target className="h-4 w-4 text-primary" /><span className="operator-label-signal">Your arenas</span></div>
+      <div className="flex items-center gap-2"><Target className="h-4 w-4 text-primary" /><span className="operator-label-signal">Your areas</span></div>
       <h1 className="mt-3 text-2xl font-semibold sm:text-3xl">Where do you want proof of growth?</h1>
-      <p className="mt-3 text-sm leading-6 text-muted-foreground">Pick at least one. Each arena gets its own evidence standard, mastery trail, and future quests.</p>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">Pick at least one. Each area gets its own evidence standard, progress trail, and future tasks.</p>
       <div className="mt-6 grid gap-2 sm:grid-cols-2">
         {MODE_BANK.map((mode) => {
           const active = selected.includes(mode.id);
@@ -264,14 +264,14 @@ function ProgressionStep() {
       <div className="space-y-5 p-5 sm:p-8">
         <div className="flex items-start gap-4">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-primary/35 bg-primary/[0.08]"><Trophy className="h-5 w-5 text-primary" /></span>
-          <div><h1 className="text-2xl font-semibold sm:text-3xl">Progress feels like a game because the evidence moves.</h1><p className="mt-3 text-sm leading-6 text-muted-foreground">Your daily route adapts from completed work, Court verdicts, resistance, and neglected domains—not from opening the app.</p></div>
+          <div><h1 className="text-2xl font-semibold sm:text-3xl">Progress feels real because the evidence moves.</h1><p className="mt-3 text-sm leading-6 text-muted-foreground">Your daily route adapts from completed work, verdicts, resistance, and neglected subjects, not from opening the app.</p></div>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <ProgressionRule title="Streak" body="Protected by evidence; weak proof can defend it without pretending to be mastery." />
-          <ProgressionRule title="XP + levels" body="Awarded from authoritative verdict events, not client-side animation." />
-          <ProgressionRule title="Next quest" body="Targets the weakest useful standard while the evidence is recent." />
+          <ProgressionRule title="Proof record" body="Updated from accepted verdict events, not client-side animation." />
+          <ProgressionRule title="Next task" body="Targets the weakest useful standard while the evidence is recent." />
         </div>
-        <div className="rounded-md border border-primary/25 bg-background/45 p-4"><div className="operator-label-signal">Ready state</div><p className="mt-2 text-sm">Your arenas and targets are configured. One real artifact activates the system.</p></div>
+        <div className="rounded-md border border-primary/25 bg-background/45 p-4"><div className="operator-label-signal">Ready state</div><p className="mt-2 text-sm">Your areas and targets are configured. One real artifact activates the system.</p></div>
       </div>
     </Card>
   );
@@ -282,7 +282,7 @@ function RunMap({ step, selectedModes, selectedGoals }: { step: number; selected
     <aside className="operator-panel-accent overflow-hidden lg:sticky lg:top-6" aria-label="Your Eblocki run">
       <div className="border-b border-border bg-primary/[0.04] px-4 py-3"><div className="flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.2em]"><span className="text-primary">Run configuration</span><span className="text-muted-foreground">Preview</span></div></div>
       <div className="p-5">
-        <div className="operator-label-signal">Rookie operator</div>
+        <div className="operator-label-signal">Student profile</div>
         <h2 className="mt-1 text-xl font-semibold">First run loading</h2>
         <div className="mt-5 space-y-1.5">
           {STEPS.map((name, index) => {
@@ -298,10 +298,10 @@ function RunMap({ step, selectedModes, selectedGoals }: { step: number; selected
           })}
         </div>
         <div className="mt-5 grid grid-cols-2 gap-2">
-          <RunMetric label="Arenas" value={String(selectedModes)} />
+          <RunMetric label="Areas" value={String(selectedModes)} />
           <RunMetric label="Targets" value={String(selectedGoals)} />
         </div>
-        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-primary" /> No artifact // no XP</div>
+        <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-primary" /> No artifact // no progress claim</div>
       </div>
     </aside>
   );

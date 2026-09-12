@@ -6,13 +6,11 @@ import {
   Gavel,
   MessageSquare,
   MoreHorizontal,
-  Hexagon,
-  Swords,
   Layers,
   Settings,
   Sparkles,
   LogOut,
-  Hammer,
+  UserRound,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,14 +19,12 @@ import { haptics } from "@/hooks/useHaptics";
 const PRIMARY = [
   { to: "/dashboard", label: "Today", icon: LayoutDashboard },
   { to: "/proof", label: "Log", icon: Gavel },
-  { to: "/coach", label: "GM", icon: MessageSquare },
+  { to: "/profile", label: "Profile", icon: UserRound },
 ] as const;
 
 const SECONDARY = [
-  { to: "/operator", label: "Character", icon: Hexagon },
-  { to: "/gameforge", label: "Arena", icon: Swords },
-  { to: "/start-today", label: "Quests", icon: Sparkles },
-  { to: "/systems", label: "Intel", icon: Hammer },
+  { to: "/coach", label: "Coach", icon: MessageSquare },
+  { to: "/start-today", label: "Plan", icon: Sparkles },
   { to: "/modes", label: "Areas", icon: Layers },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;

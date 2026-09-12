@@ -220,7 +220,7 @@ export function identitySignal(s: {
   const { state, streak, proofsToday, resistanceOvercome, avgQuality, strongestDomain } = s;
 
   if (state === "elite") {
-    return `${streak}-day streak. Evidence of an operator who executes under pressure.`;
+    return `${streak}-day streak. Evidence of a student who executes under pressure.`;
   }
   if (state === "momentum") {
     if (resistanceOvercome >= 3)

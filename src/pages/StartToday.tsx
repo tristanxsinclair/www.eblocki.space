@@ -508,7 +508,7 @@ export default function StartToday() {
             <div className="grid sm:grid-cols-3 gap-2">
               <Link to="/coach"><Button variant="outline" size="sm" className="w-full"><MessageSquare className="h-3 w-3 mr-1.5" />Open coach</Button></Link>
               <Link to="/proof"><Button size="sm" className="w-full"><Gavel className="h-3 w-3 mr-1.5" />Submit proof</Button></Link>
-              <Link to="/sheet"><Button variant="outline" size="sm" className="w-full"><Crosshair className="h-3 w-3 mr-1.5" />Today's Sheet</Button></Link>
+              <Link to="/profile"><Button variant="outline" size="sm" className="w-full"><Crosshair className="h-3 w-3 mr-1.5" />Profile</Button></Link>
             </div>
             <Button
               variant="ghost"

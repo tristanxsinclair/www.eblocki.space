@@ -24,7 +24,6 @@ import {
   Compass,
   Crosshair,
   Dumbbell,
-  Gamepad2,
   Gavel,
   Info,
   Loader2,
@@ -75,10 +74,10 @@ const MODE_CHIPS: Array<{
 
 const QUICK_PROMPTS = [
   "Diagnose what is actually blocking this.",
-  "Give me one quest and the required evidence.",
+  "Give me one task and the required evidence.",
   "Turn these notes into a practice plan.",
   "Challenge the weak thinking here.",
-  "Send me to the Arena if practice is the right move.",
+  "Give me one revision drill if practice is the right move.",
 ];
 
 type CoachRouteState = {
@@ -99,7 +98,7 @@ function coerceMode(value: string | null | undefined): CoachResponseMode | "auto
 
 function getCoachProcessingText(mode: CoachResponseMode | "auto"): string {
   if (mode === "auto") {
-    return "Game Master is diagnosing...";
+    return "Coach is diagnosing...";
   }
 
   const modeMap: Record<string, string> = {
@@ -113,8 +112,8 @@ function getCoachProcessingText(mode: CoachResponseMode | "auto"): string {
     execution_lock: "Execution",
   };
 
-  const label = modeMap[mode] ?? "Game Master";
-  return `Game Master is reasoning in ${label} mode...`;
+  const label = modeMap[mode] ?? "Coach";
+  return `Coach is reasoning in ${label} mode...`;
 }
 
 function splitRemoteResponse(text: string): string {
@@ -247,19 +246,6 @@ export default function Coach() {
       responseMode: deterministic.responseMode,
       proofActionType: deterministic.proofActionType,
     });
-    logEvent("gm_message_submitted", {
-      mode: deterministic.responseMode,
-      domain: deterministic.detectedDomain,
-    });
-    if (deterministic.suggestedGameForgePack) {
-      logEvent("coach_gameforge_suggested", {
-        domain: deterministic.detectedDomain,
-        mode: deterministic.suggestedGameForgePack.mode,
-        style: deterministic.suggestedGameForgePack.style,
-        suggested: true,
-      });
-    }
-
     try {
       const { data, error: invokeError } = await supabase.functions.invoke("coach", {
         body: {
@@ -268,24 +254,24 @@ export default function Coach() {
         },
       });
       if (invokeError) {
-        setError(invokeError.message || "Remote Game Master unavailable. Local directive is still available.");
+        setError(invokeError.message || "Remote coach unavailable. Local directive is still available.");
         return;
       }
       if (!data) {
-        setError("Remote Game Master returned no response. Local directive is still available.");
+        setError("Remote coach returned no response. Local directive is still available.");
         return;
       }
       const normalised = normaliseCoachResponse(data);
       setRemoteResult(normalised);
       if (normalised.commitmentId) {
-        void logEvent("gm_quest_created", {
+        void logEvent("coach_task_created", {
           mode: normalised.proofContract.mode,
           source: normalised.usedFallback ? "fallback" : "remote",
           fallback: normalised.usedFallback,
         });
       }
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Unexpected Game Master error. Local directive is still available."));
+      setError(getErrorMessage(err, "Unexpected coach error. Local directive is still available."));
     } finally {
       setLoading(false);
     }
@@ -312,8 +298,8 @@ export default function Coach() {
       if (insertError) throw insertError;
       if (!data?.id) throw new Error("No commitment id returned.");
       setLocalCommitmentId(data.id);
-      toast.success("Quest committed to the evidence loop.");
-      void logEvent("gm_quest_created", {
+      toast.success("Task committed to the evidence loop.");
+      void logEvent("coach_task_created", {
         mode: remoteResult.proofContract.mode,
         source: remoteResult.usedFallback ? "fallback" : "remote",
         fallback: remoteResult.usedFallback,
@@ -338,8 +324,8 @@ export default function Coach() {
   return (
     <AppShell>
       <Seo
-        title="Game Master | EBLOCKI"
-        description="Diagnose the real bottleneck, receive one quest, and define the evidence required to close it."
+        title="Coach | Eblocki"
+        description="Diagnose the real bottleneck, receive one task, and define the evidence required to close it."
         path="/coach"
       />
       <div className="operator-page page-enter">
@@ -348,9 +334,9 @@ export default function Coach() {
             <EblockiLogo variant="mark" size="md" />
             <div className="min-w-0">
               {!isMobile && (
-                <span className="operator-label">Game Master // Evidence-bound Directive Engine</span>
+                <span className="operator-label">Coach // Evidence-bound Directive Engine</span>
               )}
-              <h1 className="operator-heading-1 mt-2 break-words">Bring the real bottleneck. Leave with one quest.</h1>
+              <h1 className="operator-heading-1 mt-2 break-words">Bring the real bottleneck. Leave with one task.</h1>
             </div>
           </div>
           </header>
@@ -424,7 +410,7 @@ export default function Coach() {
           </div>
         </Card>
 
-        {/* Calm processing state while the Game Master is thinking */}
+        {/* Calm processing state while the coach is thinking */}
         {loading && (
           <div className="flex justify-center py-2">
             <div className="motion-calm flex items-center gap-2 text-muted-foreground">
@@ -439,21 +425,14 @@ export default function Coach() {
             <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Start here</div>
             <p className="mt-2 text-sm text-muted-foreground break-words">
               Paste a real problem above (one paragraph is enough): a question, a stuck task,
-              an avoidance pattern, a sales situation, a study block. The Game Master will
-              return one quest, one required artifact, and one next move.
+              an avoidance pattern, a sales situation, a study block. The coach will
+              return one task, one required artifact, and one next move.
             </p>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <EmptyCell icon={<Radar />} title="Diagnose" body="Find the real domain, intent, state, and urgency." />
-              <EmptyCell icon={<Target />} title="Quest" body="Convert the answer into one evidence-bound action." />
-              <EmptyCell icon={<Gamepad2 />} title="Arena" body="Send weak concepts to practice when repetition is useful." />
+              <EmptyCell icon={<Target />} title="Task" body="Convert the answer into one evidence-bound action." />
+              <EmptyCell icon={<Gavel />} title="Proof" body="Name the artifact and standard before work counts." />
             </div>
-            {isMobile && (
-              <Link to="/gameforge" className="mt-3 inline-block w-full">
-                <Button size="sm" variant="outline" className="w-full min-h-[44px] native-tap gap-2">
-                  <Gamepad2 className="h-3.5 w-3.5" /> Arena (after diagnosis)
-                </Button>
-              </Link>
-            )}
           </Card>
         )}
 
@@ -461,7 +440,7 @@ export default function Coach() {
           <Card className="panel p-4 border-primary/30 bg-primary/5 max-w-full overflow-hidden">
             <div className="flex items-start gap-2 text-sm text-muted-foreground">
               <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <span className="break-words">Local directive is ready. The existing Game Master function is being checked for an optional remote enhancement.</span>
+              <span className="break-words">Local directive is ready. The remote coach is being checked for an optional enhancement.</span>
             </div>
           </Card>
         )}
@@ -497,7 +476,7 @@ export default function Coach() {
 
             <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Quest Action</div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Action</div>
                 <Button size="sm" variant="outline" onClick={copyProofAction} className="gap-1.5"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</Button>
               </div>
               <p className="mt-2 text-sm leading-6 break-words whitespace-pre-wrap">{engineResult.proofAction}</p>
@@ -509,31 +488,6 @@ export default function Coach() {
               responseAnswer={responseAnswer}
               responseSections={responseSections}
             />
-
-            {engineResult.suggestedGameForgePack && (
-              <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional Arena Pack</div>
-                    <h3 className="mt-1 text-sm font-semibold break-words">{engineResult.suggestedGameForgePack.title}</h3>
-                    <p className="mt-2 text-xs leading-5 text-muted-foreground break-words">{engineResult.suggestedGameForgePack.reason}</p>
-                  </div>
-                  <Gamepad2 className="h-4 w-4 text-primary shrink-0" />
-                </div>
-                <Link
-                  to="/gameforge"
-                  state={{
-                    seed: engineResult.suggestedGameForgePack.sourceMaterial,
-                    mode: engineResult.suggestedGameForgePack.mode,
-                    style: engineResult.suggestedGameForgePack.style,
-                    intensity: "focused",
-                  }}
-                  className="mt-3 inline-flex"
-                >
-                  <Button size="sm">Enter Arena <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Button>
-                </Link>
-              </Card>
-            )}
 
             {remoteResult?.proofContract.shouldCreate && (
               <ProofContractCard
@@ -548,7 +502,7 @@ export default function Coach() {
               <MotionLockIn active={!!committedId} className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3 max-w-full overflow-hidden">
                 <div className="min-w-0">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Next step</span>
-                  <p className="text-sm mt-1 break-words">Quest saved. Log the action and file its required evidence.</p>
+                  <p className="text-sm mt-1 break-words">Task saved. Log the action and file its required evidence.</p>
                 </div>
                 <Link to="/proof"><Button size="sm">Log Action <ArrowRight className="h-3 w-3 ml-1" /></Button></Link>
               </MotionLockIn>
@@ -579,7 +533,7 @@ export default function Coach() {
         <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
           <h2 className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground m-0">Recent interactions</h2>
           {history.length === 0 ? (
-            <p className="text-sm text-muted-foreground mt-2 break-words">No Game Master interactions yet. Name a real bottleneck above to start the loop.</p>
+            <p className="text-sm text-muted-foreground mt-2 break-words">No coach interactions yet. Name a real bottleneck above to start the loop.</p>
           ) : (
             <ul className="mt-3 divide-y divide-border">
               {history.map((h) => (
@@ -647,7 +601,7 @@ function CoachResultSummaryCard({
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
-            {remoteResult?.usedFallback ? "Local Directive" : "Game Master Result"}
+            {remoteResult?.usedFallback ? "Local Directive" : "Coach Result"}
           </div>
           <h2 className="mt-1 text-lg font-semibold leading-snug break-words">{displayToken(engineResult.detectedIntent)}</h2>
         </div>

@@ -10,14 +10,14 @@ export default function Privacy() {
     >
       <p>
         EBLOCKI ("we", "us") provides a behavioural performance operating system that helps
-        operators convert ambition into measurable proof. This policy describes what data we
+        students convert ambition into measurable proof. This policy describes what data we
         collect, how it is used, and the rights you have over it.
       </p>
 
       <h2>1. Data we collect</h2>
       <ul>
         <li><strong>Account data:</strong> email address, full name, encrypted password (managed by our auth provider).</li>
-        <li><strong>Operator data:</strong> control sheets, proof artifacts, coach interactions, modes, onboarding profile, configuration.</li>
+        <li><strong>Student data:</strong> plans, proof artifacts, coach interactions, areas, onboarding profile, configuration.</li>
         <li><strong>Attachments:</strong> PDFs, images, and text files you upload as proof evidence, plus OCR text we extract from them.</li>
         <li><strong>Device data:</strong> platform (iOS / Android / web), push notification token, app version, locale.</li>
         <li><strong>Analytics:</strong> anonymised event names, session identifiers, screen names, feature usage timings.</li>
@@ -49,7 +49,7 @@ export default function Privacy() {
 
       <h2>5. Retention</h2>
       <p>
-        Operator data is retained while your account is active. When you delete your account, all
+        Student data is retained while your account is active. When you delete your account, all
         rows are removed within 30 days and storage attachments are purged immediately.
       </p>
 

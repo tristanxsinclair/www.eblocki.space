@@ -31,7 +31,7 @@ function cleanModeId(name: string) {
   );
 }
 
-function buildModeFromArena(name: string, description: string, proof: string, standards: string) {
+function buildModeFromArea(name: string, description: string, proof: string, standards: string) {
   const modeId = cleanModeId(name);
   const proofExamples = proof
     .split(",")
@@ -46,11 +46,11 @@ function buildModeFromArena(name: string, description: string, proof: string, st
   return {
     mode_id: modeId,
     display_name: name || "Custom Mode",
-    description: description || `Personalised Eblocki mode for ${name || "this arena"}.`,
+    description: description || `Personalised Eblocki mode for ${name || "this area"}.`,
     keywords,
     proof_examples: proofExamples.length
       ? proofExamples
-      : [`Completed proof artifact for ${name || "this arena"}`],
+      : [`Completed proof artifact for ${name || "this area"}`],
     weak_evidence_examples: [
       "Missing evidence, planning without output, or reflection without substance.",
     ],
@@ -197,7 +197,7 @@ export default function Modes() {
     if (!user) return;
     if (!newModeName.trim()) return toast.error("Give the mode a name.");
     setSavingModeId("new");
-    const modeRow = buildModeFromArena(newModeName.trim(), newModeDescription.trim(), newModeProof.trim(), newModeStandards.trim());
+    const modeRow = buildModeFromArea(newModeName.trim(), newModeDescription.trim(), newModeProof.trim(), newModeStandards.trim());
     try {
       const { error } = await supabase.from("user_modes").insert({ user_id: user.id, ...modeRow });
       if (error) throw error;
@@ -254,7 +254,7 @@ export default function Modes() {
             {isMobile ? "Areas" : "Mode Operating System"}
           </span>
           <h1 className="text-2xl md:text-4xl font-semibold break-words">
-            {isMobile ? "Areas are where your proof belongs." : "Your modes are the arenas where proof matters."}
+            {isMobile ? "Areas are where your proof belongs." : "Your modes are the areas where proof matters."}
           </h1>
           <p className="text-sm md:text-base text-muted-foreground max-w-3xl break-words">
             {isMobile
@@ -430,7 +430,7 @@ export default function Modes() {
               <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
                 Personalised Eblocki OS
               </span>
-              <h2 className="text-xl font-semibold mt-1">Add a custom operating arena</h2>
+              <h2 className="text-xl font-semibold mt-1">Add a custom study area</h2>
             </div>
             <Button variant={showAddMode ? "secondary" : "outline"} onClick={() => setShowAddMode((current) => !current)}>
               {showAddMode ? "Hide form" : "Add mode"}

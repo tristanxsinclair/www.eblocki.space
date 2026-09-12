@@ -70,7 +70,7 @@ export const MODE_TEMPLATES: Record<ModeKey, ObjectiveTemplate[]> = {
     T({
       title: "Upgrade one weak answer",
       description: "Take an existing answer and convert it into marker-ready structure with headings.",
-      why_it_matters: "Recycling beats writing from cold. Identity = the operator who edits to the standard.",
+      why_it_matters: "Recycling beats writing from cold. Identity = the student who edits to the standard.",
       required_artifact: "Before/after pair of one answer.",
       resistance_level: 4,
       focus_minutes: 40,

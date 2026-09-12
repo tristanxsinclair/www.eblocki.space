@@ -129,7 +129,7 @@ export default function ModeDetail() {
   const diagnosis = useMemo(() => {
     if (!mode) return null;
     const lines: string[] = [];
-    if (progress.totalArtifacts === 0) lines.push("This mode is under-proven. The system has no record of evidence in this arena.");
+    if (progress.totalArtifacts === 0) lines.push("This mode is under-proven. The system has no record of evidence in this area.");
     if (progress.pendingCommitments > Math.max(1, progress.completedCommitments)) {
       lines.push("Contracts are being created faster than completed. Close one before forging the next.");
     }

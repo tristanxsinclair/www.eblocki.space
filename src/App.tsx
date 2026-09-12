@@ -9,7 +9,6 @@ import Auth from "./pages/Auth.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import Coach from "./pages/Coach.tsx";
-import Sheet from "./pages/Sheet.tsx";
 import Proof from "./pages/Proof.tsx";
 import Systems from "./pages/Systems.tsx";
 import Modes from "./pages/Modes.tsx";
@@ -23,8 +22,6 @@ import ProofWeek from "./pages/ProofWeek.tsx";
 import Install from "./pages/Install.tsx";
 import EngineDebug from "./pages/EngineDebug.tsx";
 import BetaAdmin from "./pages/BetaAdmin.tsx";
-import Operator from "./pages/Operator.tsx";
-import GameForge from "./pages/GameForge.tsx";
 import Welcome from "./pages/Welcome.tsx";
 import Why from "./pages/Why.tsx";
 import Privacy from "./pages/legal/Privacy.tsx";
@@ -38,8 +35,7 @@ import OAuthConsent from "./pages/OAuthConsent.tsx";
 import Pricing from "./pages/Pricing.tsx";
 import CheckoutReturn from "./pages/CheckoutReturn.tsx";
 import Founder from "./pages/Founder.tsx";
-import Demo from "./pages/Demo.tsx";
-import GameDashboard from "./pages/GameDashboard.tsx";
+import Profile from "./pages/Profile.tsx";
 
 const queryClient = new QueryClient();
 
@@ -72,7 +68,6 @@ const App = () => (
           <Routes>
             <Route path="/onboarding" element={<Protected><Onboarding /></Protected>} />
             <Route path="/" element={<Landing />} />
-            <Route path="/demo" element={<Demo />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/install" element={<Install />} />
@@ -86,16 +81,12 @@ const App = () => (
             <Route path="/founder" element={<Founder />} />
             <Route path="/checkout/return" element={<CheckoutReturn />} />
             <Route path="/welcome" element={<Protected><Welcome /></Protected>} />
-            <Route path="/dashboard" element={<Protected><GameDashboard /></Protected>} />
-            <Route path="/game" element={<Protected><GameDashboard /></Protected>} />
+            <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
             <Route path="/today" element={<Protected><Dashboard /></Protected>} />
-            <Route path="/operator" element={<Protected><Operator /></Protected>} />
-            <Route path="/character" element={<Protected><Operator /></Protected>} />
-            <Route path="/gameforge" element={<Protected><GameForge /></Protected>} />
-            <Route path="/arena" element={<Protected><GameForge /></Protected>} />
+            <Route path="/profile" element={<Protected><Profile /></Protected>} />
+            <Route path="/operator" element={<Protected><Profile /></Protected>} />
             <Route path="/coach" element={<Protected><Coach /></Protected>} />
-            <Route path="/gm" element={<Protected><Coach /></Protected>} />
-            <Route path="/sheet" element={<Protected><Sheet /></Protected>} />
+            <Route path="/sheet" element={<Protected><Navigate to="/start-today" replace /></Protected>} />
             <Route path="/start" element={<Protected><StartToday /></Protected>} />
             <Route path="/start-today" element={<Protected><StartToday /></Protected>} />
             <Route path="/proof" element={<Protected><Proof /></Protected>} />

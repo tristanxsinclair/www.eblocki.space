@@ -58,10 +58,7 @@ import {
 import { parseTemporalProofParams } from "@/lib/eblocki/temporal-proof-link";
 import { verdictIdentityImpact } from "@/lib/eblocki/verdict-identity-impact";
 import { MotionVerdictCard } from "@/components/eblocki/motion";
-import {
-  buildLifeGameSettlementHref,
-  isSafeLifeGameRecordId,
-} from "@/lib/eblocki/life-game";
+import { isSafeRecordId } from "@/lib/eblocki/proof-linking";
 
 const ARTIFACT_TYPES = [
   "product system review",
@@ -93,7 +90,7 @@ interface Verdict {
   eliteVersion: string;
   artifactId: string;
   contractClosed: boolean;
-  questSyncPending: boolean;
+  taskSyncPending: boolean;
   selectedStandard: string;
   requiredEvidence: string[];
   contractAlignment: string;
@@ -118,7 +115,7 @@ const ACCEPTED_TYPES = "application/pdf,image/png,image/jpeg,image/webp,image/gi
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10MB
 const ACCEPTED_MIME_LIST = ACCEPTED_TYPES.split(",");
 function trustedRecordHint(value: string | null): string | null {
-  return isSafeLifeGameRecordId(value) ? value : null;
+  return isSafeRecordId(value) ? value : null;
 }
 
 type AttachStatus = "idle" | "validating" | "reading" | "extracting" | "ready" | "failed";
@@ -257,7 +254,7 @@ export default function Proof() {
   const firstProofMode = isFirstProofMode(params);
   const uglyStartMode = isUglyStartMode(params);
   const temporalBrief = useMemo(() => parseTemporalProofParams(params), [params]);
-  const questSource = params.get("source") === "quest";
+  const taskSource = params.get("source") === "task" || params.get("source") === "quest";
   const objectiveIdHint = trustedRecordHint(params.get("objective"));
   const [firstProofSubmitted, setFirstProofSubmitted] = useState(false);
   const [correctionAttempt, setCorrectionAttempt] = useState(false);
@@ -606,7 +603,7 @@ export default function Proof() {
       }
 
       let contractClosed = false;
-      let questSyncPending = false;
+      let taskSyncPending = false;
       if (linkedContract && !linkedContract.proof_artifact_id) {
         const { error: upErr } = await supabase
           .from("proof_commitments")
@@ -620,7 +617,7 @@ export default function Proof() {
           .eq("user_id", user.id)
           .is("proof_artifact_id", null);
         if (!upErr) contractClosed = true;
-        else questSyncPending = true;
+        else taskSyncPending = true;
       }
 
       if (linkedObjective) {
@@ -637,7 +634,7 @@ export default function Proof() {
           .in("status", ["pending", "active"])
           .select("id")
           .maybeSingle();
-        if (objectiveError || !syncedObjective) questSyncPending = true;
+        if (objectiveError || !syncedObjective) taskSyncPending = true;
       }
 
       const extras = buildVerdictExtras(submissionPreview, score);
@@ -663,7 +660,7 @@ export default function Proof() {
         eliteVersion: extras.eliteVersion,
         artifactId: artifact!.id,
         contractClosed,
-        questSyncPending,
+        taskSyncPending,
         selectedStandard: submissionPreview.standardLabel,
         requiredEvidence: submissionPreview.requiredEvidence,
         contractAlignment: submissionPreview.alignmentMessage,
@@ -691,18 +688,18 @@ export default function Proof() {
           : null,
       );
 
-      if (questSyncPending) {
-        toast.warning("Action logged // quest sync pending", {
-          description: "Your evidence is safe. Eblocki will retry the quest link from the HUD.",
+      if (taskSyncPending) {
+        toast.warning("Action logged // task sync pending", {
+          description: "Your evidence is safe. Eblocki will retry the task link from Today.",
         });
       } else {
-        toast.success(questSource ? "Action filed. Review the verdict below." : "Proof submitted. Review the result below.");
+        toast.success(taskSource ? "Action filed. Review the verdict below." : "Proof submitted. Review the result below.");
       }
-      void logEvent("life_game_action_filed", {
+      void logEvent("proof_action_filed", {
         route: "/proof",
-        source: questSource ? "quest" : "proof",
+        source: taskSource ? "task" : "proof",
         evidenceStrength: score.evidenceStrength,
-        syncState: questSyncPending ? "pending" : "complete",
+        syncState: taskSyncPending ? "pending" : "complete",
       });
       if (firstProofMode) {
         setFirstProofSubmitted(true);
@@ -901,8 +898,8 @@ export default function Proof() {
   return (
     <AppShell>
       <Seo
-        title={questSource ? "Log Action | EBLOCKI" : "Proof Check | EBLOCKI"}
-        description={questSource
+        title={taskSource ? "Log Action | EBLOCKI" : "Proof Check | EBLOCKI"}
+        description={taskSource
           ? "File a real action, attach evidence, and receive an authoritative verdict."
           : "Submit proof artifacts, score evidence strength, and close pending Proof Contracts."}
         path="/proof"
@@ -923,13 +920,13 @@ export default function Proof() {
         ) : (
           <header className="min-w-0 border-b border-border/80 pb-5">
             <span className="operator-label">
-              {questSource ? "Quest evidence" : "Proof Check"}
+              {taskSource ? "Task evidence" : "Proof Check"}
             </span>
             <h1 className="operator-heading-1 mt-2 break-words">
-              {questSource ? "Log Action" : "Submit proof"}
+              {taskSource ? "Log Action" : "Submit proof"}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground break-words">
-              {questSource
+              {taskSource
                 ? "What did you do? File the artifact before claiming completion."
                 : "One measurable artifact. Standard before submission."}
             </p>
@@ -1173,7 +1170,7 @@ export default function Proof() {
           <div className="flex items-center gap-2">
             <Gavel className="h-4 w-4 text-primary" />
             <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">
-              {firstProofMode ? "Submit your first proof" : questSource ? "File Action" : "Submit proof"}
+              {firstProofMode ? "Submit your first proof" : taskSource ? "File Action" : "Submit proof"}
             </h2>
           </div>
 
@@ -1226,7 +1223,7 @@ export default function Proof() {
                 <div className="mt-1 text-foreground">{linkedContract.title}</div>
                 {linkedContract.required_artifact && (
                   <div className="mt-0.5 text-muted-foreground">
-                    {questSource ? "Evidence required" : "Required"}: {linkedContract.required_artifact}
+                    {taskSource ? "Evidence required" : "Required"}: {linkedContract.required_artifact}
                   </div>
                 )}
                 {linkedContract.evidence_standard && (
@@ -1353,7 +1350,7 @@ export default function Proof() {
 
             <div>
               <Label htmlFor="proof-content">
-                {firstProofMode ? "Paste your work" : questSource ? "What did you do?" : "Content"}
+                {firstProofMode ? "Paste your work" : taskSource ? "What did you do?" : "Content"}
               </Label>
               <Textarea
                 id="proof-content"
@@ -1377,7 +1374,7 @@ export default function Proof() {
                 <div className="text-sm text-foreground">
                   {firstProofMode
                     ? "Optional details — mode, proof type, reflection, attachment"
-                    : "Optional details — reflection, next upgrade, XP flags, attachment"}
+                    : "Optional details — reflection, next upgrade, proof tags, attachment"}
                 </div>
               </div>
               <ChevronDown
@@ -1454,10 +1451,10 @@ export default function Proof() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">
-                      Pressure XP
+                      Pressure tag
                     </span>
                     <span className={"font-mono text-[10px] " + (pressureFlag ? "text-primary" : "text-muted-foreground")}>
-                      {pressureFlag ? "ON x1.3" : "OFF"}
+                      {pressureFlag ? "ON" : "OFF"}
                     </span>
                   </div>
                   <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
@@ -1478,10 +1475,10 @@ export default function Proof() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-primary">
-                      Transfer XP
+                      Transfer tag
                     </span>
                     <span className={"font-mono text-[10px] " + (transferFlag ? "text-primary" : "text-muted-foreground")}>
-                      {transferFlag ? "ON x1.4" : "OFF"}
+                      {transferFlag ? "ON" : "OFF"}
                     </span>
                   </div>
                   <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
@@ -1683,20 +1680,20 @@ export default function Proof() {
                   ? "Processing attachment…"
                   : firstProofMode
                     ? "Submit first proof"
-                    : questSource
+                    : taskSource
                       ? "File Action"
                       : "Submit proof"}
             </Button>
           </div>
         </Card>
 
-        {verdict?.questSyncPending && (
+        {verdict?.taskSyncPending && (
           <Card className="panel border-primary/40 bg-primary/5 p-4">
             <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
-              Action logged // quest sync pending
+              Action logged // task sync pending
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              The artifact exists and remains authoritative. Quest closure will be reconciled
+              The artifact exists and remains authoritative. Task closure will be reconciled
               independently; do not submit a duplicate action.
             </p>
           </Card>
@@ -1723,9 +1720,7 @@ export default function Proof() {
               verdict={verdict}
               presentation={verdictPresentation}
               firstProofMode={firstProofMode}
-              settlementHref={
-                questSource ? buildLifeGameSettlementHref(verdict.artifactId) : null
-              }
+              settlementHref={taskSource ? "/profile" : null}
               onCorrectedAttempt={(presentation) => {
                 setVerdict(null);
                 setSubmittedStudyClassification(null);
@@ -1987,14 +1982,14 @@ function ProofVerdictSummaryCard({
               onClick={() => {
                 void logEvent("proof_verdict_cta_clicked", {
                   route: "/proof",
-                  source: "quest",
-                  ctaName: "open_character_settlement",
+                  source: "task",
+                  ctaName: "open_profile_after_proof",
                   destination: settlementHref,
                 });
               }}
             >
               <Zap className="mr-1.5 h-3.5 w-3.5" />
-              Open character settlement
+              Open profile
             </Button>
           </Link>
         )}

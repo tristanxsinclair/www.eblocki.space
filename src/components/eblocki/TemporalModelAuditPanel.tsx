@@ -85,7 +85,7 @@ export function TemporalModelAuditPanel() {
           loopStatus: result.status,
           modelVersion: forecast.modelVersion,
           confidenceLevel: forecast.confidence.band,
-          intelligenceLevel: result.status,
+          calibrationStatus: result.status,
         });
       } catch {
         if (cancelled) return;
