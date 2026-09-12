@@ -1,4 +1,3 @@
-import type { GameForgeGameStyle, GameForgeMode } from "@/lib/gameforge/gameforge-engine";
 import {
   routeCoachInput,
   type CoachDomain,
@@ -20,14 +19,6 @@ export interface CoachInput {
   preferredMode?: CoachResponseMode | "auto";
   recentProofCount?: number;
   recentWeakPoint?: string | null;
-}
-
-export interface CoachGameForgeSuggestion {
-  title: string;
-  reason: string;
-  mode: GameForgeMode;
-  style: GameForgeGameStyle;
-  sourceMaterial: string;
 }
 
 export interface CoachAiPayload {
@@ -65,21 +56,8 @@ export interface CoachEngineResult {
   nextCheckpoint: string;
   followUpQuestion?: string;
   warning?: string;
-  suggestedGameForgePack?: CoachGameForgeSuggestion;
   aiPayload: CoachAiPayload;
 }
-
-const GAMEFORGE_DOMAIN_MAP: Partial<Record<CoachDetectedDomain, GameForgeMode>> = {
-  law: "law",
-  law_academic: "law",
-  psychology: "psychology",
-  sales: "sales",
-  sport: "sport",
-  language: "language",
-  finance: "finance",
-  study: "general",
-  general: "general",
-};
 
 function clean(value: string): string {
   return value.replace(/\s+/g, " ").trim();
@@ -232,26 +210,9 @@ function warningFor(route: CoachRouteResult): string | undefined {
   return undefined;
 }
 
-function shouldSuggestGameForge(route: CoachRouteResult, input: string): boolean {
-  const text = input.toLowerCase();
-  if (!GAMEFORGE_DOMAIN_MAP[route.domain]) return false;
-  if (route.intent === "academic_proof_plan" || route.intent === "law_source_bank" || route.intent === "product_system_review") return false;
-  return route.intent === "practice_request" || /\b(exam|concept|mistake|weak|practice|quiz|memorise|memorize|objection|tactic|vocab|application)\b/.test(text);
-}
-
-function gameForgeStyleFor(domain: CoachDetectedDomain): GameForgeGameStyle {
-  if (domain === "law" || domain === "law_academic") return "court_trial";
-  if (domain === "sales") return "scenario";
-  if (domain === "sport") return "transfer_challenge";
-  if (domain === "language") return "speed_round";
-  if (domain === "psychology") return "scenario";
-  if (domain === "finance") return "transfer_challenge";
-  return "mixed";
-}
-
 function buildAiPayload(params: { input: string; route: CoachRouteResult; proofActionType: CoachEngineResult["proofActionType"] }): CoachAiPayload {
   return {
-    system: "You are Eblocki Game Master: terse, dry, exact, and evidence-bound. Use the supplied deterministic route. One callout, one quest, one artifact, one evidence standard, one next action. Never award XP, invent a verdict, mark completion, fabricate sources, or claim AI certainty.",
+    system: "You are Eblocki Coach: terse, exact, and evidence-bound. Use the supplied deterministic route. One callout, one task, one artifact, one evidence standard, one next action. Never award XP, invent a verdict, mark completion, fabricate sources, or claim AI certainty.",
     user: clip(params.input, 3000),
     responseMode: params.route.mode,
     safeContext: {
@@ -293,15 +254,6 @@ export function buildCoachResponse(input: CoachInput): CoachEngineResult {
   const diagnosis = empty
     ? "No input yet. Eblocki needs a real bottleneck, note, question, or situation before it can prescribe proof."
     : diagnosisFor(route);
-  const suggestedGameForgePack = !empty && shouldSuggestGameForge(route, text)
-    ? {
-        title: `${route.domain} practice pack`,
-        reason: "Practice is useful here because the weakness is skill recall, application, or repeated mistake exposure.",
-        mode: GAMEFORGE_DOMAIN_MAP[route.domain] ?? "general",
-        style: gameForgeStyleFor(route.domain),
-        sourceMaterial: clip(text, 1200),
-      }
-    : undefined;
   const internalPromptSummary = `Classified as ${route.intent} for ${route.domain}; state ${route.state}; mode ${route.mode}; artifact ${route.recommendedProofArtifact.artifactType}; standard ${route.recommendedProofArtifact.proofStandardKey}.`;
   const aiPayload = buildAiPayload({ input: text, route, proofActionType });
 
@@ -324,7 +276,6 @@ export function buildCoachResponse(input: CoachInput): CoachEngineResult {
     nextCheckpoint: checkpointFor(route),
     followUpQuestion: text.length < 45 && !empty ? "What would count as proof that this is handled today?" : undefined,
     warning: warningFor(route),
-    suggestedGameForgePack,
     aiPayload,
   };
 }

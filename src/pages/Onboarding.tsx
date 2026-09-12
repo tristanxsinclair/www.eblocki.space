@@ -21,7 +21,7 @@ import { Seo } from "@/components/Seo";
 import { haptics } from "@/hooks/useHaptics";
 import { cn } from "@/lib/utils";
 
-type Arena = {
+type Area = {
   id: string;
   name: string;
   why: string;
@@ -43,7 +43,7 @@ type SupabaseUserMode = {
 
 const STEP_COUNT = 6;
 
-const newArena = (): Arena => ({
+const newArea = (): Area => ({
   id: crypto.randomUUID(),
   name: "",
   why: "",
@@ -70,33 +70,33 @@ function splitList(value: string) {
     .filter(Boolean);
 }
 
-function buildModeFromArena(arena: Arena) {
-  const modeId = cleanModeId(arena.name);
+function buildModeFromArea(area: Area) {
+  const modeId = cleanModeId(area.name);
   return {
     mode_id: modeId,
-    display_name: arena.name.trim() || "Custom Mode",
+    display_name: area.name.trim() || "Custom Mode",
     description:
-      arena.why.trim() ||
-      `Personalised Eblocki mode for ${arena.name || "this performance arena"}.`,
-    keywords: [arena.name, ...splitList(arena.standards), ...splitList(arena.proof)].filter(Boolean),
-    proof_examples: splitList(arena.proof).length
-      ? splitList(arena.proof)
-      : [`Completed proof artifact for ${arena.name || "this arena"}`],
+      area.why.trim() ||
+      `Personalised Eblocki mode for ${area.name || "this performance area"}.`,
+    keywords: [area.name, ...splitList(area.standards), ...splitList(area.proof)].filter(Boolean),
+    proof_examples: splitList(area.proof).length
+      ? splitList(area.proof)
+      : [`Completed proof artifact for ${area.name || "this area"}`],
     weak_evidence_examples: [
-      arena.weakEffort || "Thinking, planning, or consuming information without producing evidence.",
+      area.weakEffort || "Thinking, planning, or consuming information without producing evidence.",
     ],
     strong_evidence_examples: [
-      arena.success || "A concrete artifact with applied detail, reflection, and a next upgrade.",
+      area.success || "A concrete artifact with applied detail, reflection, and a next upgrade.",
     ],
     elite_evidence_examples: [
-      `Elite evidence in ${arena.name || "this arena"} includes output, application, feedback, correction, and a next measurable upgrade.`,
+      `Elite evidence in ${area.name || "this area"} includes output, application, feedback, correction, and a next measurable upgrade.`,
     ],
     preferred_response_framework:
       "Bottom Line Up Front → Analysis → Actionable System → HD/Elite Upgrade",
     scoring_criteria: {
       custom: ["artifact produced", "applied detail", "feedback quality", "reflection", "next upgrade"],
     },
-    research_needs: splitList(arena.standards),
+    research_needs: splitList(area.standards),
     tone_adjustments:
       "Direct, strategic, proof-first. Keep academic integrity and do not fabricate sources.",
     is_default: false,
@@ -104,7 +104,7 @@ function buildModeFromArena(arena: Arena) {
   };
 }
 
-function modeToArena(mode: SupabaseUserMode): Arena {
+function modeToArea(mode: SupabaseUserMode): Area {
   return {
     id: mode.mode_id ?? crypto.randomUUID(),
     name: mode.display_name,
@@ -131,8 +131,8 @@ export default function Onboarding() {
   const [prefersDetailedAnalysis, setPrefersDetailedAnalysis] = useState(true);
   const [challengeAvoidance, setChallengeAvoidance] = useState(true);
   const [autoCreateProofContracts, setAutoCreateProofContracts] = useState(true);
-  const [arenas, setArenas] = useState<Arena[]>([newArena()]);
-  const [openArenaId, setOpenArenaId] = useState<string | null>(arenas[0].id);
+  const [areas, setAreas] = useState<Area[]>([newArea()]);
+  const [openAreaId, setOpenAreaId] = useState<string | null>(areas[0].id);
 
   useEffect(() => {
     if (!user) return;
@@ -153,9 +153,9 @@ export default function Onboarding() {
           setAutoCreateProofContracts(profile.auto_create_proof_contracts ?? true);
         }
         if (modes && modes.length > 0) {
-          const mapped = modes.map(modeToArena);
-          setArenas(mapped);
-          setOpenArenaId(mapped[0].id);
+          const mapped = modes.map(modeToArea);
+          setAreas(mapped);
+          setOpenAreaId(mapped[0].id);
         }
       } catch (e) {
         // swallow — fresh form is fine
@@ -164,19 +164,19 @@ export default function Onboarding() {
   }, [user]);
 
   const generatedModes = useMemo(
-    () => arenas.filter((a) => a.name.trim()).map((a) => buildModeFromArena(a)),
-    [arenas],
+    () => areas.filter((a) => a.name.trim()).map((a) => buildModeFromArea(a)),
+    [areas],
   );
 
   const canAdvance = useMemo(() => {
     if (step === 0) return true; // welcome
     if (step === 1) return identitySummary.trim().length >= 10;
     if (step === 2) return true; // roles/goals optional
-    if (step === 3) return arenas.some((a) => a.name.trim().length > 0);
+    if (step === 3) return areas.some((a) => a.name.trim().length > 0);
     if (step === 4) return true; // coaching
     if (step === 5) return generatedModes.length > 0;
     return true;
-  }, [step, identitySummary, arenas, generatedModes]);
+  }, [step, identitySummary, areas, generatedModes]);
 
   const goNext = () => {
     if (!canAdvance) {
@@ -191,19 +191,19 @@ export default function Onboarding() {
     setStep((s) => Math.max(0, s - 1));
   };
 
-  const updateArena = (id: string, key: keyof Arena, value: string) =>
-    setArenas((cur) => cur.map((a) => (a.id === id ? { ...a, [key]: value } : a)));
+  const updateArea = (id: string, key: keyof Area, value: string) =>
+    setAreas((cur) => cur.map((a) => (a.id === id ? { ...a, [key]: value } : a)));
 
-  const addArena = () => {
+  const addArea = () => {
     haptics.light();
-    const a = newArena();
-    setArenas((cur) => [...cur, a]);
-    setOpenArenaId(a.id);
+    const a = newArea();
+    setAreas((cur) => [...cur, a]);
+    setOpenAreaId(a.id);
   };
 
-  const removeArena = (id: string) => {
+  const removeArea = (id: string) => {
     haptics.medium();
-    setArenas((cur) => (cur.length === 1 ? cur : cur.filter((a) => a.id !== id)));
+    setAreas((cur) => (cur.length === 1 ? cur : cur.filter((a) => a.id !== id)));
   };
 
   const saveOnboarding = async () => {
@@ -339,32 +339,32 @@ export default function Onboarding() {
 
         {step === 3 && (
           <StepBlock
-            kicker="Arenas"
+            kicker="Areas"
             title="Where does proof matter?"
-            sub="One arena per area of life. Tap to expand and fill in. The first one needs a name."
+            sub="One area per subject, role, or commitment. Tap to expand and fill in. The first one needs a name."
           >
             <div className="space-y-3">
-              {arenas.map((arena, i) => (
-                <ArenaCard
-                  key={arena.id}
+              {areas.map((area, i) => (
+                <AreaCard
+                  key={area.id}
                   index={i}
-                  arena={arena}
-                  open={openArenaId === arena.id}
-                  onOpen={() => setOpenArenaId(openArenaId === arena.id ? null : arena.id)}
-                  onChange={(k, v) => updateArena(arena.id, k, v)}
-                  onRemove={() => removeArena(arena.id)}
-                  canRemove={arenas.length > 1}
+                  area={area}
+                  open={openAreaId === area.id}
+                  onOpen={() => setOpenAreaId(openAreaId === area.id ? null : area.id)}
+                  onChange={(k, v) => updateArea(area.id, k, v)}
+                  onRemove={() => removeArea(area.id)}
+                  canRemove={areas.length > 1}
                 />
               ))}
             </div>
             <Button
               type="button"
               variant="outline"
-              onClick={addArena}
+              onClick={addArea}
               className="mt-4 w-full h-12"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add another arena
+              Add another area
             </Button>
           </StepBlock>
         )}
@@ -646,9 +646,9 @@ function ChipField({
   );
 }
 
-function ArenaCard({
+function AreaCard({
   index,
-  arena,
+  area,
   open,
   onOpen,
   onChange,
@@ -656,10 +656,10 @@ function ArenaCard({
   canRemove,
 }: {
   index: number;
-  arena: Arena;
+  area: Area;
   open: boolean;
   onOpen: () => void;
-  onChange: (k: keyof Arena, v: string) => void;
+  onChange: (k: keyof Area, v: string) => void;
   onRemove: () => void;
   canRemove: boolean;
 }) {
@@ -672,10 +672,10 @@ function ArenaCard({
       >
         <div className="min-w-0">
           <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            Arena {index + 1}
+            Area {index + 1}
           </span>
           <p className="text-sm font-medium truncate mt-0.5">
-            {arena.name || "Untitled arena"}
+            {area.name || "Untitled area"}
           </p>
         </div>
         <ChevronDown
@@ -687,7 +687,7 @@ function ArenaCard({
         <div className="px-4 pb-4 space-y-3 border-t border-border/60 pt-3">
           <FieldLabel>Name</FieldLabel>
           <Input
-            value={arena.name}
+            value={area.name}
             onChange={(e) => onChange("name", e.target.value)}
             placeholder="University Psychology, Sales, Fitness, Content…"
             className="h-12 text-base"
@@ -695,7 +695,7 @@ function ArenaCard({
 
           <FieldLabel>Why does this matter?</FieldLabel>
           <Textarea
-            value={arena.why}
+            value={area.why}
             onChange={(e) => onChange("why", e.target.value)}
             placeholder="What's at stake here?"
             className="min-h-[80px]"
@@ -703,7 +703,7 @@ function ArenaCard({
 
           <FieldLabel>Strong performance looks like</FieldLabel>
           <Textarea
-            value={arena.success}
+            value={area.success}
             onChange={(e) => onChange("success", e.target.value)}
             placeholder="What does a great week produce?"
             className="min-h-[80px]"
@@ -711,7 +711,7 @@ function ArenaCard({
 
           <FieldLabel>Weak effort looks like</FieldLabel>
           <Textarea
-            value={arena.weakEffort}
+            value={area.weakEffort}
             onChange={(e) => onChange("weakEffort", e.target.value)}
             placeholder="What does dodging the work look like?"
             className="min-h-[80px]"
@@ -719,7 +719,7 @@ function ArenaCard({
 
           <FieldLabel>Proof artifacts (comma-separated)</FieldLabel>
           <Textarea
-            value={arena.proof}
+            value={area.proof}
             onChange={(e) => onChange("proof", e.target.value)}
             placeholder="essay, sales call recording, training log…"
             className="min-h-[64px]"
@@ -727,7 +727,7 @@ function ArenaCard({
 
           <FieldLabel>Standards / rubrics / sources</FieldLabel>
           <Textarea
-            value={arena.standards}
+            value={area.standards}
             onChange={(e) => onChange("standards", e.target.value)}
             placeholder="HD criteria, ICP framework, RPE scale…"
             className="min-h-[64px]"
@@ -741,7 +741,7 @@ function ArenaCard({
               className="w-full h-11 text-destructive hover:text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Remove arena
+              Remove area
             </Button>
           )}
         </div>

@@ -2,9 +2,8 @@ import { useEffect, useRef } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, MessageSquare, Gavel, Settings, LogOut, Sparkles, Hexagon, Swords, Hammer } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Gavel, Settings, LogOut, Sparkles, UserRound, Layers } from "lucide-react";
 import { usePushRegistration } from "@/hooks/usePushRegistration";
-import { LevelUpListener } from "./LevelUpListener";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { EblockiLogo } from "./EblockiLogo";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
@@ -12,11 +11,10 @@ import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 const NAV = [
   { to: "/dashboard", label: "Today", icon: LayoutDashboard },
   { to: "/proof", label: "Log Action", icon: Gavel },
-  { to: "/start-today", label: "Quests", icon: Sparkles },
-  { to: "/coach", label: "Game Master", icon: MessageSquare },
-  { to: "/gameforge", label: "Arena", icon: Swords },
-  { to: "/operator", label: "Character", icon: Hexagon },
-  { to: "/systems", label: "Intel", icon: Hammer },
+  { to: "/start-today", label: "Plan", icon: Sparkles },
+  { to: "/coach", label: "Coach", icon: MessageSquare },
+  { to: "/modes", label: "Areas", icon: Layers },
+  { to: "/profile", label: "Profile", icon: UserRound },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -94,7 +92,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
       <main className="flex-1 min-w-0 w-full max-w-full overflow-x-hidden pb-nav-safe md:pb-0" id="main">{children}</main>
       <MobileBottomNav />
-      <LevelUpListener />
     </div>
   );
 }

@@ -133,7 +133,7 @@ export function WeeklyRetro({ className }: Props) {
     // Identity claim — only state it if the data actually supports it.
     let identityClaim: string | null = null;
     if (totalProofs >= 5 && avgQuality >= 6) {
-      identityClaim = "Operator who ships at depth.";
+      identityClaim = "Student who ships at depth.";
     } else if (totalProofs >= 5) {
       identityClaim = "Consistent shipper — depth is the next claim to earn.";
     } else if (activeDays >= 3) {

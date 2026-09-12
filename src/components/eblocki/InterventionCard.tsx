@@ -13,7 +13,7 @@ import { STATE_LABELS, STATE_PRESCRIPTION, type BehaviouralState } from "@/lib/e
 interface InterventionMeta {
   icon: LucideIcon;
   accent: string;       // border/glow color class
-  headline: string;     // operator-voice
+  headline: string;
   cta: { label: string; to: string };
   pressure: boolean;    // mark pressure_flag if user proves under this state
 }
@@ -30,7 +30,7 @@ const META: Partial<Record<BehaviouralState, InterventionMeta>> = {
     icon: Crosshair,
     accent: "border-primary/40 bg-primary/[0.04]",
     headline: "Overload detected. Triage to one prime objective. Park everything else.",
-    cta: { label: "Set Prime Objective", to: "/sheet" },
+    cta: { label: "Set Prime Objective", to: "/start-today" },
     pressure: false,
   },
   low_energy: {
@@ -51,7 +51,7 @@ const META: Partial<Record<BehaviouralState, InterventionMeta>> = {
     icon: Crosshair,
     accent: "border-primary/40 bg-primary/[0.04]",
     headline: "Scattered focus. One objective. One artifact. One timer.",
-    cta: { label: "Set NCA", to: "/sheet" },
+    cta: { label: "Set next action", to: "/start-today" },
     pressure: false,
   },
   academic_displacement: {
@@ -130,9 +130,9 @@ export function InterventionCard({ state, className }: Props) {
             {meta.pressure && (
               <span
                 className="font-mono text-[10px] uppercase tracking-[0.2em] px-1.5 py-0.5 rounded-sm border border-primary/40 text-primary"
-                title="Proof shipped while in this state earns Pressure XP (×1.3)."
+                title="Proof shipped while in this state is marked as real pressure evidence."
               >
-                +Pressure XP
+                Pressure proof
               </span>
             )}
           </div>

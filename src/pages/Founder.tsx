@@ -15,7 +15,7 @@ const CRITERIA = [
 const BENEFITS = [
   "Lifetime Eblocki access — Pro + everything ever built.",
   "Priority feedback channel with the founder.",
-  "Early access to experimental intelligence features.",
+  "Early access to advanced study feedback features.",
   "Named credit in the Founder ledger.",
 ];
 

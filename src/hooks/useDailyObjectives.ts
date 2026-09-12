@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { normaliseModeKey } from "@/lib/eblocki/mode-templates";
 import { personaliseQuests } from "@/lib/eblocki/quest-personalisation";
 import { logEvent } from "@/lib/eblocki/analytics";
-import { assertObjectiveCanComplete } from "@/lib/eblocki/life-game";
+import { assertObjectiveCanComplete } from "@/lib/eblocki/proof-linking";
 import { localDayKey, resolvedTimeZone } from "@/lib/eblocki/local-day";
 
 export type ObjectiveKind = "mission" | "streak_save" | "recovery" | "boss" | "quick_win";
@@ -69,7 +69,7 @@ async function seedIfNeededInner(userId: string, date: string) {
     .order("created_at", { ascending: false })
     .limit(5);
 
-  // Everything the operator has actually built their OS to be — modes with
+  // Everything the student has actually built their OS to be — modes with
   // their own evidence standards, domain levels, and recent proof history.
   const [{ data: activeModes }, { data: domainLevels }, { data: recentProofs }] =
     await Promise.all([
@@ -136,7 +136,7 @@ async function seedIfNeededInner(userId: string, date: string) {
         streak_impact: 1,
         identity_alignment: 4,
         proof_required: true,
-        why_it_matters: p.evidence_standard ?? "Closing this proof reinforces the operator identity.",
+        why_it_matters: p.evidence_standard ?? "Closing this proof reinforces the student's record.",
         status: "pending",
         proof_commitment_id: p.id,
         position: i,

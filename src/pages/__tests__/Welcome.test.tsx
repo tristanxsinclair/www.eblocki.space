@@ -7,7 +7,7 @@ import Welcome from "@/pages/Welcome";
 vi.mock("@/lib/eblocki/analytics", () => ({ logEvent: vi.fn() }));
 
 describe("first-use welcome", () => {
-  it("configures arenas and behavioural targets before the first proof cycle", () => {
+  it("configures areas and behavioural targets before the first proof cycle", () => {
     render(
       <HelmetProvider>
         <MemoryRouter>
@@ -17,7 +17,7 @@ describe("first-use welcome", () => {
     );
 
     expect(screen.getByText("Step 1 of 5")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /life game that cannot lie/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /study system that cannot lie/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
     expect(screen.getByRole("heading", { name: /Where do you want proof/i })).toBeInTheDocument();
@@ -32,7 +32,7 @@ describe("first-use welcome", () => {
     expect(screen.getByText(/Submit the stronger attempt/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
 
-    expect(screen.getByRole("heading", { name: /Progress feels like a game/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Start first quest/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Progress feels real/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Start first task/i })).toBeInTheDocument();
   });
 });

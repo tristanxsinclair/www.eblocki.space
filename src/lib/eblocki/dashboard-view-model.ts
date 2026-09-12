@@ -302,7 +302,7 @@ export function buildDashboardViewModel(input: DashboardViewModelInput = {}): Da
     : dashboardStatus === "needs_proof"
       ? "Contracts exist, but the Court has no completed proof yet. Close one artifact to start calibration."
       : dashboardStatus === "degraded"
-        ? "Some intelligence data is missing or legacy-shaped. Core proof submission remains available."
+        ? "Some forecast data is missing or legacy-shaped. Core proof submission remains available."
         : "Command centre active. Keep proof moving before interpretation expands.";
 
   return {

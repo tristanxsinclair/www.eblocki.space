@@ -392,7 +392,7 @@ export function ProofCapture({
                   "font-mono text-xs tabular-nums",
                   preview.xp.final > 0 ? "text-primary" : "text-destructive",
                 )}>
-                  {preview.xp.final > 0 ? `+${preview.xp.final} XP` : "0 XP"}
+                  {preview.xp.final > 0 ? `+${preview.xp.final} pts` : "0 pts"}
                 </span>
               </div>
             )}

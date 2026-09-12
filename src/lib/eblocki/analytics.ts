@@ -50,14 +50,10 @@ export type EngineEvent =
   | "temporal_loop_audit_status"
   | "temporal_calibration_completed"
   | "dashboard_section_opened"
-  | "gameforge_pack_generated"
-  | "gameforge_round_completed"
-  | "gameforge_boss_battle_completed"
-  | "gameforge_mastery_result"
   | "coach_prompt_submitted"
   | "coach_mode_detected"
   | "coach_proof_action_generated"
-  | "coach_gameforge_suggested"
+  | "coach_task_created"
   | "product_need_detected"
   | "product_match_shown"
   | "product_match_clicked"
@@ -65,18 +61,8 @@ export type EngineEvent =
   | "upgrade_cta_shown"
   | "upgrade_clicked"
   | "recommendation_outcome_logged"
-  | "life_game_hud_viewed"
-  | "life_game_panel_opened"
-  | "life_game_quest_viewed"
-  | "life_game_quest_log_started"
-  | "life_game_action_filed"
-  | "life_game_xp_synced"
-  | "life_game_settlement_viewed"
-  | "life_game_demo_started"
-  | "life_game_demo_signup_clicked"
-  | "gm_message_submitted"
-  | "gm_quest_created"
-  | "arena_result_filed";
+  | "profile_viewed"
+  | "proof_action_filed";
 
 /** Whitelist of property keys - anything else is dropped. */
 const ALLOWED_KEYS = new Set([
@@ -85,11 +71,11 @@ const ALLOWED_KEYS = new Set([
   "quality", "proof_len", "has_upgrade", "has_hard",
   "step", "route", "ctaName", "source", "destination", "verdictStrength", "challengeState",
   "modelVersion", "confidenceLevel", "loopStatus", "riskKind", "recommendedPath",
-  "accuracyBucket", "intelligenceLevel", "sectionName",
+  "accuracyBucket", "calibrationStatus", "sectionName",
   "domain", "intensity", "style", "scoreBucket", "responseMode", "proofActionType",
   "accuracy", "bossCompleted", "correct", "difficulty", "suggested", "roundStyle",
   "needSource", "needUrgency", "matchCategory", "monetisationType", "fitScore", "accessLevel", "outcome",
-  "panel", "statKey", "questKind", "evidenceStrength", "verdict", "syncState", "fallback",
+  "panel", "statKey", "taskKind", "evidenceStrength", "verdict", "syncState", "fallback",
 ]);
 
 function sanitise(props: Record<string, unknown>): Record<string, unknown> {

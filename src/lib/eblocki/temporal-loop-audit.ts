@@ -240,9 +240,9 @@ export function auditTemporalLoop(input: TemporalLoopAuditInput = {}): TemporalL
     findings,
     "intelligence_score",
     !!intelligence,
-    intelligence ? "Temporal Intelligence Score can be calculated." : "Temporal Intelligence Score needs a forecast.",
+    intelligence ? "Forecast calibration score can be calculated." : "Forecast calibration score needs a forecast.",
   );
-  if (!intelligence) missingPieces.push("temporal intelligence score");
+  if (!intelligence) missingPieces.push("forecast calibration score");
 
   const emptyStateOk = input.dashboardCanShowEmptyState !== false;
   addFinding(

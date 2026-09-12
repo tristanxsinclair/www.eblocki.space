@@ -214,11 +214,11 @@ export default function Settings() {
 
   return (
     <AppShell>
-      <Seo title="Settings | EBLOCKI" description="Operator config — profile, modes, and identity claims." path="/settings" />
+      <Seo title="Settings | EBLOCKI" description="Student settings — profile, areas, and identity claims." path="/settings" />
       <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6 min-w-0 max-w-full text-wrap-safe">
         <header className="min-w-0">
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Settings</span>
-          <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Operator config.</h1>
+          <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Student settings.</h1>
         </header>
 
         <Card className="panel p-4 md:p-5 space-y-5 max-w-full overflow-hidden">
@@ -292,7 +292,7 @@ export default function Settings() {
             <div className="min-w-0">
               <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Mode management</span>
               <h2 className="text-xl font-semibold mt-2 break-words">Active modes</h2>
-              <p className="text-sm text-muted-foreground mt-1 break-words">Edit your personalised modes and toggle whether each arena is active.</p>
+              <p className="text-sm text-muted-foreground mt-1 break-words">Edit your personalised modes and toggle whether each study area is active.</p>
             </div>
           </div>
 

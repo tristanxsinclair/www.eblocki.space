@@ -38,7 +38,7 @@ const PLANS = [
       "Early features access",
       "Deeper personalisation",
       "Priority feedback",
-      "Experimental intelligence",
+      "Advanced study feedback",
     ],
   },
 ] as const;

@@ -10,7 +10,7 @@ export default function DataHandling() {
     >
       <h2>Storage location</h2>
       <p>
-        All operator data is stored in a managed PostgreSQL database with Row Level Security.
+        All student data is stored in a managed PostgreSQL database with Row Level Security.
         Every table policy restricts reads and writes to <code>auth.uid()</code> = the row owner,
         so users can only ever see their own data.
       </p>

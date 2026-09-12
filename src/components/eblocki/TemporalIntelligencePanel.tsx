@@ -119,7 +119,7 @@ export function TemporalIntelligencePanel() {
         <div className="flex items-center gap-2">
           <Brain className="h-4 w-4 text-primary" />
           <h2 className="font-mono text-[10px] uppercase tracking-widest text-primary m-0">
-            Temporal Intelligence // System Calibration
+            Forecast Calibration // System Signal
           </h2>
         </div>
         <div className="flex items-center gap-3 font-mono text-[10px] uppercase text-muted-foreground">

@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { rollVariableReward } from "@/lib/eblocki/momentum";
 import type { DailyObjective } from "@/hooks/useDailyObjectives";
 import { ProofCapture, type ProofCapturePayload } from "./ProofCapture";
-import { buildQuestLogActionHref } from "@/lib/eblocki/life-game";
+import { buildTaskLogActionHref } from "@/lib/eblocki/proof-linking";
 
 interface Props {
   objective: DailyObjective;
@@ -32,7 +32,7 @@ const KIND_META: Record<
   mission: { icon: Target, label: "Mission", color: "text-primary" },
   streak_save: { icon: Flame, label: "Streak Save", color: "text-destructive" },
   recovery: { icon: Shield, label: "Recovery", color: "text-primary/80" },
-  boss: { icon: Zap, label: "Boss Battle", color: "text-destructive" },
+  boss: { icon: Zap, label: "Deep Work", color: "text-destructive" },
   quick_win: { icon: Sparkles, label: "Quick Win", color: "text-primary/80" },
 };
 
@@ -117,7 +117,7 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
     setDragX(0);
     if (objective.proof_required) {
       navigate(
-        buildQuestLogActionHref({
+        buildTaskLogActionHref({
           commitmentId: objective.proof_commitment_id,
           objectiveId: objective.id,
         }),
