@@ -78,6 +78,8 @@ Entry counts remain history counts. Calendar activity remains dated activity, no
 | `E2E_BASE_URL=http://127.0.0.1:8087 npx playwright test tests/e2e/correction-coherence.spec.ts tests/e2e/student-app.spec.ts tests/e2e/wp-003-verdict-copy-qa.spec.ts tests/e2e/system-forge.spec.ts` | PASS, 13 passed / 5 skipped; authenticated specs need an injected session |
 | `PGLITE_MODULE=/tmp/eblocki-correction-db/node_modules/@electric-sql/pglite/dist/index.js node scripts/test-correction-database.mjs` | PASS, PostgreSQL migration replay and actual CLE settlement checks |
 | `git diff --check` | PASS |
+| `npm run check:judgment-generated` | PASS after implementation commit; regeneration leaves tracked outputs unchanged |
+| `E2E_BASE_URL=http://127.0.0.1:8087 npx playwright test tests/e2e/correction-coherence.spec.ts` | PASS, final targeted rerun: 5 tests |
 
 For reproducible SQL checks, install the isolated test dependency with `npm install --prefix /tmp/eblocki-correction-db @electric-sql/pglite@0.5.8`. The runner creates disposable prerequisite tables and auth shims, loads the actual existing CLE and XP-idempotency migrations, then applies this migration twice and runs `tests/sql/correction-assessment.sql`. It does not connect to production. It is not a full Supabase migration-chain/RLS/concurrency test.
 
@@ -151,3 +153,5 @@ Rollback should first stop new writes and restore the prior browser/edge release
 - `supabase/migrations/20260913000100_correction_assessment.sql`
 - `tests/e2e/correction-coherence.spec.ts`
 - `tests/sql/correction-assessment.sql`
+
+Implementation commit: `db3dd35`. Work is committed on the isolated branch; nothing was pushed or deployed.
