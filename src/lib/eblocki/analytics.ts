@@ -17,8 +17,14 @@ export type EngineEvent =
   | "activation_dashboard_zero_state_seen"
   | "activation_first_proof_entered"
   | "activation_first_proof_submitted"
+  | "activation_artifact_submission_started"
+  | "activation_artifact_submitted"
   | "activation_verdict_shown"
   | "activation_verdict_cta_clicked"
+  | "activation_correction_started"
+  | "activation_second_attempt_submitted"
+  | "proof_verdict_viewed"
+  | "proof_verdict_cta_clicked"
   | "activation_proof_week_join_clicked"
   | "activation_day_2_return_seen"
   | "objective_created"
@@ -58,7 +64,19 @@ export type EngineEvent =
   | "product_match_dismissed"
   | "upgrade_cta_shown"
   | "upgrade_clicked"
-  | "recommendation_outcome_logged";
+  | "recommendation_outcome_logged"
+  | "life_game_hud_viewed"
+  | "life_game_panel_opened"
+  | "life_game_quest_viewed"
+  | "life_game_quest_log_started"
+  | "life_game_action_filed"
+  | "life_game_xp_synced"
+  | "life_game_settlement_viewed"
+  | "life_game_demo_started"
+  | "life_game_demo_signup_clicked"
+  | "gm_message_submitted"
+  | "gm_quest_created"
+  | "arena_result_filed";
 
 /** Whitelist of property keys - anything else is dropped. */
 const ALLOWED_KEYS = new Set([
@@ -71,6 +89,7 @@ const ALLOWED_KEYS = new Set([
   "domain", "intensity", "style", "scoreBucket", "responseMode", "proofActionType",
   "accuracy", "bossCompleted", "correct", "difficulty", "suggested", "roundStyle",
   "needSource", "needUrgency", "matchCategory", "monetisationType", "fitScore", "accessLevel", "outcome",
+  "panel", "statKey", "questKind", "evidenceStrength", "verdict", "syncState", "fallback",
 ]);
 
 function sanitise(props: Record<string, unknown>): Record<string, unknown> {

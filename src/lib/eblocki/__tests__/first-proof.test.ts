@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildProofEntryHref,
   FIRST_PROOF_COPY,
   FIRST_PROOF_DEFAULTS,
   FIRST_PROOF_EXAMPLES,
@@ -9,6 +10,10 @@ import {
   FIRST_PROOF_STANDARD,
   FIRST_PROOF_STANDARD_PREVIEW,
   isFirstProofMode,
+  isUglyStartMode,
+  UGLY_START_COPY,
+  UGLY_START_QUERY_KEY,
+  UGLY_START_QUERY_VALUE,
 } from "../first-proof";
 import { scoreProofArtifact } from "../proof-scoring";
 
@@ -35,6 +40,29 @@ describe("isFirstProofMode", () => {
   it("exposes the expected query key/value contract", () => {
     expect(FIRST_PROOF_QUERY_KEY).toBe("first");
     expect(FIRST_PROOF_QUERY_VALUE).toBe("1");
+  });
+});
+
+describe("ugly-start proof entry", () => {
+  it("returns true when ?ugly=1 is present", () => {
+    expect(isUglyStartMode(new URLSearchParams("ugly=1"))).toBe(true);
+  });
+
+  it("returns false when ugly param missing or not exact", () => {
+    expect(isUglyStartMode(new URLSearchParams(""))).toBe(false);
+    expect(isUglyStartMode(new URLSearchParams("ugly=true"))).toBe(false);
+  });
+
+  it("exposes the expected ugly-start query contract", () => {
+    expect(UGLY_START_QUERY_KEY).toBe("ugly");
+    expect(UGLY_START_QUERY_VALUE).toBe("1");
+  });
+
+  it("builds proof entry hrefs without duplicating route logic", () => {
+    expect(buildProofEntryHref()).toBe("/proof");
+    expect(buildProofEntryHref({ uglyStart: true })).toBe("/proof?ugly=1");
+    expect(buildProofEntryHref({ firstProof: true })).toBe("/proof?first=1");
+    expect(buildProofEntryHref({ firstProof: true, uglyStart: true })).toBe("/proof?first=1&ugly=1");
   });
 });
 
@@ -84,6 +112,12 @@ describe("first-proof copy", () => {
     expect(FIRST_PROOF_COPY.subtitle).toMatch(/what to do next/i);
   });
 
+  it("keeps ugly-start micro-copy stable", () => {
+    expect(UGLY_START_COPY.title).toBe("Avoidance detected. Start ugly. Quality comes after existence.");
+    expect(UGLY_START_COPY.subtitle).toBe("2-minute start. One rough sentence or artifact counts. Quality is not judged until artifact exists.");
+    expect(UGLY_START_COPY.support).toBe("One artifact. One standard. One verdict.");
+  });
+
   it("keeps the example list stable", () => {
     expect(FIRST_PROOF_EXAMPLES).toEqual([
       { domain: "Essay", example: "essay paragraph" },
@@ -116,6 +150,9 @@ describe("first-proof copy", () => {
       FIRST_PROOF_STANDARD_PREVIEW.whatCounts,
       FIRST_PROOF_STANDARD_PREVIEW.whatMakesItStronger,
       FIRST_PROOF_STANDARD_PREVIEW.whatShouldIPaste,
+      UGLY_START_COPY.title,
+      UGLY_START_COPY.subtitle,
+      UGLY_START_COPY.support,
       ...FIRST_PROOF_EXAMPLES.map((example) => `${example.domain} ${example.example}`),
     ]
       .join(" \n ")

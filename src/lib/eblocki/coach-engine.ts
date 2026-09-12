@@ -251,7 +251,7 @@ function gameForgeStyleFor(domain: CoachDetectedDomain): GameForgeGameStyle {
 
 function buildAiPayload(params: { input: string; route: CoachRouteResult; proofActionType: CoachEngineResult["proofActionType"] }): CoachAiPayload {
   return {
-    system: "You are Eblocki Proof Coach. Use the supplied deterministic route. One classification, one artifact, one proof standard, one next action. Do not fabricate sources or claim AI certainty.",
+    system: "You are Eblocki Game Master: terse, dry, exact, and evidence-bound. Use the supplied deterministic route. One callout, one quest, one artifact, one evidence standard, one next action. Never award XP, invent a verdict, mark completion, fabricate sources, or claim AI certainty.",
     user: clip(params.input, 3000),
     responseMode: params.route.mode,
     safeContext: {
@@ -269,6 +269,7 @@ function buildAiPayload(params: { input: string; route: CoachRouteResult; proofA
       "fabricated legal authority",
       "fabricated psychology citations",
       "identity praise without proof",
+      "invented XP, verdicts, or completion",
       "planning without an artifact",
       "competing proof artifacts unless explicitly requested",
       "raw private notes in analytics",

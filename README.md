@@ -1,8 +1,8 @@
 # Eblocki
 
-**Convert ambition into measurable proof.**
+**Turn real life into a game where actions only count when evidence exists.**
 
-Eblocki is a behavioural performance operating system designed to turn goals, study plans, sales improvement, sport development, content building, and identity work into concrete evidence.
+Eblocki is a life-game presentation layer over a Behavioural Evidence Operating System. It turns goals, study, sales, sport, product building, finance, and identity work into concrete artifacts, authoritative verdicts, and earned character progress.
 
 It is not a generic productivity app.  
 It is not a motivational dashboard.  
@@ -12,9 +12,15 @@ Eblocki is built around one operating principle:
 
 > Proof beats intention.
 
-The app helps users move through a clear performance loop:
+The primary life-game loop is:
 
-Check-in → Mode Detection → State Diagnosis → Coaching Response → Proof Contract → Proof Artifact → Evidence Score → Feedback → Next Upgrade
+Quest → real-world action → evidence artifact → Court verdict → authoritative XP → character update → next quest
+
+The underlying evidence loop remains the source of truth:
+
+Check-in → Mode Detection → State Diagnosis → Game Master Directive → Proof Contract → Proof Artifact → Evidence Score → Feedback → Next Upgrade
+
+The life-game UI does not create a second XP ledger, quest database, Coach function, or behavioural engine.
 
 ---
 
@@ -71,9 +77,9 @@ This gives each day a measurable evidence trail.
 
 ---
 
-### AI Coach
+### Game Master
 
-The AI Coach is designed to act as a behavioural diagnostic engine.
+The Game Master is the user-facing identity of the existing Coach diagnostic engine.
 
 It takes a user check-in or task and returns:
 

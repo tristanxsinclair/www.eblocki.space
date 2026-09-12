@@ -60,36 +60,44 @@ export function ProofWeekPanel({ artifactDates }: { artifactDates: string[] }) {
 
   if (!joinedAt) {
     return (
-      <Card className="panel p-4 md:p-5 border-primary/30 bg-primary/5">
+      <Card className="panel rounded-2xl p-5 md:p-6 border-primary/30 bg-primary/[0.06] mobile-safe-card text-wrap-safe">
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-primary" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">7-Day Proof Week</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">7-Day Proof Week</span>
         </div>
-        <h3 className="mt-2 text-lg font-semibold">Find out if your work is real in 7 days.</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h3 className="mt-3 text-lg font-semibold tracking-tight">Find out if your work is real in 7 days.</h3>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           One command a day. One proof artifact. At the end, you see whether Eblocki exposed fake productivity — and you decide if it stays.
         </p>
-        <div className="mt-3 flex gap-2">
-          <Button size="sm" onClick={join} disabled={joining}>{joining ? "Joining…" : "Join Proof Week"}</Button>
-          <Link to="/proof"><Button size="sm" variant="outline">Submit proof first</Button></Link>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button size="sm" onClick={join} disabled={joining} className="rounded-xl">{joining ? "Joining…" : "Join Proof Week"}</Button>
+          <Link to="/proof"><Button size="sm" variant="outline" className="rounded-xl">Submit proof first</Button></Link>
         </div>
       </Card>
     );
   }
 
   if (status.completed) {
+    const fullyLogged = status.daysWithProof >= 7;
+    const headerLabel = fullyLogged
+      ? "Proof Week complete — 7/7"
+      : `Proof Week closed — ${status.daysWithProof}/7 days logged`;
     return (
-      <Card className="panel p-4 md:p-5 border-primary/40">
+      <Card className="panel rounded-2xl p-5 md:p-6 border-primary/40 mobile-safe-card text-wrap-safe">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 text-primary" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Week complete</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">{headerLabel}</span>
         </div>
-        <p className="mt-2 text-sm">
+        <p className="mt-3 text-sm leading-relaxed">
           You logged proof on <span className="text-foreground font-medium">{status.daysWithProof}/7 days</span> ({status.artifactsThisWeek} artifacts).
         </p>
-        <p className="mt-1 text-sm text-muted-foreground">Verdict time. Share feedback and tell us if this is worth paying for.</p>
-        <div className="mt-3 flex gap-2">
-          <Link to="/proof#feedback"><Button size="sm"><MessageSquare className="h-3 w-3 mr-1.5" />Give verdict</Button></Link>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+          {status.daysWithProof >= 7
+            ? "Verdict time. Share feedback and tell us if this is worth paying for."
+            : "The 7-day window is closed. Keep logging proof, but do not call this a completed Proof Week."}
+        </p>
+        <div className="mt-4 flex gap-2">
+          <Link to="/proof#feedback"><Button size="sm" className="rounded-xl"><MessageSquare className="h-3 w-3 mr-1.5" />Give verdict</Button></Link>
         </div>
       </Card>
     );
@@ -97,23 +105,23 @@ export function ProofWeekPanel({ artifactDates }: { artifactDates: string[] }) {
 
   const today = status.today!;
   return (
-    <Card className="panel p-4 md:p-5 border-primary/30">
+    <Card className="panel rounded-2xl p-5 md:p-6 border-primary/30 mobile-safe-card text-wrap-safe min-w-0 max-w-full">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-primary" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-primary">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">
             Proof Week — Day {status.currentDay} / 7
           </span>
         </div>
-        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground tabular-nums">
           {status.daysWithProof}/7 days with proof
         </span>
       </div>
-      <h3 className="mt-2 text-base font-semibold leading-snug">{today.label}: {today.command}</h3>
-      <p className="mt-1 text-xs text-muted-foreground">
+      <h3 className="mt-3 text-base font-semibold leading-snug tracking-tight">{today.label}: {today.command}</h3>
+      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
         <span className="text-foreground">Proof required:</span> {today.proofRequired}
       </p>
-      <div className="mt-3 flex gap-1">
+      <div className="mt-4 flex gap-1">
         {PROOF_WEEK_DAYS.map((d) => (
           <span
             key={d.day}
@@ -126,9 +134,9 @@ export function ProofWeekPanel({ artifactDates }: { artifactDates: string[] }) {
           />
         ))}
       </div>
-      <div className="mt-3 flex gap-2">
-        <Link to="/proof"><Button size="sm"><Target className="h-3 w-3 mr-1.5" />Submit today's proof</Button></Link>
-        <Link to="/coach"><Button size="sm" variant="outline">Get command</Button></Link>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link to="/proof"><Button size="sm" className="rounded-xl"><Target className="h-3 w-3 mr-1.5" />Submit today's proof</Button></Link>
+        <Link to="/coach"><Button size="sm" variant="outline" className="rounded-xl">Get command</Button></Link>
       </div>
     </Card>
   );

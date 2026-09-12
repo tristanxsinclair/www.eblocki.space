@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { buildSnapshot, type MomentumSnapshot, type ProofSample } from "@/lib/eblocki/momentum";
+import { localDayKey, resolvedTimeZone } from "@/lib/eblocki/local-day";
 
 /**
  * useMomentum
@@ -20,9 +21,13 @@ export function useMomentum() {
     if (!user) return;
     setLoading(true);
     try {
-      const todayISO = new Date().toISOString().slice(0, 10);
-
-      const [{ data: proofRows }, { data: priorRows }] = await Promise.all([
+      const now = new Date();
+      const [
+        { data: proofRows },
+        { data: priorRows },
+        { data: activeModes },
+        { data: profile },
+      ] = await Promise.all([
         supabase
           .from("proof_artifacts")
           .select("created_at, quality_score, evidence_strength, domain, content")
@@ -35,16 +40,22 @@ export function useMomentum() {
           .eq("user_id", user.id)
           .order("state_date", { ascending: false })
           .limit(1),
+        supabase
+          .from("user_modes")
+          .select("mode_id, is_default")
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .order("is_default", { ascending: false })
+          .limit(1),
+        supabase
+          .from("user_onboarding_profiles")
+          .select("timezone")
+          .eq("user_id", user.id)
+          .maybeSingle(),
       ]);
 
-      // Active mode drives mode-specific scoring multipliers.
-      const { data: activeModes } = await supabase
-        .from("user_modes")
-        .select("mode_id, is_default")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .order("is_default", { ascending: false })
-        .limit(1);
+      const timeZone = profile?.timezone || resolvedTimeZone();
+      const todayISO = localDayKey(now, timeZone);
       const activeMode = activeModes?.[0]?.mode_id ?? null;
 
       const proofs: ProofSample[] = (proofRows ?? []) as ProofSample[];
@@ -71,6 +82,8 @@ export function useMomentum() {
         },
         strongestDomain: strongest,
         activeMode,
+        now,
+        timeZone,
       });
 
       setSnapshot(snap);

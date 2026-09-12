@@ -36,7 +36,7 @@ const KIND_COPY: Record<keyof Omit<Prefs, "notifications_enabled" | "quiet_hours
   depth_nudge:       { label: "Depth nudge",     example: "Consistency is stable. Convert today into one deeper proof." },
   recovery_reminder: { label: "Recovery reminder", example: "Recovery day. Reduce scope. One real proof preserves continuity." },
   milestone:         { label: "Milestone",       example: "Freeze token earned. Defend the pattern with one early proof tomorrow." },
-  coach_prompt:      { label: "Coach prompt",    example: "Your coach surfaced a pattern in your reflections — open to review." },
+  coach_prompt:      { label: "Coach insight",   example: "Your coach surfaced a pattern in your reflections — open to review." },
 };
 
 export function NotificationPreferences() {

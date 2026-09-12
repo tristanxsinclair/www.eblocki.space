@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -12,21 +12,24 @@ import {
   Settings,
   Sparkles,
   LogOut,
+  Hammer,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
+import { haptics } from "@/hooks/useHaptics";
 
 const PRIMARY = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/proof", label: "Proof", icon: Gavel },
-  { to: "/coach", label: "Coach", icon: MessageSquare },
+  { to: "/dashboard", label: "Today", icon: LayoutDashboard },
+  { to: "/proof", label: "Log", icon: Gavel },
+  { to: "/coach", label: "GM", icon: MessageSquare },
 ] as const;
 
 const SECONDARY = [
-  { to: "/operator", label: "Operator", icon: Hexagon },
-  { to: "/gameforge", label: "GameForge", icon: Swords },
-  { to: "/modes", label: "Modes", icon: Layers },
-  { to: "/start-today", label: "Start Today", icon: Sparkles },
+  { to: "/operator", label: "Character", icon: Hexagon },
+  { to: "/gameforge", label: "Arena", icon: Swords },
+  { to: "/start-today", label: "Quests", icon: Sparkles },
+  { to: "/systems", label: "Intel", icon: Hammer },
+  { to: "/modes", label: "Areas", icon: Layers },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -41,13 +44,31 @@ export function MobileBottomNav() {
   const location = useLocation();
   const nav = useNavigate();
   const { user, signOut } = useAuth();
+  const navRef = useRef<HTMLElement | null>(null);
+
+  // Publish measured nav height so pages can clear it via .pb-nav-safe without
+  // hard-coding magic numbers. Only mounts on mobile (component returns null
+  // above md in practice via the md:hidden class on the <nav>).
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const publish = () => {
+      const h = el.getBoundingClientRect().height;
+      if (h > 0) document.documentElement.style.setProperty("--app-nav-h", `${Math.round(h)}px`);
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const moreActive = SECONDARY.some((item) => location.pathname.startsWith(item.to));
 
   return (
     <nav
+      ref={navRef}
       aria-label="Primary mobile navigation"
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 safe-bottom safe-x"
+      className="operator-chrome mobile-dock md:hidden fixed bottom-0 inset-x-0 z-40 border-t safe-bottom safe-x"
     >
       <ul className="grid grid-cols-4">
         {PRIMARY.map((item) => (
@@ -55,9 +76,10 @@ export function MobileBottomNav() {
             <NavLink
               to={item.to}
               end={item.to === "/dashboard"}
+              onClick={() => haptics.select()}
               className={({ isActive }) =>
                 cn(
-                  "native-tap flex flex-col items-center justify-center gap-0.5 min-h-[56px] px-1 py-1.5 text-[10px] font-mono uppercase tracking-widest",
+                  "operator-interactive flex flex-col items-center justify-center gap-0.5 min-h-[58px] px-1 py-1.5 text-[10px] font-medium",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
@@ -68,11 +90,14 @@ export function MobileBottomNav() {
                 <>
                   <span
                     className={cn(
-                      "flex h-6 w-10 items-center justify-center rounded-sm",
-                      isActive && "bg-primary/10 border border-primary/30",
+                      "relative flex h-7 w-11 items-center justify-center rounded-xl motion-micro",
+                      isActive && "bg-white/[0.08] border border-white/[0.1]",
                     )}
                   >
                     <item.icon className="h-4 w-4" />
+                    {isActive && (
+                      <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-primary motion-entrance" />
+                    )}
                   </span>
                   <span className="truncate max-w-full">{item.label}</span>
                 </>
@@ -87,7 +112,7 @@ export function MobileBottomNav() {
                 type="button"
                 aria-label="Open more navigation"
                 className={cn(
-                  "native-tap flex flex-col items-center justify-center gap-0.5 min-h-[56px] w-full px-1 py-1.5 text-[10px] font-mono uppercase tracking-widest",
+                  "operator-interactive flex flex-col items-center justify-center gap-0.5 min-h-[58px] w-full px-1 py-1.5 text-[10px] font-medium",
                   moreActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
@@ -95,8 +120,8 @@ export function MobileBottomNav() {
               >
                 <span
                   className={cn(
-                    "flex h-6 w-10 items-center justify-center rounded-sm",
-                    moreActive && "bg-primary/10 border border-primary/30",
+                    "flex h-7 w-11 items-center justify-center rounded-xl",
+                    moreActive && "bg-white/[0.08] border border-white/[0.1]",
                   )}
                 >
                   <MoreHorizontal className="h-4 w-4" />
@@ -117,7 +142,7 @@ export function MobileBottomNav() {
                       to={item.to}
                       onClick={() => setMoreOpen(false)}
                       className={cn(
-                        "native-tap flex items-center gap-3 rounded-sm border border-border bg-background/40 px-3 py-3 min-h-[48px] text-sm",
+                        "operator-interactive flex items-center gap-3 border border-border bg-background/40 px-3 py-3 min-h-[48px] text-sm",
                         location.pathname.startsWith(item.to)
                           ? "border-primary/40 text-primary"
                           : "text-foreground hover:border-primary/30",
@@ -140,7 +165,7 @@ export function MobileBottomNav() {
                     await signOut();
                     nav("/");
                   }}
-                  className="native-tap mt-2 inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-destructive min-h-[44px]"
+                  className="operator-interactive operator-hit mt-2 inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-destructive"
                 >
                   <LogOut className="h-3.5 w-3.5" /> Sign out
                 </button>

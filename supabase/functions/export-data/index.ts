@@ -39,7 +39,21 @@ Deno.serve(async (req) => {
 
   for (const t of tables) {
     const { data, error } = await supabase.from(t).select("*");
-    archive[t] = error ? { _error: error.message } : data;
+    if (error) {
+      archive[t] = { _error: error.message };
+      continue;
+    }
+    // Strip server-controlled AI infrastructure identifiers from the export.
+    // These columns may exist historically on performance_os_config rows but
+    // are never user-configurable and must not leak to the exported archive.
+    if (t === "performance_os_config" && Array.isArray(data)) {
+      archive[t] = data.map((row: Record<string, unknown>) => {
+        const { model: _m, vector_store_id: _v, ...safe } = row ?? {};
+        return safe;
+      });
+    } else {
+      archive[t] = data;
+    }
   }
 
   return new Response(JSON.stringify(archive, null, 2), {

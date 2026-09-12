@@ -59,4 +59,23 @@ describe("momentum scoring", () => {
       expect(snap.momentum_score).toBeGreaterThanOrEqual(0);
     }
   });
+
+  it("counts proofs using the configured local day instead of the UTC date", () => {
+    const snap = buildSnapshot({
+      proofs: [
+        {
+          created_at: "2026-07-04T17:00:00.000Z",
+          quality_score: 7,
+          evidence_strength: "strong",
+          domain: "law",
+        },
+      ],
+      prior: PRIOR_ZERO,
+      now: new Date("2026-07-05T00:30:00.000Z"),
+      timeZone: "Australia/Perth",
+    });
+
+    expect(snap.proofs_today).toBe(1);
+    expect(snap.streak_days).toBe(1);
+  });
 });

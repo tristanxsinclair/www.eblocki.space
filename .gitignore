@@ -23,3 +23,9 @@ mcp-dist/
 *.njsproj
 *.sln
 *.sw?
+.env
+
+# Playwright auth storage state (contains session tokens)
+playwright/.auth/
+test-results/
+

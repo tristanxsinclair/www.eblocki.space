@@ -1,4 +1,5 @@
 import { selectDomainStandard, type DomainStandardKey } from "./domain-standards";
+import { humaniseModeId } from "./display-labels";
 import { validateProofContractAlignment, type ProofContractLike } from "./proof-contract-alignment";
 
 export interface ProofStandardPreviewInput {
@@ -96,14 +97,15 @@ function stableArtifactHint(value: string): string {
 }
 
 export function buildProofStandardPreview(input: ProofStandardPreviewInput = {}): ProofStandardPreview {
-  const selectedDomain = inferDomain(input);
+  const rawSelectedDomain = inferDomain(input);
+  const selectedDomain = humaniseModeId(rawSelectedDomain);
   const artifactType = stableArtifactHint(inferArtifactType(input));
   const selectionArtifact = [artifactType, contractArtifact(input.proofContract), input.proofAction]
     .map((value) => clean(value))
     .filter(Boolean)
     .join(" ");
   const standard = selectDomainStandard({
-    domain: selectedDomain,
+    domain: rawSelectedDomain,
     intent: input.intent,
     artifactType: selectionArtifact || artifactType,
     signalText: input.signalText,
@@ -132,7 +134,7 @@ export function buildProofStandardPreview(input: ProofStandardPreviewInput = {})
     proofAction: input.proofAction ?? contractArtifact(input.proofContract),
     proofContract: input.proofContract,
     proofStandardKey: standard.key,
-    domain: selectedDomain,
+    domain: rawSelectedDomain,
   });
 
   return {

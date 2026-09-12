@@ -24,6 +24,20 @@ export const EVENTS = {
   coach_response_received: "coach_response_received",
   coach_state_detected: "coach_state_detected",
 
+  // life-game presentation
+  life_game_hud_viewed: "life_game_hud_viewed",
+  life_game_panel_opened: "life_game_panel_opened",
+  life_game_quest_viewed: "life_game_quest_viewed",
+  life_game_quest_log_started: "life_game_quest_log_started",
+  life_game_action_filed: "life_game_action_filed",
+  life_game_xp_synced: "life_game_xp_synced",
+  life_game_settlement_viewed: "life_game_settlement_viewed",
+  life_game_demo_started: "life_game_demo_started",
+  life_game_demo_signup_clicked: "life_game_demo_signup_clicked",
+  gm_message_submitted: "gm_message_submitted",
+  gm_quest_created: "gm_quest_created",
+  arena_result_filed: "arena_result_filed",
+
   // proof
   proof_artifact_drafted: "proof_artifact_drafted",
   proof_artifact_submitted: "proof_artifact_submitted",

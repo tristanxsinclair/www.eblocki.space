@@ -1,6 +1,7 @@
 import type { TemporalResult } from "./temporal-engine";
 import { getTemporalSnapshotSummary } from "./temporal-snapshot";
 import { buildProofStandardPreview, type ProofStandardPreview } from "./proof-standard-preview";
+import { isSameLocalDay } from "./local-day";
 
 export type DashboardStatus = "new_user" | "needs_proof" | "active" | "degraded";
 
@@ -50,6 +51,8 @@ export interface DashboardViewModelInput {
   hasSentinel?: boolean;
   hasCortex?: boolean;
   queryFailed?: boolean;
+  now?: Date | string | number;
+  timeZone?: string;
 }
 
 export interface DashboardViewModel {
@@ -68,8 +71,10 @@ export interface DashboardViewModel {
     todayCommand: string;
     activeRoute: string;
     proofContract: string;
+    timebox: string;
     selectedStandard: string;
     requiredEvidence: string[];
+    whatDoesNotCount: string[];
     riskIfIgnored: string;
     nextCheckpoint: string;
     latestCourtSignal: string;
@@ -88,6 +93,7 @@ export interface DashboardViewModel {
   };
   evidenceSummary: {
     weekArtifacts: number;
+    proofsTodayCount: number;
     eliteCount: number;
     strongCount: number;
     averageScore: number;
@@ -160,6 +166,47 @@ function timeboxFor(preview: ProofStandardPreview): string {
   }
 }
 
+function whatDoesNotCountFor(preview: ProofStandardPreview): string[] {
+  switch (preview.standardKey) {
+    case "law_source_bank_standard":
+      return [
+        "Reading or highlighting cases without logging a source-bank entry.",
+        "Copying citations with no key rule, assessment use, or confidence check.",
+        "Planning the answer instead of producing the artifact.",
+      ];
+    case "academic_proof_plan_standard":
+      return [
+        "Expanding the study plan with no first executable artifact.",
+        "Research rabbit holes that produce no visible proof.",
+        "Calendar or admin work with no measurable output.",
+      ];
+    case "product_system_review_standard":
+      return [
+        "Opinions about the product with no actual output or screen evidence.",
+        "Roadmap talk with no corrected logic or test path.",
+        "Naming bugs without producing the next measurable artifact.",
+      ];
+    case "eblocki_implementation_standard":
+      return [
+        "Claimed progress with no changed files.",
+        "Notes or plans with no build, test, or verification result.",
+        "Saying it works without a visible implementation artifact.",
+      ];
+    case "law_irac_standard":
+      return [
+        "Reading authorities without writing the answer.",
+        "Issue lists with no rule, application, or conclusion.",
+        "Style polishing before authority and fact application exist.",
+      ];
+    default:
+      return [
+        "Planning, reorganising, or researching without an artifact.",
+        "Consuming material without your own visible output.",
+        "Talking about progress without pasted or attached evidence.",
+      ];
+  }
+}
+
 function riskFor(route: string): string {
   if (route === "law_source_bank" || route === "academic_proof_plan") return "Planning will replace assessed academic proof.";
   if (route === "product_system_review") return "Review will replace implementation or test evidence.";
@@ -193,7 +240,8 @@ export function buildDashboardViewModel(input: DashboardViewModelInput = {}): Da
   const allArtifacts = input.allArtifacts ?? recentProofs;
   const temporal = input.temporalResult ?? null;
   const modesCount = input.modesCount ?? 0;
-  const now = Date.now();
+  const nowDate = input.now == null ? new Date() : new Date(input.now);
+  const now = Number.isFinite(nowDate.getTime()) ? nowDate.getTime() : Date.now();
   const weekArtifacts = allArtifacts.filter((artifact) => now - dateMs(artifact.created_at) <= 7 * DAY);
   const scoredWeek = weekArtifacts
     .map((artifact) => artifact.quality_score)
@@ -216,6 +264,7 @@ export function buildDashboardViewModel(input: DashboardViewModelInput = {}): Da
   const latestSnapshotSummary = getTemporalSnapshotSummary(recentProofs.find((proof) => proof.temporal_snapshot)?.temporal_snapshot ?? null);
   const topPending = pending[0] ?? null;
   const latestProof = recentProofs[0] ?? null;
+  const proofsTodayCount = allArtifacts.filter((artifact) => isSameLocalDay(artifact.created_at, now, input.timeZone)).length;
 
   const hasProof = allArtifacts.length > 0;
   const dashboardStatus: DashboardStatus = input.queryFailed
@@ -236,7 +285,8 @@ export function buildDashboardViewModel(input: DashboardViewModelInput = {}): Da
     proofContract: topPending,
   });
   const activeRoute = inferActiveRoute(proofPreview, topPending, latestProof);
-  const proofContract = `One artifact: ${proofPreview.artifactType}. One standard: ${proofPreview.standardLabel}. Timebox: ${timeboxFor(proofPreview)}.`;
+  const timebox = timeboxFor(proofPreview);
+  const proofContract = `One artifact: ${proofPreview.artifactType}. One standard: ${proofPreview.standardLabel}. Timebox: ${timebox}.`;
   const nextCheckpoint = checkpointFor(proofPreview, activeRoute);
   const riskIfIgnored = temporal?.risk.primaryFailureMode
     ? temporal.risk.primaryFailureMode.replace(/_/g, " ")
@@ -271,8 +321,10 @@ export function buildDashboardViewModel(input: DashboardViewModelInput = {}): Da
       todayCommand,
       activeRoute,
       proofContract,
+      timebox,
       selectedStandard: proofPreview.standardLabel,
       requiredEvidence: proofPreview.requiredEvidence,
+      whatDoesNotCount: whatDoesNotCountFor(proofPreview),
       riskIfIgnored,
       nextCheckpoint,
       latestCourtSignal,
@@ -291,6 +343,7 @@ export function buildDashboardViewModel(input: DashboardViewModelInput = {}): Da
     },
     evidenceSummary: {
       weekArtifacts: weekArtifacts.length,
+      proofsTodayCount,
       eliteCount: weekArtifacts.filter((artifact) => strengthRank(artifact.evidence_strength) === 4).length,
       strongCount: weekArtifacts.filter((artifact) => strengthRank(artifact.evidence_strength) === 3).length,
       averageScore: average(scoredWeek),

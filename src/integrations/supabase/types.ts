@@ -178,6 +178,78 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_systems: {
+        Row: {
+          active_command: string
+          available_minutes_per_day: number
+          bottleneck: string
+          created_at: string
+          daily_loop: string
+          domain: string
+          first_command: string
+          goal: string
+          id: string
+          is_active: boolean
+          minimum_viable_rep: string
+          name: string
+          outcome: string
+          progression_levels: Json
+          proof_artifacts: Json
+          review_cycle: string
+          scoring_rubric: Json
+          skills: Json
+          updated_at: string
+          user_id: string
+          weekly_structure: Json
+        }
+        Insert: {
+          active_command: string
+          available_minutes_per_day: number
+          bottleneck: string
+          created_at?: string
+          daily_loop: string
+          domain: string
+          first_command: string
+          goal: string
+          id?: string
+          is_active?: boolean
+          minimum_viable_rep: string
+          name: string
+          outcome: string
+          progression_levels?: Json
+          proof_artifacts?: Json
+          review_cycle: string
+          scoring_rubric?: Json
+          skills?: Json
+          updated_at?: string
+          user_id: string
+          weekly_structure?: Json
+        }
+        Update: {
+          active_command?: string
+          available_minutes_per_day?: number
+          bottleneck?: string
+          created_at?: string
+          daily_loop?: string
+          domain?: string
+          first_command?: string
+          goal?: string
+          id?: string
+          is_active?: boolean
+          minimum_viable_rep?: string
+          name?: string
+          outcome?: string
+          progression_levels?: Json
+          proof_artifacts?: Json
+          review_cycle?: string
+          scoring_rubric?: Json
+          skills?: Json
+          updated_at?: string
+          user_id?: string
+          weekly_structure?: Json
+        }
+        Relationships: []
+      }
       daily_control_sheets: {
         Row: {
           avoidance_signal: string | null
@@ -741,24 +813,30 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_level: string
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          stripe_customer_id: string | null
           updated_at: string
         }
         Insert: {
+          access_level?: string
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Update: {
+          access_level?: string
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -979,6 +1057,54 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          environment: string
+          id: string
+          price_id: string
+          product_id: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          price_id: string
+          product_id: string
+          status?: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: string
+          id?: string
+          price_id?: string
+          product_id?: string
+          status?: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -1002,6 +1128,69 @@ export type Database = {
           reason?: string
         }
         Relationships: []
+      }
+      system_reps: {
+        Row: {
+          artifact_type: string
+          command: string
+          created_at: string
+          id: string
+          next_upgrade: string | null
+          proof_content: string | null
+          proof_id: string | null
+          score: number | null
+          self_score: number | null
+          system_id: string
+          user_id: string
+          verdict: string | null
+          weakness: string | null
+        }
+        Insert: {
+          artifact_type: string
+          command: string
+          created_at?: string
+          id?: string
+          next_upgrade?: string | null
+          proof_content?: string | null
+          proof_id?: string | null
+          score?: number | null
+          self_score?: number | null
+          system_id: string
+          user_id: string
+          verdict?: string | null
+          weakness?: string | null
+        }
+        Update: {
+          artifact_type?: string
+          command?: string
+          created_at?: string
+          id?: string
+          next_upgrade?: string | null
+          proof_content?: string | null
+          proof_id?: string | null
+          score?: number | null
+          self_score?: number | null
+          system_id?: string
+          user_id?: string
+          verdict?: string | null
+          weakness?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_reps_proof_id_fkey"
+            columns: ["proof_id"]
+            isOneToOne: false
+            referencedRelation: "proof_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_reps_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "custom_systems"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_modes: {
         Row: {
@@ -1282,6 +1471,10 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      has_active_subscription: {
+        Args: { check_env?: string; user_uuid: string }
+        Returns: boolean
       }
       has_role: {
         Args: {

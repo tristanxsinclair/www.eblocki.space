@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Crosshair } from "lucide-react";
 import { logEvent } from "@/lib/eblocki/analytics";
+import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) return error.message;
@@ -104,10 +104,7 @@ export default function Auth() {
       />
       <div className="w-full max-w-sm">
         <Link to="/" className="flex items-center gap-2 mb-6 justify-center">
-          <div className="h-8 w-8 rounded-sm bg-primary flex items-center justify-center text-primary-foreground">
-            <Crosshair className="h-5 w-5" />
-          </div>
-          <span className="font-mono text-base tracking-[0.25em]">EBLOCKI</span>
+          <EblockiLogo variant="compact" size="lg" />
         </Link>
         <Card className="panel p-6">
           {showForgot ? (

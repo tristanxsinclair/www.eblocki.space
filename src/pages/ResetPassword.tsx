@@ -12,19 +12,83 @@ import { Crosshair } from "lucide-react";
 export default function ResetPassword() {
   const nav = useNavigate();
   const [ready, setReady] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const finishChecking = () => {
+      if (!cancelled) setChecking(false);
+    };
+
+    const clearRecoveryParams = () => {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    };
+
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" || session) setReady(true);
+      if (cancelled) return;
+      if (event === "PASSWORD_RECOVERY" || session) {
+        setReady(true);
+        setErr(null);
+      }
     });
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-    });
-    return () => sub.subscription.unsubscribe();
+
+    (async () => {
+      try {
+        const search = new URLSearchParams(window.location.search);
+        const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const code = search.get("code");
+        const accessToken = hash.get("access_token");
+        const refreshToken = hash.get("refresh_token");
+
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          if (!cancelled) {
+            setReady(true);
+            setErr(null);
+            clearRecoveryParams();
+          }
+          return;
+        }
+
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
+          if (!cancelled) {
+            setReady(true);
+            setErr(null);
+            clearRecoveryParams();
+          }
+          return;
+        }
+
+        const { data } = await supabase.auth.getSession();
+        if (!cancelled && data.session) {
+          setReady(true);
+          setErr(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setReady(false);
+          setErr("Reset link expired or invalid. Request a new reset email from the sign-in page.");
+        }
+      } finally {
+        finishChecking();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const submit = async (e: React.FormEvent) => {
@@ -58,9 +122,18 @@ export default function ResetPassword() {
           <h1 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Reset password</h1>
           <p className="mt-1 text-sm">Set a new password. Keep your account protected.</p>
           {!ready ? (
-            <p className="mt-4 text-xs text-muted-foreground font-mono">
-              Open the reset link from your email to continue. If you arrived here directly, request a new reset email from the sign-in page.
-            </p>
+            <div className="mt-4 space-y-3">
+              {checking ? (
+                <p className="text-xs text-muted-foreground font-mono">
+                  Checking reset link…
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground font-mono">
+                  Open the reset link from your email to continue. If you arrived here directly, request a new reset email from the sign-in page.
+                </p>
+              )}
+              {err && <p className="text-xs text-destructive font-mono" role="alert">{err}</p>}
+            </div>
           ) : (
             <form onSubmit={submit} className="mt-5 space-y-3">
               <div>

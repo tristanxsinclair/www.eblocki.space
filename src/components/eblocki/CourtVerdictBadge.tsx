@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { VERDICT_LABEL, type CourtVerdict } from "@/lib/eblocki/level-engine";
+import { type CourtVerdict } from "@/lib/eblocki/level-engine";
+import { plainCourtVerdict } from "@/lib/eblocki/user-facing-copy";
 
 const TONE: Record<CourtVerdict, string> = {
   rejected: "border-destructive/40 text-destructive bg-destructive/10",
@@ -22,7 +23,7 @@ export function CourtVerdictBadge({
       )}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {VERDICT_LABEL[verdict]}
+      {plainCourtVerdict(verdict)}
     </span>
   );
 }
