@@ -4,7 +4,7 @@ exports.scoreProof = scoreProof;
 exports.evidenceStrengthFromScore = evidenceStrengthFromScore;
 exports.scoreProofArtifact = scoreProofArtifact;
 const domain_standards_1 = require("./domain-standards");
-const next_upgrade_extract_1 = require("./next-upgrade-extract");
+const academic_evidence_1 = require("./academic-evidence");
 const HEURISTICS = {
     law: [
         { keywords: ["issue"], label: "issue" },
@@ -142,15 +142,14 @@ function scoreProofArtifact(input) {
     const domain = String(input.domain || "general").toLowerCase();
     const title = input.title?.trim() || "";
     const artifactType = input.artifactType?.trim() || "";
-    const content = input.content?.trim() || "";
+    const content = (0, academic_evidence_1.evidenceOnly)(input.content);
     const reflection = input.reflection?.trim() || "";
-    const nextUpgrade = input.nextUpgrade?.trim() || "";
     // Standard selection scans title/content/reflection so product-system
     // critiques (coach, router, proof action card, specificity leak…) cannot
     // fall through to General Proof Standard just because artifactType is vague.
     const signalText = [title, content, reflection].filter(Boolean).join("\n");
-    const standard = (0, domain_standards_1.selectDomainStandard)({ domain, artifactType, signalText });
-    const combined = [title, artifactType, content, reflection, nextUpgrade].filter(Boolean).join("\n");
+    const standard = input.selectedStandard ? (0, domain_standards_1.getDomainStandard)(input.selectedStandard) : (0, domain_standards_1.selectDomainStandard)({ domain, artifactType, signalText });
+    const combined = [title, artifactType, content, reflection].filter(Boolean).join("\n");
     const standardHits = standard.criteria.filter((criterion) => combined.toLowerCase().includes(criterion.split(" ")[0].toLowerCase())).length;
     let score = 1;
     if (title.length > 4)
@@ -162,8 +161,6 @@ function scoreProofArtifact(input) {
     if (content.length >= 250)
         score += 1;
     if (reflection.length >= 40)
-        score += 1;
-    if (nextUpgrade.length >= 20)
         score += 1;
     const markerCount = countDomainMarkers(domain, combined);
     if (markerCount >= 2)
@@ -194,6 +191,15 @@ function scoreProofArtifact(input) {
             finalScore = Math.min(finalScore, 8);
         }
     }
+    const dimensions = standard.key === "academic_applied_standard" ? (0, academic_evidence_1.academicEvidence)(content) : null;
+    if (dimensions) {
+        const demonstrated = Object.values(dimensions).filter(Boolean).length;
+        finalScore = demonstrated === 0 ? (content.length >= 80 ? 3 : 1) : Math.min(8, 3 + demonstrated * 2);
+        if (!dimensions.application)
+            finalScore = Math.min(finalScore, 6);
+    }
+    if (content.length < 40)
+        finalScore = Math.min(finalScore, 3);
     const evidenceStrength = evidenceStrengthFromScore(finalScore);
     let feedback = "";
     let suggestedUpgrade = "";
@@ -213,16 +219,23 @@ function scoreProofArtifact(input) {
         feedback = `Elite evidence against ${standard.label}. The artifact includes action, application, feedback, and a clear upgrade path.`;
         suggestedUpgrade = "Preserve this standard and repeat it across the next proof cycle.";
     }
-    const resolvedNextUpgrade = (0, next_upgrade_extract_1.extractNextUpgrade)({
-        nextUpgrade,
-        content,
-        reflection,
-        fallback: suggestedUpgrade,
-    });
+    const diagnosis = dimensions ? (0, academic_evidence_1.academicGap)(dimensions) : null;
+    if (dimensions)
+        feedback = `${evidenceStrength[0].toUpperCase() + evidenceStrength.slice(1)} structural evidence against ${standard.label}. Visible dimensions: ${Object.entries(dimensions).filter(([, v]) => v).map(([k]) => k).join(", ") || "none"}. Subject correctness and unaided recall are not verified.`;
     return {
         qualityScore: finalScore,
         evidenceStrength,
         feedback,
-        nextUpgrade: resolvedNextUpgrade,
+        nextUpgrade: diagnosis?.action ?? suggestedUpgrade,
+        standardKey: standard.key,
+        standardLabel: standard.label,
+        gap: diagnosis?.gap ?? standard.missingStandard,
+        correctionTarget: diagnosis?.target ?? null,
+        dimensions,
+        recommendationSource: "system",
+        recommendedArtifact: diagnosis ? `A worked answer with ${diagnosis.target} evidence and the reasoning behind it.` : null,
+        countEligible: finalScore >= 7,
+        closureEligible: finalScore >= 7,
+        limitations: ["Structural text assessment; external truth, task difficulty and factual correctness are not verified."],
     };
 }

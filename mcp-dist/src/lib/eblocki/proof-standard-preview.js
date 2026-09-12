@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildProofStandardPreview = buildProofStandardPreview;
 const domain_standards_1 = require("./domain-standards");
+const display_labels_1 = require("./display-labels");
 const proof_contract_alignment_1 = require("./proof-contract-alignment");
 function clean(value) {
     return (value ?? "").trim();
@@ -70,14 +71,15 @@ function stableArtifactHint(value) {
     return value || "visible artifact";
 }
 function buildProofStandardPreview(input = {}) {
-    const selectedDomain = inferDomain(input);
+    const rawSelectedDomain = inferDomain(input);
+    const selectedDomain = (0, display_labels_1.humaniseModeId)(rawSelectedDomain);
     const artifactType = stableArtifactHint(inferArtifactType(input));
     const selectionArtifact = [artifactType, contractArtifact(input.proofContract), input.proofAction]
         .map((value) => clean(value))
         .filter(Boolean)
         .join(" ");
     const standard = (0, domain_standards_1.selectDomainStandard)({
-        domain: selectedDomain,
+        domain: rawSelectedDomain,
         intent: input.intent,
         artifactType: selectionArtifact || artifactType,
         signalText: input.signalText,
@@ -104,7 +106,7 @@ function buildProofStandardPreview(input = {}) {
         proofAction: input.proofAction ?? contractArtifact(input.proofContract),
         proofContract: input.proofContract,
         proofStandardKey: standard.key,
-        domain: selectedDomain,
+        domain: rawSelectedDomain,
     });
     return {
         selectedDomain,

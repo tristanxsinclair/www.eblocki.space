@@ -843,6 +843,8 @@ export type Database = {
       }
       proof_artifacts: {
         Row: {
+          parent_artifact_id: string | null
+          assessment: Json | null
           artifact_type: string | null
           attachment_name: string | null
           attachment_path: string | null
@@ -866,6 +868,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          parent_artifact_id?: string | null
+          assessment?: Json | null
           artifact_type?: string | null
           attachment_name?: string | null
           attachment_path?: string | null
@@ -889,6 +893,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          parent_artifact_id?: string | null
+          assessment?: Json | null
           artifact_type?: string | null
           attachment_name?: string | null
           attachment_path?: string | null
@@ -911,7 +917,7 @@ export type Database = {
           transfer_flag?: boolean
           user_id?: string
         }
-        Relationships: []
+        Relationships: [{ foreignKeyName: "proof_artifacts_parent_artifact_id_fkey"; columns: ["parent_artifact_id"]; isOneToOne: false; referencedRelation: "proof_artifacts"; referencedColumns: ["id"] }]
       }
       proof_commitments: {
         Row: {
@@ -1437,6 +1443,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      proof_evidence_fingerprint: { Args: { content: string }; Returns: string }
       cle_base_xp: { Args: { tier: number }; Returns: number }
       cle_canon_domain: { Args: { d: string }; Returns: string }
       cle_classify_tier: {

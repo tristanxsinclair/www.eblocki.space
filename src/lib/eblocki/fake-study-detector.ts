@@ -6,9 +6,9 @@
  * Proof Upgrade Command.
  *
  * Pure function, no I/O, never throws. Safe on empty / partial input.
- * This sits ALONGSIDE `scoreProofArtifact` (which scores against a
- * domain rubric) and intentionally punishes passive study even when the
- * rubric scorer is generous.
+ * Internal lexical diagnostic only. Its legacy tiers are not evidence
+ * verdicts and must not be rendered as competing artifact judgments.
+ * scoreProofArtifact owns the artifact assessment.
  */
 
 export type StudyVerdict = "weak" | "useful" | "strong" | "elite";

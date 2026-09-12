@@ -1,6 +1,6 @@
 import type { Mode } from "./modes";
-import { selectDomainStandard } from "./domain-standards";
-import { extractNextUpgrade } from "./next-upgrade-extract";
+import { selectDomainStandard, getDomainStandard, type DomainStandardKey } from "./domain-standards";
+import { academicEvidence, academicGap, evidenceOnly, type AcademicEvidence, type AcademicDimension } from "./academic-evidence";
 
 export type EvidenceStrength = "weak" | "moderate" | "strong" | "elite";
 
@@ -125,6 +125,7 @@ export type ProofDomain =
   | "general";
 
 export interface ProofScoringInput {
+  selectedStandard?: DomainStandardKey;
   domain?: ProofDomain | string;
   title?: string;
   artifactType?: string;
@@ -134,6 +135,16 @@ export interface ProofScoringInput {
 }
 
 export interface ProofScoringResult {
+  standardKey: DomainStandardKey;
+  standardLabel: string;
+  countEligible: boolean;
+  closureEligible: boolean;
+  gap: string;
+  correctionTarget: AcademicDimension | null;
+  dimensions: AcademicEvidence | null;
+  recommendationSource: "system";
+  recommendedArtifact: string | null;
+  limitations: string[];
   qualityScore: number;
   evidenceStrength: EvidenceStrength;
   feedback: string;
@@ -178,16 +189,16 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
   const domain = String(input.domain || "general").toLowerCase();
   const title = input.title?.trim() || "";
   const artifactType = input.artifactType?.trim() || "";
-  const content = input.content?.trim() || "";
+  const content = evidenceOnly(input.content);
   const reflection = input.reflection?.trim() || "";
-  const nextUpgrade = input.nextUpgrade?.trim() || "";
+
   // Standard selection scans title/content/reflection so product-system
   // critiques (coach, router, proof action card, specificity leak…) cannot
   // fall through to General Proof Standard just because artifactType is vague.
   const signalText = [title, content, reflection].filter(Boolean).join("\n");
-  const standard = selectDomainStandard({ domain, artifactType, signalText });
+  const standard = input.selectedStandard ? getDomainStandard(input.selectedStandard) : selectDomainStandard({ domain, artifactType, signalText });
 
-  const combined = [title, artifactType, content, reflection, nextUpgrade].filter(Boolean).join("\n");
+  const combined = [title, artifactType, content, reflection].filter(Boolean).join("\n");
   const standardHits = standard.criteria.filter((criterion) => combined.toLowerCase().includes(criterion.split(" ")[0].toLowerCase())).length;
 
   let score = 1;
@@ -196,7 +207,7 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
   if (content.length >= 80) score += 1;
   if (content.length >= 250) score += 1;
   if (reflection.length >= 40) score += 1;
-  if (nextUpgrade.length >= 20) score += 1;
+
 
   const markerCount = countDomainMarkers(domain, combined);
   if (markerCount >= 2) score += 1;
@@ -225,6 +236,13 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
       finalScore = Math.min(finalScore, 8);
     }
   }
+  const dimensions = standard.key === "academic_applied_standard" ? academicEvidence(content) : null;
+  if (dimensions) {
+    const demonstrated = Object.values(dimensions).filter(Boolean).length;
+    finalScore = demonstrated === 0 ? (content.length >= 80 ? 3 : 1) : Math.min(8, 3 + demonstrated * 2);
+    if (!dimensions.application) finalScore = Math.min(finalScore, 6);
+  }
+  if (content.length < 40) finalScore = Math.min(finalScore, 3);
   const evidenceStrength = evidenceStrengthFromScore(finalScore);
 
   let feedback = "";
@@ -244,17 +262,23 @@ export function scoreProofArtifact(input: ProofScoringInput): ProofScoringResult
     suggestedUpgrade = "Preserve this standard and repeat it across the next proof cycle.";
   }
 
-  const resolvedNextUpgrade = extractNextUpgrade({
-    nextUpgrade,
-    content,
-    reflection,
-    fallback: suggestedUpgrade,
-  });
+  const diagnosis = dimensions ? academicGap(dimensions) : null;
+  if (dimensions) feedback = `${evidenceStrength[0].toUpperCase() + evidenceStrength.slice(1)} structural evidence against ${standard.label}. Visible dimensions: ${Object.entries(dimensions).filter(([, v]) => v).map(([k]) => k).join(", ") || "none"}. Subject correctness and unaided recall are not verified.`;
 
   return {
     qualityScore: finalScore,
     evidenceStrength,
     feedback,
-    nextUpgrade: resolvedNextUpgrade,
+    nextUpgrade: diagnosis?.action ?? suggestedUpgrade,
+    standardKey: standard.key,
+    standardLabel: standard.label,
+    gap: diagnosis?.gap ?? standard.missingStandard,
+    correctionTarget: diagnosis?.target ?? null,
+    dimensions,
+    recommendationSource: "system",
+    recommendedArtifact: diagnosis ? `A worked answer with ${diagnosis.target} evidence and the reasoning behind it.` : null,
+    countEligible: finalScore >= 7,
+    closureEligible: finalScore >= 7,
+    limitations: ["Structural text assessment; external truth, task difficulty and factual correctness are not verified."],
   };
 }

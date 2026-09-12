@@ -1,0 +1,22 @@
+// Use an isolated dev install: PGLITE_MODULE=/absolute/path/to/pglite/dist/index.js
+const { PGlite } = await import(process.env.PGLITE_MODULE || '@electric-sql/pglite');
+import { readFileSync } from 'node:fs';
+const root = process.cwd();
+const db = new PGlite();
+await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated;
+CREATE TABLE proof_artifacts(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,domain text,title text,content text,quality_score integer,evidence_strength text,created_at timestamptz DEFAULT now(),temporal_snapshot jsonb);
+CREATE TABLE proof_commitments(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,status text,proof_artifact_id uuid);
+CREATE TABLE daily_objectives(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,status text,proof_artifact_id uuid,proof_required boolean DEFAULT true);`);
+await db.exec(`CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT null::uuid';
+CREATE TABLE momentum_state(user_id uuid,streak_days int,state_date date);
+INSERT INTO momentum_state VALUES('11111111-1111-4111-8111-111111111111',0,current_date);`);
+await db.exec(readFileSync(root+'/supabase/migrations/20260520031545_213c4cc8-5d1d-4916-9ec3-53294c05cb23.sql','utf8'));
+await db.exec(readFileSync(root+'/supabase/migrations/20260811000100_wp0_xp_event_idempotency.sql','utf8'));
+const migration=readFileSync(root+'/supabase/migrations/20260913000100_correction_assessment.sql','utf8');
+await db.exec(migration);
+await db.exec(migration);
+await db.exec(readFileSync(root+'/tests/sql/correction-assessment.sql','utf8'));
+const settled = await db.query(`SELECT proof_id, count(*) FROM xp_events GROUP BY proof_id HAVING count(*) <> 1`);
+if(settled.rows.length) throw new Error('Duplicate XP');
+console.log('PASS: migration replay, Court thresholds, parent ownership, duplicate rejection, one-time contract binding, immutable history, empty evidence, existing CLE XP/Court/ledger settlement and total reconciliation.');
+await db.close();

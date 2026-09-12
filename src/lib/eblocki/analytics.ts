@@ -12,6 +12,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export type EngineEvent =
+  | "correction_attempt_submitted"
   | "activation_landing_primary_cta_clicked"
   | "activation_auth_completed"
   | "activation_dashboard_zero_state_seen"
@@ -66,6 +67,7 @@ export type EngineEvent =
 
 /** Whitelist of property keys - anything else is dropped. */
 const ALLOWED_KEYS = new Set([
+  "parent_artifact_id", "parent_score", "corrected_score", "score_delta", "correction_status", "standard_key",
   "kind", "mode", "state", "score", "streak", "resistance", "depth",
   "result", "reason", "dedup_key", "escalation_level", "count", "fixture",
   "quality", "proof_len", "has_upgrade", "has_hard",

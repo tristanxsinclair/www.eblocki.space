@@ -16,6 +16,7 @@ export interface ProofResultCopy {
 export type ProofResultPresentationStatus = "ready" | "loading" | "error" | "empty";
 
 export interface ImprovementLoopPresentationInput {
+  recommendedArtifact?: string | null;
   status?: ProofResultPresentationStatus;
   strength?: string | null;
   score?: number | null;
@@ -146,8 +147,8 @@ export function plainVerdictLabel(
   const numeric = typeof score === "number" && Number.isFinite(score) ? score : null;
 
   if (!strength && numeric == null) return "Did not count yet";
-  if (rank >= 3 || (numeric != null && numeric >= 7)) return "Counted";
-  if (rank >= 2 || (numeric != null && numeric >= 5)) return "Needs upgrade";
+  if (rank >= 3 && numeric != null && numeric >= 7) return "Counted";
+  if (rank >= 2 && numeric != null && numeric >= 4) return "Needs upgrade";
   return "Did not count yet";
 }
 
@@ -218,6 +219,8 @@ function parseGap(
   const text = cleanPresentationText(missingStandard);
   if (!text) return null;
   if ((strength ?? "").toLowerCase() === "elite" && /^none\b/i.test(text)) return null;
+
+  if (!text.includes(":")) return { label: "Remaining evidence gap", explanation: text };
 
   const withoutMissing = text.replace(/^missing\s+/i, "");
   const [rawLabel, ...rest] = withoutMissing.split(":");
@@ -361,7 +364,7 @@ export function buildImprovementLoopPresentation(
   const correction = nextUpgrade
     ? {
         action: nextUpgrade,
-        expectedArtifact: buildExpectedArtifact({ ...input, selectedStandard: standardLabel, requiredEvidence }),
+        expectedArtifact: input.recommendedArtifact ?? buildExpectedArtifact({ ...input, selectedStandard: standardLabel, requiredEvidence }),
       }
     : null;
   const primaryAction = copy.primaryAction === "improve" || correction ? "corrected_attempt" : "dashboard";

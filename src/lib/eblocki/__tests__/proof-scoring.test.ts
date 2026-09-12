@@ -87,7 +87,8 @@ describe("Court verdict standards", () => {
       reflection: "Diagnosis only.",
       nextUpgrade: longBody,
     });
-    expect(result.nextUpgrade).toBe("Fix specificity propagation into Proof Action card.");
+    expect(result.nextUpgrade).not.toBe("Fix specificity propagation into Proof Action card.");
+    expect(result.recommendationSource).toBe("system");
     expect(result.nextUpgrade).not.toMatch(/huge artifact body/);
   });
 });
