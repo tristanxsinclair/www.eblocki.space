@@ -28,7 +28,6 @@ export function useStudentOverview() {
   const query = useQuery({
     queryKey: ["student-overview", user?.id, today],
     enabled: Boolean(user),
-    // Supabase already retries reads; avoid multiplying its retry window.
     retry: false,
     queryFn: async () => {
       if (!user) throw new Error("Sign in to load your day.");
@@ -36,17 +35,17 @@ export function useStudentOverview() {
         await Promise.all([
           supabase
             .from("profiles")
-            .select("full_name,email,access_level")
+            .select("full_name,email")
             .eq("id", user.id)
             .maybeSingle(),
           supabase
             .from("user_onboarding_profiles")
-            .select("identity_summary,roles,goals,coaching_style,timezone")
+            .select("identity_summary,roles,goals")
             .eq("user_id", user.id)
             .maybeSingle(),
           supabase
             .from("user_modes")
-            .select("mode_id,display_name,description")
+            .select("mode_id,display_name")
             .eq("user_id", user.id)
             .eq("is_active", true)
             .order("display_name"),
@@ -58,7 +57,7 @@ export function useStudentOverview() {
             .maybeSingle(),
           supabase
             .from("proof_commitments")
-            .select("id,title,required_artifact,domain,due_date")
+            .select("id,title,required_artifact,due_date")
             .eq("user_id", user.id)
             .eq("status", "pending")
             .order("due_date", { ascending: true, nullsFirst: false })
@@ -66,10 +65,9 @@ export function useStudentOverview() {
             .limit(5),
           supabase
             .from("proof_artifacts")
-            .select(
-              "id,title,domain,evidence_strength,quality_score,created_at,next_upgrade",
-              { count: "exact" },
-            )
+            .select("id,title,evidence_strength,quality_score,created_at", {
+              count: "exact",
+            })
             .eq("user_id", user.id)
             .order("created_at", { ascending: false })
             .limit(8),
@@ -82,10 +80,33 @@ export function useStudentOverview() {
             .gte("created_at", weekStart.toISOString())
             .order("created_at", { ascending: false }),
         ]);
-      const error = [account, profile, areas, sheet, tasks, recent, week].find(
-        (result) => result.error,
-      )?.error;
-      if (error) throw error;
+
+      const failures = [
+        ["account", account.error],
+        ["profile", profile.error],
+        ["areas", areas.error],
+        ["sheet", sheet.error],
+        ["tasks", tasks.error],
+        ["recent", recent.error],
+        ["week", week.error],
+      ] as const;
+      const failed = failures.filter(([, error]) => Boolean(error));
+      if (failed.length) {
+        console.error(
+          "[student-overview] read failure",
+          failed.map(([source, error]) => ({
+            source,
+            code: error?.code,
+            message: error?.message,
+            details: error?.details,
+            hint: error?.hint,
+          })),
+        );
+        throw new Error(
+          `Student overview read failed: ${failed.map(([source]) => source).join(", ")}`,
+        );
+      }
+
       return {
         account: account.data,
         profile: profile.data,
