@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import "./EblockiLogo.css";
 
@@ -28,38 +28,15 @@ const TEXT_SIZE: Record<NonNullable<EblockiLogoProps["size"]>, string> = {
 
 const SESSION_FLAG = "eblocki_logo_revealed_v1";
 
-/**
- * Eblocki brand mark — bespoke geometric E-block monogram.
- * Three bars on a 24×24 grid with a shortened middle bar; the negative
- * space to the right of the middle bar is the signature "block cut".
- * Rendered as inline SVG so it is crisp at every size and needs no assets.
- * Colour is inherited from semantic foreground/primary tokens.
- */
-function LogoSvg({ px, animate }: { px: number; animate: boolean }) {
-  const rootRef = useRef<SVGSVGElement | null>(null);
+function BrandMark({ px }: { px: number }) {
   return (
-    <svg
-      ref={rootRef}
+    <img
+      src="/icon-192.png"
       width={px}
       height={px}
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-      role="img"
-      aria-label="Eblocki"
-      className={cn("eblocki-mark shrink-0", animate && "is-animating")}
-    >
-      <g>
-        <rect className="eb-bar eb-bar--top text-primary" x="2" y="3" width="20" height="4.5" rx="1.5" fill="currentColor" />
-        <rect className="eb-bar eb-bar--mid" x="2" y="9.75" width="13" height="4.5" rx="1.5" fill="currentColor" opacity="0.72" />
-        <rect className="eb-bar eb-bar--bot text-primary" x="2" y="16.5" width="20" height="4.5" rx="1.5" fill="currentColor" />
-      </g>
-      
-      <g fill="currentColor" opacity="0.16" className="eb-highlight">
-        <rect x="2.5" y="3.5" width="19" height="0.6" rx="0.3" />
-        <rect x="2.5" y="10.25" width="12" height="0.6" rx="0.3" />
-        <rect x="2.5" y="17.0" width="19" height="0.6" rx="0.3" />
-      </g>
-    </svg>
+      alt="Eblocki"
+      className="shrink-0 rounded-sm object-contain"
+    />
   );
 }
 
@@ -76,7 +53,9 @@ export function EblockiLogo({
   useEffect(() => {
     if (animate === false) return;
     if (typeof window === "undefined") return;
-    const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const prefersReduced = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (prefersReduced) return;
     if (animate === true) {
       setShouldAnimate(true);
@@ -96,8 +75,11 @@ export function EblockiLogo({
   const isIconOnly = variant === "mark" || variant === "appIcon";
 
   const Mark = (
-    <span className="inline-flex text-foreground" aria-hidden={isIconOnly ? undefined : true}>
-      <LogoSvg px={px} animate={shouldAnimate} />
+    <span
+      className="inline-flex text-foreground"
+      aria-hidden={isIconOnly ? undefined : true}
+    >
+      <BrandMark px={px} />
       {isIconOnly && <span className="sr-only">{alt}</span>}
     </span>
   );
@@ -107,11 +89,11 @@ export function EblockiLogo({
   const wordmark = (
     <span
       className={cn(
-        "eblocki-wordmark font-brand text-foreground lowercase",
+        "eblocki-wordmark font-sans text-foreground lowercase",
         TEXT_SIZE[size],
         shouldAnimate && "is-animating",
       )}
-      style={{ letterSpacing: "-0.02em", fontWeight: 500 }}
+      style={{ letterSpacing: 0, fontWeight: 500 }}
     >
       eblocki
     </span>

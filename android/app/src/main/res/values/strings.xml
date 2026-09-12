@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Eblocki</string>
+    <string name="title_activity_main">Eblocki</string>
+    <string name="package_name">space.eblocki.app</string>
+    <string name="custom_url_scheme">space.eblocki.app</string>
+</resources>

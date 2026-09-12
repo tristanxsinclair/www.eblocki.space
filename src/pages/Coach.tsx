@@ -334,9 +334,9 @@ export default function Coach() {
             <EblockiLogo variant="mark" size="md" />
             <div className="min-w-0">
               {!isMobile && (
-                <span className="operator-label">Coach // Evidence-bound Directive Engine</span>
+                <span className="operator-label">Your study support</span>
               )}
-              <h1 className="operator-heading-1 mt-2 break-words">Bring the real bottleneck. Leave with one task.</h1>
+              <h1 className="operator-heading-1 mt-2 break-words">Coach</h1>
             </div>
           </div>
           </header>
@@ -344,14 +344,15 @@ export default function Coach() {
         <Card className="operator-panel-accent max-w-full overflow-hidden">
           <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-3 min-w-0">
             <div className="min-w-0">
-              <div className="operator-label">Input Console</div>
-              <div className="mt-1 text-sm text-foreground break-words">Question, notes, thought dump, sales situation, legal issue, or avoidance pattern.</div>
+              <div className="text-base font-medium">What's on your mind?</div>
+              <div className="mt-1 text-sm text-muted-foreground break-words">A tricky question, a study block, or a task you keep putting off.</div>
             </div>
             <BrainCircuit className="h-4 w-4 text-primary shrink-0" />
           </div>
           <div className="p-4 md:p-5 space-y-4">
             <Textarea
-              placeholder="Name the real bottleneck, the action you are avoiding, or the decision that needs evidence."
+              aria-label="Message to your coach"
+              placeholder="I'm stuck on..."
               value={input}
               onChange={(event) => setInput(event.target.value)}
               className="min-h-[170px] resize-none w-full max-w-full input-anchored"
@@ -378,7 +379,7 @@ export default function Coach() {
               </MobileCollapse>
             ) : (
               <div>
-                <div className="operator-label mb-2">Mode chips</div>
+                <div className="operator-label mb-2">Focus area</div>
                 <div className="flex flex-wrap gap-2">
                   {MODE_CHIPS.map((chip) => (
                     <button
@@ -404,7 +405,7 @@ export default function Coach() {
                 disabled={loading}
                 className="gap-2 w-full sm:w-auto"
               >
-                {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Diagnosing</> : <><Send className="h-4 w-4" /> Diagnose</>}
+                {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Thinking...</> : <><Send className="h-4 w-4" /> Send to coach</>}
               </ProofSubmitButton>
             </div>
           </div>
@@ -421,19 +422,13 @@ export default function Coach() {
         )}
 
         {!engineResult && !loading && (
-          <Card className="panel p-4 md:p-5 border-border/80 bg-card/50 max-w-full overflow-hidden">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Start here</div>
-            <p className="mt-2 text-sm text-muted-foreground break-words">
-              Paste a real problem above (one paragraph is enough): a question, a stuck task,
-              an avoidance pattern, a sales situation, a study block. The coach will
-              return one task, one required artifact, and one next move.
-            </p>
-            <div className="mt-3 grid gap-3 md:grid-cols-3">
-              <EmptyCell icon={<Radar />} title="Diagnose" body="Find the real domain, intent, state, and urgency." />
-              <EmptyCell icon={<Target />} title="Task" body="Convert the answer into one evidence-bound action." />
-              <EmptyCell icon={<Gavel />} title="Proof" body="Name the artifact and standard before work counts." />
-            </div>
-          </Card>
+          <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+            {[
+              { label: "Get unstuck", prompt: "I keep putting off my study. Help me choose one small task to start with." },
+              { label: "Plan revision", prompt: "Help me plan a focused revision session for my next exam." },
+              { label: "Review my approach", prompt: "Help me check whether my current study approach is working." },
+            ].map((example) => <Button key={example.label} variant="outline" onClick={() => setInput(example.prompt)}>{example.label}</Button>)}
+          </div>
         )}
 
         {loading && engineResult && (

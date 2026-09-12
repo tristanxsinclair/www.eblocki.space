@@ -36,8 +36,16 @@ import Pricing from "./pages/Pricing.tsx";
 import CheckoutReturn from "./pages/CheckoutReturn.tsx";
 import Founder from "./pages/Founder.tsx";
 import Profile from "./pages/Profile.tsx";
+import { isNative } from "@/lib/mobile/native";
 
 const queryClient = new QueryClient();
+
+function AppEntry() {
+  const { user, loading } = useAuth();
+  if (loading) return <AppSkeleton />;
+  if (!isNative() && !user) return <Landing />;
+  return <Navigate to={user ? "/dashboard" : "/auth"} replace />;
+}
 
 function Protected({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
@@ -67,7 +75,7 @@ const App = () => (
           <PageTransition>
           <Routes>
             <Route path="/onboarding" element={<Protected><Onboarding /></Protected>} />
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<AppEntry />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/install" element={<Install />} />

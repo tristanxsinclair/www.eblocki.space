@@ -1,581 +1,241 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import type { EvidenceStrength } from "@/lib/eblocki/proof-scoring";
 import { Link, Navigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
-import { useAuth } from "@/hooks/useAuth";
-import { AppShell } from "@/components/eblocki/AppShell";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { EvidenceStrengthBadge, ModeBadge, StateBadge } from "@/components/eblocki/Badges";
+import { addDays, format } from "date-fns";
 import {
   ArrowRight,
-  CircleDot,
-  FileText,
-  Gavel,
-  Layers,
+  BookOpen,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Circle,
+  FilePlus2,
   MessageSquare,
-  Radar,
-  Sparkles,
+  Plus,
 } from "lucide-react";
-import { detectMode, MODE_LABELS, type Mode } from "@/lib/eblocki/modes";
-import { detectState, STATE_LABELS, STATE_PRESCRIPTION, type BehaviouralState } from "@/lib/eblocki/states";
+import { AppShell } from "@/components/eblocki/AppShell";
 import { Seo } from "@/components/Seo";
-import { MomentumPanel } from "@/components/eblocki/MomentumPanel";
-import { WeeklyRetro } from "@/components/eblocki/WeeklyRetro";
-import { InterventionCard } from "@/components/eblocki/InterventionCard";
-import { TemporalFeedbackPanel } from "@/components/eblocki/TemporalFeedbackPanel";
-import { TemporalIntelligencePanel } from "@/components/eblocki/TemporalIntelligencePanel";
-import { TemporalModelAuditPanel } from "@/components/eblocki/TemporalModelAuditPanel";
-import { TemporalCommandCard } from "@/components/eblocki/TemporalCommandCard";
-import { ProductMatchPanel } from "@/components/eblocki/ProductMatchPanel";
-import { InterestSignalCard } from "@/components/eblocki/InterestSignalCard";
-import { DashboardForecastTabs } from "@/components/eblocki/DashboardForecastTabs";
-import { IdentityLedger } from "@/components/eblocki/IdentityLedger";
-import { computeTemporal, type LedgerLike, type ProofArtifactLike, type TemporalResult, type VerdictLike } from "@/lib/eblocki/temporal-engine";
-import {
-  buildDashboardViewModel,
-  type DashboardCoachRow,
-  type DashboardCommitmentRow,
-  type DashboardDailySheetRow,
-  type DashboardProofRow,
-} from "@/lib/eblocki/dashboard-view-model";
-import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
-import { logEvent } from "@/lib/eblocki/analytics";
-import { buildProofEntryHref } from "@/lib/eblocki/first-proof";
-import { isSameLocalDay, localDayKey } from "@/lib/eblocki/local-day";
-import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
-import { ProofClosureCard } from "@/components/eblocki/ProofClosureCard";
-import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useEntitlement } from "@/hooks/useEntitlement";
-import { hasProofOnDate, plainEvidenceStrength } from "@/lib/eblocki/user-facing-copy";
+import { Button } from "@/components/ui/button";
+import { StudentActivity } from "@/components/eblocki/StudentActivity";
+import { StudentPageState } from "@/components/eblocki/StudentPageState";
+import { useStudentOverview } from "@/hooks/useStudentOverview";
 import { useWelcomeGate } from "@/hooks/useWelcomeGate";
-
-type UserModeRow = Pick<Tables<"user_modes">, "mode_id">;
-type DashboardArtifactRow = DashboardProofRow & ProofArtifactLike;
-
-const EVIDENCE_STRENGTHS: EvidenceStrength[] = ["weak", "moderate", "strong", "elite"];
-
-function isEvidenceStrength(value: string | null | undefined): value is EvidenceStrength {
-  return EVIDENCE_STRENGTHS.includes(value as EvidenceStrength);
-}
+import { localDayKey } from "@/lib/eblocki/local-day";
+import { plainVerdictLabel } from "@/lib/eblocki/user-facing-copy";
+import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
-  const isMobile = useIsMobile();
-  const { user } = useAuth();
-  const { accessLevel } = useEntitlement();
-  const welcomeCheck = useWelcomeGate();
-  const [today, setToday] = useState<DashboardDailySheetRow | null>(null);
-  const [pending, setPending] = useState<DashboardCommitmentRow[]>([]);
-  const [recent, setRecent] = useState<DashboardProofRow[]>([]);
-  const [recentCoach, setRecentCoach] = useState<DashboardCoachRow[]>([]);
-  const [allArtifacts, setAllArtifacts] = useState<DashboardArtifactRow[]>([]);
-  const [verdicts, setVerdicts] = useState<VerdictLike[]>([]);
-  const [ledger, setLedger] = useState<LedgerLike[]>([]);
-  const [activeDomains, setActiveDomains] = useState<string[]>([]);
-  const [quick, setQuick] = useState("");
-  const [mode, setMode] = useState<Mode | null>(null);
-  const [state, setStateBadge] = useState<BehaviouralState | null>(null);
-  const [diagnosticsTab, setDiagnosticsTab] = useState("forecast");
-  const [queryFailed, setQueryFailed] = useState(false);
-
-  const todayISO = localDayKey();
-  const artifactDates = useMemo(
-    () => allArtifacts.map((artifact) => artifact.created_at).filter((value): value is string => !!value),
-    [allArtifacts],
+  const { data, name, today, weekStart, isPending, isError, refetch } =
+    useStudentOverview();
+  const welcome = useWelcomeGate();
+  if (welcome === "needs") return <Navigate to="/welcome" replace />;
+  const todayLogs =
+    data?.week.filter((proof) => localDayKey(proof.created_at) === today) ?? [];
+  const counted = todayLogs.some(
+    (proof) =>
+      plainVerdictLabel(proof.evidence_strength, proof.quality_score) ===
+      "Counted",
   );
-  const proofToday = useMemo(
-    () => hasProofOnDate(allArtifacts, todayISO),
-    [allArtifacts, todayISO],
+  const activeDays = new Set(
+    data?.week.map((proof) => localDayKey(proof.created_at)),
   );
-  const todayArtifact = useMemo(
-    () => allArtifacts.find((artifact) => isSameLocalDay(artifact.created_at, todayISO)) ?? null,
-    [allArtifacts, todayISO],
-  );
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      setQueryFailed(false);
-      try {
-        const [dcsRes, pcRes, paRes, ciRes, allRes, modesRes, verdictRes, ledgerRes] = await Promise.all([
-          supabase.from("daily_control_sheets").select("*").eq("user_id", user.id).eq("sheet_date", todayISO).maybeSingle(),
-          supabase.from("proof_commitments").select("*").eq("user_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),
-          supabase.from("proof_artifacts").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
-          supabase.from("coach_interactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
-          supabase.from("proof_artifacts")
-            .select("id,domain,title,artifact_type,evidence_strength,quality_score,transfer_flag,pressure_flag,proof_tier,created_at,next_upgrade,temporal_snapshot")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(200),
-          supabase.from("user_modes").select("mode_id").eq("user_id", user.id).eq("is_active", true),
-          supabase.from("court_verdicts").select("verdict,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(200),
-          supabase.from("identity_ledger").select("kind,domain,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100),
-        ]);
-        if (cancelled) return;
-        setToday(dcsRes.data);
-        setPending(pcRes.data ?? []);
-        setRecent(paRes.data ?? []);
-        setRecentCoach(ciRes.data ?? []);
-        setAllArtifacts(allRes.data ?? []);
-        setActiveDomains(((modesRes.data ?? []) as UserModeRow[]).map((row) => row.mode_id));
-        setVerdicts(verdictRes.data ?? []);
-        setLedger(ledgerRes.data ?? []);
-        setQueryFailed(Boolean(dcsRes.error || pcRes.error || paRes.error || ciRes.error || allRes.error || modesRes.error || verdictRes.error || ledgerRes.error));
-      } catch {
-        if (!cancelled) {
-          setQueryFailed(true);
-        }
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [user, todayISO]);
-
-  useEffect(() => {
-    if (!user || welcomeCheck !== "ok" || allArtifacts.length !== 0) return;
-    void logEvent("activation_dashboard_zero_state_seen", {
-      route: "/today",
-      source: "today",
-    });
-  }, [user, welcomeCheck, allArtifacts.length]);
-
-  useEffect(() => {
-    if (!user || allArtifacts.length === 0) return;
-    const latestCreatedAt = allArtifacts[0]?.created_at;
-    if (!latestCreatedAt || isSameLocalDay(latestCreatedAt, todayISO)) return;
-    void logEvent("activation_day_2_return_seen", {
-      route: "/today",
-      source: "today",
-    });
-  }, [user, allArtifacts, todayISO]);
-
-  const currentMode = recentCoach[0]?.mode ?? null;
-  const currentState = ((today?.state as BehaviouralState | null) ?? (recentCoach[0]?.state_detected as BehaviouralState | null) ?? null);
-  const topPending = pending[0];
-  const latestArtifact = recent[0];
-  const temporalArtifacts = allArtifacts.filter(
-    (artifact): artifact is DashboardArtifactRow => typeof artifact.created_at === "string",
-  );
-
-  const temporalResult = useMemo<TemporalResult | null>(() => {
-    try {
-      return computeTemporal({
-        artifacts: temporalArtifacts,
-        verdicts,
-        ledger,
-        activeDomains,
-        state: currentState,
-      });
-    } catch {
-      return null;
-    }
-  }, [temporalArtifacts, verdicts, ledger, activeDomains, currentState]);
-
-  const view = useMemo(() => buildDashboardViewModel({
-    today,
-    pending,
-    recentProofs: recent,
-    allArtifacts,
-    recentCoach,
-    modesCount: activeDomains.length,
-    temporalResult,
-    queryFailed,
-  }), [today, pending, recent, allArtifacts, recentCoach, activeDomains.length, temporalResult, queryFailed]);
-  const hasProofToday = view.evidenceSummary.proofsTodayCount > 0;
-  const submitProofHref = buildProofEntryHref({
-    firstProof: allArtifacts.length === 0,
-    uglyStart: !hasProofToday,
-  });
-
-  const handleCheckIn = () => {
-    if (!quick.trim()) return;
-    setMode(detectMode(quick).primary);
-    setStateBadge(detectState(quick));
-  };
-
-  const openDiagnosticsTab = (tabName: string) => {
-    setDiagnosticsTab(tabName);
-    logEvent("dashboard_section_opened", { sectionName: `diagnostics_${tabName}` });
-  };
-
-  if (welcomeCheck === "needs") {
-    return <Navigate to="/welcome" replace />;
-  }
+  const task = data?.sheet?.prime_objective
+    ? data.tasks.find((item) => item.title === data.sheet?.prime_objective)
+    : (data?.tasks.find((item) => item.due_date === today) ?? data?.tasks[0]);
+  const title = data?.sheet?.prime_objective || task?.title;
+  const proofHref = task
+    ? `/proof?contract=${encodeURIComponent(task.id)}`
+    : "/proof";
 
   return (
     <AppShell>
       <Seo
-        title="Dashboard | EBLOCKI"
-        description="Today surface: next proof, verdict, progress, and deeper analysis."
+        title="Today | Eblocki"
+        description="Your daily plan, study progress, and recent work."
         path="/today"
       />
-      <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-5">
-        <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">
+      <div className="student-page">
+        <header className="student-page-header">
           <div className="min-w-0">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-              {new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
-            </span>
-            <h1 className="text-2xl md:text-4xl font-semibold mt-1.5 tracking-tight">
-              Today
-            </h1>
+            <p className="student-eyebrow">
+              {format(new Date(`${today}T12:00:00`), "EEEE, d MMMM")}
+            </p>
+            <h1 className="student-title">Today</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Good to see you, {name.split(" ")[0]}.
+            </p>
           </div>
-          {!isMobile && (
-            <div className="flex gap-2 flex-wrap">
-              <Link to={submitProofHref}><Button size="sm"><Gavel className="h-3.5 w-3.5 mr-1.5" />Submit proof</Button></Link>
-              {hasProofToday && allArtifacts.length > 0 && (
-                <>
-                  <Link to="/coach"><Button size="sm" variant="outline"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Coach</Button></Link>
-                  <Link to="/start-today?plan=1"><Button size="sm" variant="outline"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Plan</Button></Link>
-                  <Link to="/modes"><Button size="sm" variant="outline"><Layers className="h-3.5 w-3.5 mr-1.5" />Modes</Button></Link>
-                </>
-              )}
-            </div>
-          )}
+          <Button asChild variant="outline" className="hidden sm:inline-flex">
+            <Link to="/start-today">
+              <Plus className="mr-2 h-4 w-4" />
+              Plan a task
+            </Link>
+          </Button>
         </header>
-
-        <ProofClosureCard
-          view={view}
-          proofToday={proofToday}
-          hasAnyProof={allArtifacts.length > 0}
-          todayArtifact={todayArtifact}
-          todayISO={todayISO}
-        />
-
-        {activeDomains.length === 0 && (
-          isMobile ? (
-            <MobileCollapse
-              eyebrow="Setup"
-              label="Modes not set up"
-              trackId="dashboard_modes_setup"
-            >
-              <Card className="panel rounded-2xl p-5 border-primary/25 bg-primary/[0.06] mobile-safe-card min-w-0 max-w-full">
-                <p className="text-sm leading-relaxed text-muted-foreground break-words">
-                  Add at least one mode so proof routes to the right standard. You can still submit proof now.
-                </p>
-                <Link to="/modes" className="mt-3 inline-block w-full">
-                  <Button size="default" variant="outline" className="w-full min-h-[44px] native-tap rounded-xl">
-                    Set up modes
-                  </Button>
-                </Link>
-              </Card>
-            </MobileCollapse>
-          ) : (
-            <Card className="panel rounded-2xl p-5 border-primary/25 bg-primary/[0.06]">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">Modes not set up</div>
-                  <p className="text-sm mt-2 leading-relaxed text-muted-foreground">Add at least one mode so proof routes to the right standard.</p>
-                </div>
-                <Link to="/modes"><Button size="sm" className="rounded-xl">Set up modes</Button></Link>
-              </div>
-            </Card>
-          )
-        )}
-
-        {isMobile ? (
-          <MobileCollapse
-            eyebrow="Proof Week"
-            label="7-day proof challenge"
-            trackId="proof_week_panel"
-          >
-            <ProofWeekPanel artifactDates={artifactDates} />
-          </MobileCollapse>
+        {isPending || isError || !data ? (
+          <StudentPageState error={isError} retry={() => void refetch()} />
         ) : (
-          <ProofWeekPanel artifactDates={artifactDates} />
-        )}
-
-        {allArtifacts.length > 0 && (
-          isMobile ? (
-            <MobileCollapse
-              eyebrow="Advanced"
-              label="Forecast, stats, diagnostics"
-              trackId="dashboard_advanced"
-              onOpen={(id) => logEvent("dashboard_section_opened", { sectionName: id ?? "dashboard_advanced" })}
-            >
-              <div className="space-y-5">
-                <EvidenceCommandPanel
-                  view={view}
-                  pending={pending}
-                  recent={recent}
-                  topPending={topPending}
-                  latestArtifact={latestArtifact}
-                />
-              </div>
-            </MobileCollapse>
-          ) : (
           <>
-            <EvidenceCommandPanel
-              view={view}
-              pending={pending}
-              recent={recent}
-              topPending={topPending}
-              latestArtifact={latestArtifact}
-            />
-
-            <DashboardForecastTabs
-              value={diagnosticsTab}
-              onValueChange={openDiagnosticsTab}
-              forecastSlot={
-                <>
-                  {temporalResult ? (
-                    <TemporalCommandCard result={temporalResult} />
-                  ) : (
-                    <EmptyPanel icon={<Radar />} title="Forecast standby" body={view.emptyStateMessage} />
-                  )}
-                  <TemporalFeedbackPanel />
-                  <InterventionCard state={(currentState as BehaviouralState) ?? state} />
-                </>
-              }
-              evidenceSlot={
-                <>
-                  {user && <IdentityLedger userId={user.id} limit={5} />}
-                  <div className="grid lg:grid-cols-2 gap-4">
-                    <MomentumPanel />
-                    <WeeklyRetro />
+            <section className="student-focus" aria-labelledby="daily-focus">
+              <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                {counted ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <BookOpen className="h-4 w-4" />
+                )}
+                {counted ? "Progress made today" : "Your focus"}
+              </div>
+              <h2
+                id="daily-focus"
+                className="mt-4 max-w-2xl break-words text-2xl font-semibold leading-snug"
+              >
+                {title ||
+                  (counted
+                    ? "A good day of work."
+                    : "One task. A little progress.")}
+              </h2>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+                {data.sheet?.next_best_action ||
+                  (title
+                    ? task?.required_artifact
+                    : counted
+                      ? "Your work is recorded. Take a moment before your next task."
+                      : "Choose something you can finish today.")}
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button asChild>
+                  <Link
+                    to={title || todayLogs.length ? proofHref : "/start-today"}
+                  >
+                    {title || todayLogs.length ? (
+                      <FilePlus2 className="mr-2 h-4 w-4" />
+                    ) : (
+                      <Plus className="mr-2 h-4 w-4" />
+                    )}
+                    {title || todayLogs.length
+                      ? "Log your work"
+                      : "Make today's plan"}
+                    <ArrowRight className="ml-3 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="ghost">
+                  <Link to="/coach">
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Ask your coach
+                  </Link>
+                </Button>
+              </div>
+            </section>
+            <div className="student-columns">
+              <section
+                className="student-section"
+                aria-labelledby="week-heading"
+              >
+                <div className="student-section-heading">
+                  <h2 id="week-heading">This week</h2>
+                  <span className="text-xs text-muted-foreground">
+                    {format(weekStart, "d MMM")} -{" "}
+                    {format(addDays(weekStart, 6), "d MMM")}
+                  </span>
+                </div>
+                <div className="mt-5 flex items-baseline gap-2">
+                  <span className="text-3xl font-semibold tabular-nums">
+                    {data.weekLogs}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {data.weekLogs === 1 ? "entry logged" : "entries logged"}
+                  </span>
+                </div>
+                <ol
+                  className="mt-5 grid grid-cols-7 gap-2"
+                  aria-label="Work logged this week"
+                >
+                  {Array.from({ length: 7 }, (_, index) => {
+                    const day = addDays(weekStart, index);
+                    const key = localDayKey(day);
+                    const logged = activeDays.has(key);
+                    return (
+                      <li
+                        key={key}
+                        aria-label={`${format(day, "EEEE")}: ${logged ? "work logged" : "no work logged"}`}
+                        aria-current={key === today ? "date" : undefined}
+                        className="flex min-w-0 flex-col items-center gap-2"
+                      >
+                        <span className="text-xs text-muted-foreground">
+                          {format(day, "EEEEE")}
+                        </span>
+                        <span
+                          className={cn(
+                            "week-day",
+                            logged && "is-logged",
+                            key === today && "is-today",
+                          )}
+                        >
+                          {logged ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <span>{format(day, "d")}</span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ol>
+                <p className="mt-5 text-xs text-muted-foreground">
+                  {activeDays.size}{" "}
+                  {activeDays.size === 1 ? "active day" : "active days"} this
+                  week
+                </p>
+              </section>
+              <section className="student-section" aria-labelledby="up-next">
+                <div className="student-section-heading">
+                  <h2 id="up-next">Up next</h2>
+                  <Link to="/start-today" className="student-text-link">
+                    Plan
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
+                {data.tasks.length ? (
+                  <ul className="mt-2 divide-y divide-border">
+                    {data.tasks.slice(0, 3).map((item) => (
+                      <li key={item.id}>
+                        <Link
+                          to={`/proof?contract=${encodeURIComponent(item.id)}`}
+                          className="group flex min-h-16 items-center gap-3 py-3"
+                        >
+                          <Circle className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="min-w-0 flex-1 break-words text-sm leading-6 group-hover:text-primary">
+                            {item.title}
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="py-6">
+                    <p className="text-sm text-muted-foreground">
+                      Your next task is up to you.
+                    </p>
+                    <Link to="/start-today" className="student-text-link mt-3">
+                      Add a task
+                      <Plus className="h-4 w-4" />
+                    </Link>
                   </div>
-                  <QuickCheckInCard
-                    quick={quick}
-                    setQuick={setQuick}
-                    mode={mode}
-                    state={state}
-                    onDiagnose={handleCheckIn}
-                  />
-                  <Card className="panel rounded-2xl p-5 border-border/70 bg-card/60 mobile-safe-card">
-                    <div className="flex items-center justify-between gap-3 min-w-0">
-                      <div className="min-w-0">
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Current setup</div>
-                        <p className="mt-1.5 text-sm text-muted-foreground text-wrap-safe">
-                          {currentMode ? `Last coach lens: ${MODE_LABELS[currentMode as Mode] ?? currentMode}` : "No coach diagnostic yet."}
-                        </p>
-                      </div>
-                      {currentState && <StateBadge state={currentState as BehaviouralState} />}
-                    </div>
-                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <MetricCell label="Mode count" value={String(view.evidenceSummary.modesCount)} />
-                      <MetricCell label="Latest proof" value={view.evidenceSummary.latestProofTitle ?? "none"} />
-                      <MetricCell label="Weak spot" value={view.evidenceSummary.weakestDomain ?? "clear"} />
-                    </div>
-                  </Card>
-                </>
-              }
-              auditSlot={
-                <>
-                  <TemporalIntelligencePanel />
-                  <TemporalModelAuditPanel />
-                  <div className="space-y-3">
-                    <ProductMatchPanel
-                      artifacts={allArtifacts}
-                      temporal={temporalResult}
-                      accessLevel={accessLevel}
-                      operatingProfile={{
-                        primaryDomain: activeDomains[0] ?? null,
-                        recommendationsAllowed: true,
-                        trustPreference: "neutral",
-                      }}
-                    />
-                    <InterestSignalCard />
-                  </div>
-                </>
-              }
-            />
+                )}
+              </section>
+            </div>
+            <section className="student-section" aria-labelledby="recent-work">
+              <div className="student-section-heading">
+                <h2 id="recent-work">Recent work</h2>
+                <Link to="/profile" className="student-text-link">
+                  Your profile
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              </div>
+              <StudentActivity proofs={data.recent.slice(0, 4)} />
+            </section>
           </>
-          )
         )}
       </div>
     </AppShell>
-  );
-}
-
-function EvidenceCommandPanel({
-  view,
-  pending,
-  recent,
-  topPending,
-  latestArtifact,
-}: {
-  view: ReturnType<typeof buildDashboardViewModel>;
-  pending: DashboardCommitmentRow[];
-  recent: DashboardProofRow[];
-  topPending: DashboardCommitmentRow | undefined;
-  latestArtifact: DashboardProofRow | undefined;
-}) {
-  const [showAllRecent, setShowAllRecent] = useState(false);
-  const [showSecondary, setShowSecondary] = useState(false);
-  const mobileLimit = mobileRecentProofLimit(recent.length, showAllRecent);
-  const desktopLimit = Math.min(recent.length, 4);
-  return (
-    <section className="space-y-4">
-      <SectionHeader eyebrow="Proof" title="Recent proof" detail={`${view.evidenceSummary.weekArtifacts} this week`} />
-      <Card className="panel rounded-2xl p-5 md:p-6 border-border/70 bg-card/60 mobile-safe-card">
-        <div className="grid grid-cols-3 gap-3">
-          <MetricCell label="Artifacts" value={String(view.evidenceSummary.weekArtifacts)} />
-          <MetricCell label="Strong+" value={String(view.evidenceSummary.strongCount + view.evidenceSummary.eliteCount)} />
-          <MetricCell label="Avg" value={String(view.evidenceSummary.averageScore)} />
-        </div>
-
-        <div className="mt-5 grid gap-3">
-          <EvidenceBlock icon={<FileText />} label="Next proof" action="Submit" href="/proof">
-            {topPending ? `${topPending.title} - ${topPending.required_artifact ?? "artifact required"}` : "No active contract. Open coach to forge one."}
-          </EvidenceBlock>
-          <div className={`${showSecondary ? "grid" : "hidden"} md:grid gap-3`}>
-            <EvidenceBlock icon={<Gavel />} label="Last verdict" action="Open" href="/proof">
-              {latestArtifact
-                ? `${latestArtifact.title} - ${plainEvidenceStrength(latestArtifact.evidence_strength)}`
-                : "No proof yet. Submit one artifact to start the verdict loop."}
-            </EvidenceBlock>
-            <EvidenceBlock icon={<CircleDot />} label="Weak spot" action="Modes" href="/modes">
-              {view.evidenceSummary.strongestDomain
-                ? `Strongest: ${view.evidenceSummary.strongestDomain}. Weakest: ${view.evidenceSummary.weakestDomain ?? "none flagged"}.`
-                : "No weekly mode signal yet."}
-            </EvidenceBlock>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowSecondary((open) => !open)}
-            className="md:hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-primary hover:underline self-start"
-          >
-            {showSecondary ? "Hide last verdict" : "Show last verdict"}
-          </button>
-        </div>
-
-        <div className="mt-5 grid gap-2">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Recent proof</div>
-          {recent.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border/70 bg-background/20 px-4 py-6 text-center">
-              <p className="text-sm text-muted-foreground">No proof logged yet.</p>
-              <p className="mt-1 text-xs text-muted-foreground/70">Submit one artifact to start the record.</p>
-            </div>
-          ) : (
-            <>
-              {recent.slice(0, desktopLimit).map((proof, idx) => (
-                <div
-                  key={proof.id}
-                  className={`items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/25 px-3.5 py-2.5 motion-hover hover:border-border ${idx >= mobileLimit ? "hidden md:flex" : "flex"}`}
-                >
-                  <div className="min-w-0">
-                    <div className="truncate text-sm">{proof.title}</div>
-                    <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{proof.domain}</div>
-                  </div>
-                  {isEvidenceStrength(proof.evidence_strength) && <EvidenceStrengthBadge strength={proof.evidence_strength} score={proof.quality_score ?? undefined} />}
-                </div>
-              ))}
-              {recent.length > mobileLimit && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllRecent((open) => !open)}
-                  className="md:hidden mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary hover:underline self-start"
-                >
-                  {showAllRecent ? "Show fewer" : `Show recent proof (${recent.length - mobileLimit} more)`}
-                </button>
-              )}
-            </>
-          )}
-        </div>
-
-        {pending.length > 1 && (
-          <Link to="/proof" className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary hover:underline">
-            {pending.length} pending proof contracts <ArrowRight className="h-3 w-3" />
-          </Link>
-        )}
-      </Card>
-    </section>
-  );
-}
-
-function QuickCheckInCard({
-  quick,
-  setQuick,
-  mode,
-  state,
-  onDiagnose,
-}: {
-  quick: string;
-  setQuick: (value: string) => void;
-  mode: Mode | null;
-  state: BehaviouralState | null;
-  onDiagnose: () => void;
-}) {
-  return (
-    <Card className="panel rounded-2xl p-5 border-border/70 bg-card/60">
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Quick check-in</span>
-      </div>
-      <Textarea
-        placeholder="Name the bottleneck. Real input beats polished intent."
-        value={quick}
-        onChange={(e) => setQuick(e.target.value)}
-        className="mt-3 h-24 rounded-xl"
-      />
-      <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
-          {mode && <ModeBadge mode={mode} />}
-          {state && <StateBadge state={state} />}
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="rounded-xl" onClick={onDiagnose}>Diagnose</Button>
-          <Link to={`/coach?prompt=${encodeURIComponent(quick)}`}><Button size="sm" className="rounded-xl">Coach</Button></Link>
-        </div>
-      </div>
-      {state && (
-        <p className="mt-4 text-xs leading-relaxed text-muted-foreground border-t border-border/70 pt-3">
-          <span className="text-foreground">{STATE_LABELS[state] ?? state}:</span> {STATE_PRESCRIPTION[state]}
-        </p>
-      )}
-    </Card>
-  );
-}
-
-function SectionHeader({ eyebrow, title, detail }: { eyebrow: string; title: string; detail?: string }) {
-  return (
-    <div className="flex items-end justify-between gap-3 px-0.5">
-      <div>
-        <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{eyebrow}</div>
-        <h2 className="text-base font-semibold mt-1 tracking-tight">{title}</h2>
-      </div>
-      {detail && <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{detail}</span>}
-    </div>
-  );
-}
-
-function MetricCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-border/70 bg-background/25 p-3 min-w-0 max-w-full">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{label}</div>
-      <div className="mt-1 truncate text-sm font-medium text-foreground tabular-nums">{value}</div>
-    </div>
-  );
-}
-
-function EvidenceBlock({ icon, label, action, href, children }: { icon: ReactNode; label: string; action: string; href: string; children: ReactNode }) {
-  return (
-    <div className="rounded-xl border border-border/70 bg-background/25 p-3.5 min-w-0 max-w-full motion-hover hover:border-border">
-      <div className="flex items-center justify-between gap-3 min-w-0">
-        <div className="flex items-center gap-1.5 text-muted-foreground [&_svg]:h-3.5 [&_svg]:w-3.5">
-          {icon}
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em]">{label}</span>
-        </div>
-        <Link to={href} className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary hover:underline shrink-0">{action}</Link>
-      </div>
-      <div className="mt-1.5 text-sm leading-snug text-foreground text-wrap-safe">{children}</div>
-    </div>
-  );
-}
-
-function EmptyPanel({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
-  return (
-    <Card className="panel rounded-2xl p-6 border-border/70 bg-card/60">
-      <div className="flex flex-col items-center text-center gap-3 text-muted-foreground [&_svg]:h-5 [&_svg]:w-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-background/40 text-primary/80">
-          {icon}
-        </div>
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-foreground/80">{title}</div>
-          <p className="mt-1.5 text-sm leading-relaxed max-w-sm mx-auto">{body}</p>
-        </div>
-      </div>
-    </Card>
   );
 }

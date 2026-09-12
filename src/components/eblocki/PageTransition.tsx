@@ -13,6 +13,7 @@ export function PageTransition({ children }: { children: ReactNode }) {
   const prevKey = useRef(location.pathname);
 
   useEffect(() => {
+    if (prevKey.current !== location.pathname && !location.hash) window.scrollTo(0, 0);
     if (prevKey.current !== location.pathname && ref.current) {
       ref.current.classList.remove("page-enter");
       // Force reflow to restart animation
@@ -20,7 +21,7 @@ export function PageTransition({ children }: { children: ReactNode }) {
       ref.current.classList.add("page-enter");
       prevKey.current = location.pathname;
     }
-  }, [location.pathname]);
+  }, [location.pathname, location.hash]);
 
   return (
     <div ref={ref} className={cn("page-enter w-full min-h-0")}>
