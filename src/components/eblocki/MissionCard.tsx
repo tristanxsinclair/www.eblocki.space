@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Check,
   ChevronsRight,
@@ -16,6 +17,7 @@ import { toast } from "sonner";
 import { rollVariableReward } from "@/lib/eblocki/momentum";
 import type { DailyObjective } from "@/hooks/useDailyObjectives";
 import { ProofCapture, type ProofCapturePayload } from "./ProofCapture";
+import { buildQuestLogActionHref } from "@/lib/eblocki/life-game";
 
 interface Props {
   objective: DailyObjective;
@@ -38,6 +40,7 @@ const RES_BAR = (n: number) =>
   Array.from({ length: 5 }).map((_, i) => i < n);
 
 export function MissionCard({ objective, onComplete, onSkip }: Props) {
+  const navigate = useNavigate();
   const [dragX, setDragX] = useState(0);
   const [completing, setCompleting] = useState(false);
   const [holdPct, setHoldPct] = useState(0);
@@ -56,10 +59,11 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
   const isSkipped = objective.status === "skipped";
   const isLocked = objective.status === "failed";
   const isInteractive = !isDone && !isSkipped && !isLocked && !completing;
+  const canDirectComplete = isInteractive && !objective.proof_required;
 
   /* ---------- swipe-to-complete ---------- */
   const onPointerDown = (e: React.PointerEvent) => {
-    if (!isInteractive) return;
+    if (!canDirectComplete) return;
     startX.current = e.clientX;
     width.current = cardRef.current?.offsetWidth ?? 320;
     (e.target as Element).setPointerCapture?.(e.pointerId);
@@ -73,7 +77,7 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
   const onPointerUp = async () => {
     if (startX.current == null) return;
     const threshold = width.current * 0.45;
-    if (dragX > threshold && isInteractive) {
+    if (dragX > threshold && canDirectComplete) {
       await triggerComplete();
     } else {
       setDragX(0);
@@ -83,7 +87,7 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
 
   /* ---------- hold-to-confirm-deep-work ---------- */
   const startHold = () => {
-    if (!isInteractive) return;
+    if (!canDirectComplete) return;
     haptics.medium();
     holdStart.current = Date.now();
     const tick = () => {
@@ -112,8 +116,12 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
     // doesn't sit half-translated behind it.
     setDragX(0);
     if (objective.proof_required) {
-      firedRef.current = false; // dialog will set it on actual submit
-      setReflectOpen(true);
+      navigate(
+        buildQuestLogActionHref({
+          commitmentId: objective.proof_commitment_id,
+          objectiveId: objective.id,
+        }),
+      );
       return;
     }
     firedRef.current = true;
@@ -192,9 +200,9 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
           transform: `translateX(${dragX}px)`,
           transition: startX.current == null ? "transform 220ms cubic-bezier(.2,.8,.2,1)" : "none",
         }}
-        onPointerDown={isInteractive ? onPointerDown : undefined}
-        onPointerMove={isInteractive ? onPointerMove : undefined}
-        onPointerUp={isInteractive ? onPointerUp : undefined}
+        onPointerDown={canDirectComplete ? onPointerDown : undefined}
+        onPointerMove={canDirectComplete ? onPointerMove : undefined}
+        onPointerUp={canDirectComplete ? onPointerUp : undefined}
         onPointerCancel={() => { setDragX(0); startX.current = null; }}
       >
         <div className="flex items-start justify-between gap-3">
@@ -263,6 +271,18 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
 
         {isInteractive && (
           <div className="mt-4 flex items-center gap-2">
+            {objective.proof_required ? (
+              <button
+                type="button"
+                className="flex-1 h-11 rounded-md border border-primary/40 bg-primary/5 text-xs font-mono uppercase tracking-widest text-primary active:scale-[0.99] touch-manipulation"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void triggerComplete();
+                }}
+              >
+                Log Action
+              </button>
+            ) : (
             <button
               type="button"
               className="flex-1 h-11 rounded-md border border-primary/40 bg-primary/5 text-xs font-mono uppercase tracking-widest text-primary active:scale-[0.99] touch-manipulation"
@@ -273,6 +293,7 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
             >
               {holdPct > 0 ? `Hold… ${Math.round(holdPct)}%` : "Hold to confirm"}
             </button>
+            )}
             {onSkip && (
               <button
                 type="button"
@@ -286,14 +307,14 @@ export function MissionCard({ objective, onComplete, onSkip }: Props) {
         )}
       </div>
     </div>
-    <ProofCapture
+    {!objective.proof_required && <ProofCapture
       open={reflectOpen}
       onOpenChange={setReflectOpen}
       objectiveTitle={objective.title}
       modeId={objective.mode_id}
       resistanceLevel={objective.resistance_level}
       onSubmit={submitReflection}
-    />
+    />}
     </>
   );
 }

@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
+import { redactSensitiveStripeText } from "../_shared/stripe-config.ts";
 
 /**
  * Deletes the calling user and every row they own.
@@ -65,11 +66,11 @@ Deno.serve(async (req) => {
           try {
             const stripe = createStripeClient(env);
             await stripe.subscriptions.cancel(subId);
-            console.log(`[delete-account] cancelled ${env} subscription ${subId}`);
+            console.log(`[delete-account] cancelled ${env} subscription`);
           } catch (e) {
             console.warn(
-              `[delete-account] stripe cancel failed for ${subId} (${env}):`,
-              (e as Error).message,
+              `[delete-account] stripe cancel failed (${env}):`,
+              redactSensitiveStripeText(e),
             );
           }
         }

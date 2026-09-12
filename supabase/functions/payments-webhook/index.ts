@@ -1,5 +1,15 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { type StripeEnv, verifyWebhook, createStripeClient } from "../_shared/stripe.ts";
+import {
+  StripeConfigError,
+  assertAllowedPriceLookupKey,
+  assertLivemodeMatchesEnvironment,
+  assertRequestedEnvironmentMatchesConfig,
+  assertWebhookEventMatchesEnvironment,
+  redactSensitiveStripeText,
+} from "../_shared/stripe-config.ts";
+
+const readDenoEnv = (key: string) => Deno.env.get(key);
 
 let _supabase: ReturnType<typeof createClient> | null = null;
 function getSupabase() {
@@ -12,11 +22,16 @@ function getSupabase() {
   return _supabase;
 }
 
-function priceRefFrom(price: any): string {
-  return price?.lookup_key || price?.metadata?.lovable_external_id || price?.id;
+function priceRefFrom(price: any): string | null {
+  return price?.lookup_key || price?.metadata?.lovable_external_id || null;
+}
+
+function productRefFrom(product: any): string | null {
+  return typeof product === "string" ? product : product?.id ?? null;
 }
 
 async function handleSubscriptionCreated(subscription: any, env: StripeEnv) {
+  assertLivemodeMatchesEnvironment(subscription.livemode, env, "Stripe subscription");
   const userId = subscription.metadata?.userId;
   if (!userId) {
     console.error("No userId in subscription metadata");
@@ -24,7 +39,10 @@ async function handleSubscriptionCreated(subscription: any, env: StripeEnv) {
   }
   const item = subscription.items?.data?.[0];
   const priceId = priceRefFrom(item?.price);
-  const productId = item?.price?.product;
+  if (!priceId) throw new StripeConfigError("Subscription is missing price mapping.");
+  assertAllowedPriceLookupKey(priceId);
+  const productId = productRefFrom(item?.price?.product);
+  if (!productId) throw new StripeConfigError("Subscription is missing product mapping.");
   const periodStart = item?.current_period_start ?? subscription.current_period_start;
   const periodEnd = item?.current_period_end ?? subscription.current_period_end;
 
@@ -47,9 +65,13 @@ async function handleSubscriptionCreated(subscription: any, env: StripeEnv) {
 }
 
 async function handleSubscriptionUpdated(subscription: any, env: StripeEnv) {
+  assertLivemodeMatchesEnvironment(subscription.livemode, env, "Stripe subscription");
   const item = subscription.items?.data?.[0];
   const priceId = priceRefFrom(item?.price);
-  const productId = item?.price?.product;
+  if (!priceId) throw new StripeConfigError("Subscription is missing price mapping.");
+  assertAllowedPriceLookupKey(priceId);
+  const productId = productRefFrom(item?.price?.product);
+  if (!productId) throw new StripeConfigError("Subscription is missing product mapping.");
   const periodStart = item?.current_period_start ?? subscription.current_period_start;
   const periodEnd = item?.current_period_end ?? subscription.current_period_end;
 
@@ -69,6 +91,7 @@ async function handleSubscriptionUpdated(subscription: any, env: StripeEnv) {
 }
 
 async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
+  assertLivemodeMatchesEnvironment(subscription.livemode, env, "Stripe subscription");
   await getSupabase()
     .from("subscriptions")
     .update({ status: "canceled", updated_at: new Date().toISOString() })
@@ -80,7 +103,9 @@ async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
 // synthesise a row keyed on the checkout session id. status='active',
 // current_period_end=null → useSubscription treats it as active forever.
 async function handleCheckoutCompleted(session: any, env: StripeEnv) {
+  assertLivemodeMatchesEnvironment(session.livemode, env, "Checkout session");
   if (session.mode !== "payment") return; // subscription events cover the recurring case
+  if (session.payment_status !== "paid") return;
   const userId = session.metadata?.userId;
   if (!userId) {
     console.error("checkout.session.completed missing userId");
@@ -90,18 +115,26 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv) {
   const full = await stripe.checkout.sessions.retrieve(session.id, {
     expand: ["line_items.data.price.product"],
   });
+  assertLivemodeMatchesEnvironment(full.livemode, env, "Checkout session");
   const lineItem = (full.line_items as any)?.data?.[0];
   const price = lineItem?.price;
   const priceId = priceRefFrom(price);
-  const productId = typeof price?.product === "string" ? price.product : price?.product?.id;
+  if (!priceId) throw new StripeConfigError("Checkout session is missing price mapping.");
+  assertAllowedPriceLookupKey(priceId);
+  if (priceId !== "founder_lifetime") {
+    throw new StripeConfigError("One-time checkout is not mapped to Founder access.");
+  }
+  assertLivemodeMatchesEnvironment(price?.livemode, env, "Stripe price");
+  const productId = productRefFrom(price?.product);
+  if (!productId) throw new StripeConfigError("Checkout session is missing product mapping.");
 
   await getSupabase().from("subscriptions").upsert(
     {
       user_id: userId,
       stripe_subscription_id: `onetime_${session.id}`,
       stripe_customer_id: session.customer as string,
-      product_id: productId ?? "founder_plan",
-      price_id: priceId ?? "founder_lifetime",
+      product_id: productId,
+      price_id: priceId,
       status: "active",
       current_period_start: new Date().toISOString(),
       current_period_end: null,
@@ -135,7 +168,7 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv) {
       });
     }
   } catch (e) {
-    console.error("Failed to cancel active Pro after Founder purchase:", e);
+    console.error("Failed to cancel active Pro after Founder purchase:", redactSensitiveStripeText(e));
   }
 }
 
@@ -143,16 +176,20 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
   const rawEnv = new URL(req.url).searchParams.get("env");
-  if (rawEnv !== "sandbox" && rawEnv !== "live") {
-    return new Response(JSON.stringify({ received: true, ignored: "invalid env" }), {
-      status: 200,
+  let env: StripeEnv;
+  try {
+    env = assertRequestedEnvironmentMatchesConfig(rawEnv, readDenoEnv);
+  } catch (e) {
+    console.error("Webhook environment error:", redactSensitiveStripeText(e));
+    return new Response(JSON.stringify({ received: false, error: "Invalid payment environment" }), {
+      status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
-  const env: StripeEnv = rawEnv;
 
   try {
     const event = await verifyWebhook(req, env);
+    assertWebhookEventMatchesEnvironment(event, env);
 
     switch (event.type) {
       case "customer.subscription.created":
@@ -176,7 +213,7 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("Webhook error:", e);
+    console.error("Webhook error:", redactSensitiveStripeText(e));
     return new Response("Webhook error", { status: 400 });
   }
 });

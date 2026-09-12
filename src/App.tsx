@@ -38,6 +38,8 @@ import OAuthConsent from "./pages/OAuthConsent.tsx";
 import Pricing from "./pages/Pricing.tsx";
 import CheckoutReturn from "./pages/CheckoutReturn.tsx";
 import Founder from "./pages/Founder.tsx";
+import Demo from "./pages/Demo.tsx";
+import GameDashboard from "./pages/GameDashboard.tsx";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +72,7 @@ const App = () => (
           <Routes>
             <Route path="/onboarding" element={<Protected><Onboarding /></Protected>} />
             <Route path="/" element={<Landing />} />
+            <Route path="/demo" element={<Demo />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/install" element={<Install />} />
@@ -83,14 +86,20 @@ const App = () => (
             <Route path="/founder" element={<Founder />} />
             <Route path="/checkout/return" element={<CheckoutReturn />} />
             <Route path="/welcome" element={<Protected><Welcome /></Protected>} />
-            <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+            <Route path="/dashboard" element={<Protected><GameDashboard /></Protected>} />
+            <Route path="/game" element={<Protected><GameDashboard /></Protected>} />
+            <Route path="/today" element={<Protected><Dashboard /></Protected>} />
             <Route path="/operator" element={<Protected><Operator /></Protected>} />
+            <Route path="/character" element={<Protected><Operator /></Protected>} />
             <Route path="/gameforge" element={<Protected><GameForge /></Protected>} />
+            <Route path="/arena" element={<Protected><GameForge /></Protected>} />
             <Route path="/coach" element={<Protected><Coach /></Protected>} />
+            <Route path="/gm" element={<Protected><Coach /></Protected>} />
             <Route path="/sheet" element={<Protected><Sheet /></Protected>} />
             <Route path="/start" element={<Protected><StartToday /></Protected>} />
             <Route path="/start-today" element={<Protected><StartToday /></Protected>} />
             <Route path="/proof" element={<Protected><Proof /></Protected>} />
+            <Route path="/log" element={<Protected><Proof /></Protected>} />
             <Route path="/systems" element={<Protected><Systems /></Protected>} />
             <Route path="/proof-week" element={<Protected><ProofWeek /></Protected>} />
             <Route path="/modes" element={<Protected><Modes /></Protected>} />

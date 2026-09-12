@@ -1,4 +1,5 @@
 import type { TemporalResult } from "./temporal-engine";
+import { humaniseModeId } from "./display-labels";
 
 export type PlainVerdictLabel = "Counted" | "Needs upgrade" | "Did not count yet";
 
@@ -10,6 +11,50 @@ export interface ProofResultCopy {
   nextCommandReason: string | null;
   primaryLabel: string;
   primaryAction: "improve" | "dashboard";
+}
+
+export type ProofResultPresentationStatus = "ready" | "loading" | "error" | "empty";
+
+export interface ImprovementLoopPresentationInput {
+  status?: ProofResultPresentationStatus;
+  strength?: string | null;
+  score?: number | null;
+  feedback?: string | null;
+  nextUpgrade?: string | null;
+  missingStandard?: string | null;
+  selectedStandard?: string | null;
+  requiredEvidence?: string[] | null;
+  artifactType?: string | null;
+  modeId?: string | null;
+  contractId?: string | null;
+  firstProofMode?: boolean;
+  contractClosed?: boolean | null;
+}
+
+export interface ImprovementLoopPresentation {
+  verdict: {
+    headline: string;
+    classification: string;
+    summary: string | null;
+  };
+  gap: {
+    label: string;
+    explanation: string | null;
+  } | null;
+  correction: {
+    action: string;
+    expectedArtifact: string | null;
+  } | null;
+  details: {
+    standardLabel: string | null;
+    confidenceLabel: string | null;
+    countStatus: string;
+    todayStatus: string;
+    requiredEvidence: string[];
+  };
+  correctedAttemptHref: string;
+  primaryLabel: string;
+  primaryAction: "corrected_attempt" | "dashboard";
 }
 
 export type TodayClosureStatus = "open" | "filed_pending" | "still_open" | "closed";
@@ -32,6 +77,51 @@ const STRENGTH_RANK: Record<string, number> = {
   weak: 1,
   minimum: 1,
 };
+
+const INFRASTRUCTURE_TERM_RE = /\b(model|vector|embedding|retrieval|prompt|llm|openai|token)\b/i;
+
+function collapseWhitespace(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function scrubInternalTokens(value: string): string {
+  return value
+    .replace(/accepted_strong/gi, "strong proof")
+    .replace(/accepted_useful/gi, "useful proof")
+    .replace(/accepted_minimum/gi, "minimum proof")
+    .replace(/elite_evidence/gi, "elite proof")
+    .replace(/\ban strong proof\b/gi, "a strong proof")
+    .replace(/\b[A-Z][A-Z0-9]+(?:_[A-Z0-9]+)+\b/g, (match) => humaniseModeId(match));
+}
+
+function cleanPresentationText(value?: string | null): string | null {
+  const text = collapseWhitespace(scrubInternalTokens(value ?? ""));
+  if (!text) return null;
+  if (INFRASTRUCTURE_TERM_RE.test(text)) return null;
+  return text;
+}
+
+function sentenceCaseLabel(value: string): string {
+  const cleaned = cleanPresentationText(value) ?? "";
+  if (!cleaned) return "";
+  return cleaned.charAt(0).toLowerCase() + cleaned.slice(1);
+}
+
+function buildCorrectedAttemptHref(input: {
+  modeId?: string | null;
+  contractId?: string | null;
+  firstProofMode?: boolean;
+  contractClosed?: boolean | null;
+}): string {
+  const params = new URLSearchParams();
+  const mode = collapseWhitespace(input.modeId ?? "");
+  const contract = collapseWhitespace(input.contractId ?? "");
+  if (input.firstProofMode) params.set("first", "1");
+  if (mode) params.set("mode", mode.slice(0, 80));
+  if (contract && !input.contractClosed) params.set("contract", contract.slice(0, 120));
+  const query = params.toString();
+  return query ? `/proof?${query}` : "/proof";
+}
 
 function strengthRank(value?: string | null): number {
   return STRENGTH_RANK[(value ?? "").toLowerCase()] ?? 0;
@@ -85,6 +175,78 @@ export function plainEvidenceStrength(strength?: string | null): string {
   }
 }
 
+function verdictHeadline(input: {
+  strength?: string | null;
+  score?: number | null;
+  classification: string;
+}): string {
+  const strength = (input.strength ?? "").toLowerCase();
+  const verdict = plainVerdictLabel(input.strength, input.score);
+  if (strength === "rejected" || verdict === "Did not count yet") {
+    return "This artifact does not count yet.";
+  }
+  if (verdict === "Needs upgrade") {
+    return "This artifact shows a partial proof.";
+  }
+  return `This artifact supports ${input.classification.toLowerCase()}.`;
+}
+
+function verdictSummary(input: ImprovementLoopPresentationInput, standardLabel: string | null): string | null {
+  const cleanedFeedback = cleanPresentationText(input.feedback)
+    ?.replace(/\b(Weak|Moderate|Strong|Elite) evidence against\b/g, "$1 evidence under")
+    ?? null;
+  if (cleanedFeedback) return cleanedFeedback;
+
+  const verdict = plainVerdictLabel(input.strength, input.score);
+  if (standardLabel && verdict === "Did not count yet") {
+    return `This submission does not yet demonstrate ${standardLabel}.`;
+  }
+  if (standardLabel && verdict === "Needs upgrade") {
+    return `This evidence supports an attempt under ${standardLabel}, but the standard is not fully demonstrated yet.`;
+  }
+  if (standardLabel && verdict === "Counted") {
+    return `This evidence supports a counted result under ${standardLabel}.`;
+  }
+  return null;
+}
+
+function parseGap(
+  missingStandard: string | null,
+  strength?: string | null,
+  standardLabel?: string | null,
+): ImprovementLoopPresentation["gap"] {
+  const text = cleanPresentationText(missingStandard);
+  if (!text) return null;
+  if ((strength ?? "").toLowerCase() === "elite" && /^none\b/i.test(text)) return null;
+
+  const withoutMissing = text.replace(/^missing\s+/i, "");
+  const [rawLabel, ...rest] = withoutMissing.split(":");
+  const labelBase = cleanPresentationText(rawLabel) ?? "Main standard gap";
+  const explanationBase = cleanPresentationText(rest.join(":")) ?? text;
+  const label = /gap$/i.test(labelBase) ? labelBase : `${labelBase} gap`;
+  const explanation = standardLabel
+    ? `${explanationBase}. This matters because the next attempt has to show ${standardLabel} more clearly.`
+    : explanationBase;
+
+  return { label, explanation };
+}
+
+function buildExpectedArtifact(input: ImprovementLoopPresentationInput): string | null {
+  const artifactLabel = cleanPresentationText(input.artifactType)
+    ? sentenceCaseLabel(input.artifactType!)
+    : null;
+  const firstEvidence = cleanPresentationText(input.requiredEvidence?.[0] ?? null);
+  const standardLabel = cleanPresentationText(input.selectedStandard);
+
+  if (artifactLabel && firstEvidence) {
+    return `A corrected ${artifactLabel} that shows ${firstEvidence}.`;
+  }
+  if (artifactLabel) return `A corrected ${artifactLabel}.`;
+  if (firstEvidence) return `A corrected artifact that shows ${firstEvidence}.`;
+  if (standardLabel) return `A corrected artifact judged against ${standardLabel}.`;
+  return null;
+}
+
 export function proofResultCopy(input: {
   strength?: string | null;
   score?: number | null;
@@ -111,6 +273,18 @@ export function proofResultCopy(input: {
   }
 
   if (strength === "weak") {
+    return {
+      headline: "Proof submitted. It does not count yet.",
+      countStatus: "Did not count yet",
+      todayStatus: "Today stays open until the artifact shows visible evidence.",
+      nextCommand: nextUpgrade,
+      nextCommandReason: nextUpgrade ? "Upgrade the same artifact before starting another proof." : null,
+      primaryLabel: "Upgrade proof",
+      primaryAction: "improve",
+    };
+  }
+
+  if (strength === "rejected") {
     return {
       headline: "Proof submitted. It does not count yet.",
       countStatus: "Did not count yet",
@@ -166,6 +340,50 @@ export function proofResultCopy(input: {
     nextCommandReason: "The proof counts. The next command should compound the standard.",
     primaryLabel: "Back to Today",
     primaryAction: "dashboard",
+  };
+}
+
+export function buildImprovementLoopPresentation(
+  input: ImprovementLoopPresentationInput,
+): ImprovementLoopPresentation | null {
+  const status = input.status ?? "ready";
+  if (status !== "ready") return null;
+  if (!input.strength && (input.score == null || !Number.isFinite(input.score))) return null;
+
+  const copy = proofResultCopy(input);
+  const classification = plainEvidenceStrength(input.strength);
+  const standardLabel = cleanPresentationText(input.selectedStandard);
+  const requiredEvidence = (input.requiredEvidence ?? [])
+    .map((item) => cleanPresentationText(item))
+    .filter((item): item is string => Boolean(item));
+  const nextUpgrade = cleanPresentationText(input.nextUpgrade);
+  const gap = parseGap(input.missingStandard ?? null, input.strength, standardLabel);
+  const correction = nextUpgrade
+    ? {
+        action: nextUpgrade,
+        expectedArtifact: buildExpectedArtifact({ ...input, selectedStandard: standardLabel, requiredEvidence }),
+      }
+    : null;
+  const primaryAction = copy.primaryAction === "improve" || correction ? "corrected_attempt" : "dashboard";
+
+  return {
+    verdict: {
+      headline: verdictHeadline({ strength: input.strength, score: input.score, classification }),
+      classification,
+      summary: verdictSummary({ ...input, selectedStandard: standardLabel }, standardLabel),
+    },
+    gap,
+    correction,
+    details: {
+      standardLabel,
+      confidenceLabel: classification,
+      countStatus: copy.countStatus,
+      todayStatus: copy.todayStatus,
+      requiredEvidence,
+    },
+    correctedAttemptHref: buildCorrectedAttemptHref(input),
+    primaryLabel: primaryAction === "corrected_attempt" ? "Submit corrected attempt" : copy.primaryLabel,
+    primaryAction,
   };
 }
 

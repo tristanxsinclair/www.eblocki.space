@@ -177,7 +177,7 @@ export default function ModeDetail() {
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Button onClick={() => navigate("/modes")}>Back to Modes</Button>
-              <Button variant="outline" onClick={() => navigate("/onboarding")}>Set up modes</Button>
+              <Button variant="outline" onClick={() => navigate("/onboarding")}>Open advanced setup</Button>
             </div>
           </Card>
         </div>

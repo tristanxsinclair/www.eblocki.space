@@ -19,6 +19,7 @@ export type MomentumStateName =
   | "elite";
 
 import { effectiveQuality as modeEffectiveQuality } from "./mode-scoring";
+import { localDayKey, shiftDayKey } from "./local-day";
 
 export interface ProofSample {
   created_at: string;
@@ -46,16 +47,13 @@ export interface MomentumSnapshot {
 
 const DAY_MS = 86_400_000;
 
-function startOfDayISO(d: Date) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x.toISOString().slice(0, 10);
-}
-
-/** Group proofs into a set of unique calendar dates (UTC). */
-function uniqueDays(proofs: ProofSample[]): Set<string> {
+/** Group proofs into unique calendar dates in the user's configured timezone. */
+function uniqueDays(proofs: ProofSample[], timeZone?: string): Set<string> {
   const s = new Set<string>();
-  for (const p of proofs) s.add(startOfDayISO(new Date(p.created_at)));
+  for (const p of proofs) {
+    const key = localDayKey(p.created_at, timeZone);
+    if (key) s.add(key);
+  }
   return s;
 }
 
@@ -68,24 +66,25 @@ export function computeStreak(
   proofs: ProofSample[],
   freezeTokensAvailable: number,
   now: Date = new Date(),
+  timeZone?: string,
 ): { streak: number; tokensConsumed: number } {
-  const days = uniqueDays(proofs);
+  const days = uniqueDays(proofs, timeZone);
   let streak = 0;
   let tokensLeft = freezeTokensAvailable;
   let tokensConsumed = 0;
 
-  const today = startOfDayISO(now);
-  const yesterday = startOfDayISO(new Date(now.getTime() - DAY_MS));
+  const today = localDayKey(now, timeZone);
+  const yesterday = shiftDayKey(today, -1);
+  if (!today || !yesterday) return { streak: 0, tokensConsumed: 0 };
 
   // Anchor: if today is empty, allow starting from yesterday without penalty.
-  let cursor = days.has(today) ? new Date(now) : new Date(now.getTime() - DAY_MS);
+  let cursor = days.has(today) ? today : yesterday;
   if (!days.has(today) && !days.has(yesterday)) {
     return { streak: 0, tokensConsumed: 0 };
   }
 
   for (let i = 0; i < 365; i++) {
-    const key = startOfDayISO(cursor);
-    if (days.has(key)) {
+    if (days.has(cursor)) {
       streak += 1;
     } else if (tokensLeft > 0) {
       tokensLeft -= 1;
@@ -94,7 +93,8 @@ export function computeStreak(
     } else {
       break;
     }
-    cursor = new Date(cursor.getTime() - DAY_MS);
+    cursor = shiftDayKey(cursor, -1);
+    if (!cursor) break;
   }
 
   return { streak, tokensConsumed };
@@ -126,6 +126,7 @@ export function computeMomentumScore(
    * before aggregation. See mode-scoring.ts.
    */
   activeMode?: string | null,
+  timeZone?: string,
 ): { score: number; avgQuality: number; resistanceOvercome: number } {
   const weekAgo = now.getTime() - 7 * DAY_MS;
   const week = proofs.filter((p) => new Date(p.created_at).getTime() >= weekAgo);
@@ -164,7 +165,7 @@ export function computeMomentumScore(
   const recency =
     hoursSince <= 12 ? 10 : hoursSince <= 24 ? 6 : hoursSince <= 48 ? 2 : 0;
 
-  const activeDays = uniqueDays(week).size;
+  const activeDays = uniqueDays(week, timeZone).size;
   const consistency = Math.min(activeDays * 1.5, 10);
 
   const score = Math.max(
@@ -278,12 +279,14 @@ export function buildSnapshot(input: {
   /** Active mode_id — drives mode-specific scoring multipliers. */
   activeMode?: string | null;
   now?: Date;
+  timeZone?: string;
 }): MomentumSnapshot {
   const now = input.now ?? new Date();
   const { score, avgQuality, resistanceOvercome } = computeMomentumScore(
     input.proofs,
     now,
     input.activeMode,
+    input.timeZone,
   );
 
   const { tokens: tokensBefore } = computeFreezeTokens(
@@ -291,7 +294,7 @@ export function buildSnapshot(input: {
     input.prior.freezeTokensEarnedTotal,
     input.prior.freezeTokensUsedTotal,
   );
-  const { streak } = computeStreak(input.proofs, tokensBefore, now);
+  const { streak } = computeStreak(input.proofs, tokensBefore, now, input.timeZone);
   const longest = Math.max(input.prior.longestStreak, streak);
   const { tokens, earnedTotal } = computeFreezeTokens(
     longest,
@@ -300,9 +303,9 @@ export function buildSnapshot(input: {
   );
   void earnedTotal;
 
-  const todayKey = startOfDayISO(now);
+  const todayKey = localDayKey(now, input.timeZone);
   const proofsToday = input.proofs.filter(
-    (p) => startOfDayISO(new Date(p.created_at)) === todayKey,
+    (p) => localDayKey(p.created_at, input.timeZone) === todayKey,
   ).length;
 
   const lastTs = input.proofs[0]?.created_at ?? null;

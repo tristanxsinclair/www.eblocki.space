@@ -49,6 +49,10 @@ jobs:
         run: npx playwright install-deps chromium
 
       - name: Build app
+        env:
+          EBLOCKI_BUILD_SHA: ${{ github.sha }}
+          EBLOCKI_BUILD_ID: github-e2e-${{ github.run_id }}-${{ github.run_attempt }}
+          EBLOCKI_BUILD_ENV: ci
         run: npm run build
 
       - name: Start preview server

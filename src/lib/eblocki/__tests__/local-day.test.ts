@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isSameLocalDay, localDayKey } from "../local-day";
+import { isSameLocalDay, localDayKey, shiftDayKey } from "../local-day";
 
 describe("local day helpers", () => {
   it("formats an ISO timestamp in the requested timezone", () => {
@@ -22,5 +22,15 @@ describe("local day helpers", () => {
 
   it("returns an empty key for invalid dates", () => {
     expect(localDayKey("not-a-date", "Australia/Perth")).toBe("");
+  });
+
+  it("shifts calendar keys without inheriting daylight-saving hour drift", () => {
+    expect(shiftDayKey("2026-03-08", -1)).toBe("2026-03-07");
+    expect(shiftDayKey("2026-03-08", 1)).toBe("2026-03-09");
+  });
+
+  it("rejects invalid calendar keys", () => {
+    expect(shiftDayKey("not-a-day", 1)).toBe("");
+    expect(shiftDayKey("2026-07-25", 0.5)).toBe("");
   });
 });

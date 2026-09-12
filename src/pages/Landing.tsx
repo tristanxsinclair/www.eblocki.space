@@ -1,112 +1,87 @@
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Seo } from "@/components/Seo";
-import { logEvent } from "@/lib/eblocki/analytics";
 import {
   ArrowRight,
+  Bot,
   CheckCircle2,
-  Flame,
+  FileCheck2,
   Gavel,
+  ScrollText,
   ShieldCheck,
-  Sparkles,
+  Swords,
   Target,
+  Trophy,
 } from "lucide-react";
 import { EblockiLogo } from "@/components/eblocki/EblockiLogo";
+import { Seo } from "@/components/Seo";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { logEvent } from "@/lib/eblocki/analytics";
 
-const STEPS = [
+const GAME_LOOP = [
   {
     icon: Target,
-    label: "Step 1",
-    title: "Submit proof",
-    body:
-      "Submit one real piece of study work: a paragraph, corrected answer, notes in your own words, or another clear artifact.",
+    label: "01",
+    title: "Do one real thing",
+    body: "Eblocki gives you one task for today. It happens in real life: write, build, train, sell, practise, or decide.",
+  },
+  {
+    icon: FileCheck2,
+    label: "02",
+    title: "Show what you made",
+    body: "Paste the actual thing you produced — the notes, the answer, the commit, the numbers. Ticking a box does not count.",
   },
   {
     icon: Gavel,
-    label: "Step 2",
-    title: "Get a verdict",
-    body:
-      "Eblocki tells you what counted, what was weak, and whether the work proves progress.",
+    label: "03",
+    title: "Get an honest verdict",
+    body: "Eblocki judges the evidence against a clear standard and tells you what counted, what didn't, and how to make it stronger.",
   },
   {
-    icon: ArrowRight,
-    label: "Step 3",
-    title: "Correct the next move",
-    body: "You get one next action so tomorrow starts with clarity instead of guesswork.",
-  },
-];
-
-const SCALE = [
-  {
-    title: "Weak Proof",
-    body: "You said something, but the action is unclear or too soft to count.",
-    accent: "text-evidence-weak",
+    icon: Trophy,
+    label: "04",
+    title: "Earn progress you can trust",
+    body: "Levels and XP only move after real evidence is filed and judged. Nothing is handed out for good intentions.",
   },
   {
-    title: "Useful Proof",
-    body: "Action happened, but it needs a clearer result or stronger next step.",
-    accent: "text-evidence-moderate",
+    icon: Bot,
+    label: "05",
+    title: "Get tomorrow's move",
+    body: "Eblocki reads your record, names what is actually holding you back, and gives you one next move — not a to-do list.",
   },
-  {
-    title: "Strong Proof",
-    body: "Clear effort, clear outcome, and a next move that can compound.",
-    accent: "text-evidence-strong",
-  },
-  {
-    title: "Elite Proof",
-    body: "Repeatable evidence that shows real progress, not just activity.",
-    accent: "text-evidence-elite",
-  },
-];
-
-const FOR_YOU = [
-  "You study but still feel inconsistent.",
-  "You revise, but you are not sure what really counts as progress.",
-  "You want proof instead of another productivity system.",
-  "You want your work judged honestly, not praised vaguely.",
-  "You need a clear next step after each study session.",
-];
-
-const WHAT_YOU_GET = [
-  "7 days of daily proof submission.",
-  "A simple verdict on what counted.",
-  "One next step after each submission.",
-  "A clearer picture of where your effort leaks.",
-  "A realistic first-week beta experience.",
-];
+] as const;
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="operator-surface life-game-shell">
       <Seo
-        title="Eblocki Proof Week Beta"
-        description="Build proof for 7 days. Submit one real action each day, get a verdict, and see what your effort actually proves."
+        title="eblocki — Stop Fake Productivity. Turn Effort Into Proof."
+        description="Free and open source. Do one real task, show the evidence, get an honest verdict and your next move. Progress only counts when proof exists."
         path="/"
       />
 
-      <header className="border-b border-border bg-background/95 backdrop-blur safe-top safe-x">
-        <div className="container flex flex-wrap items-center justify-between gap-3 py-4">
-          <Link to="/" className="flex items-center gap-2 native-tap">
+      <header className="operator-chrome sticky top-0 z-40 border-b safe-top safe-x">
+        <div className="container flex min-h-16 items-center justify-between gap-3">
+          <Link to="/" className="operator-interactive operator-hit inline-flex items-center">
             <EblockiLogo variant="compact" size="md" />
           </Link>
           <nav className="flex items-center gap-3">
             <a
-              href="#how-it-works"
-              className="hidden text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground sm:inline-flex"
+              href="#how-xp-works"
+              className="operator-interactive operator-hit hidden items-center px-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground sm:inline-flex"
             >
-              How it works
+              What counts as proof
             </a>
-            <a
-              href="#join"
-              className="hidden text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground sm:inline-flex"
+            <Link
+              to="/demo"
+              className="operator-interactive operator-hit inline-flex items-center px-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground"
             >
-              Join beta
-            </a>
-            <Link to="/pricing" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
-              Pricing
+              Demo
             </Link>
-            <Link to="/auth" className="text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground">
+            <Link
+              to="/auth"
+              className="operator-interactive operator-hit inline-flex items-center px-2 font-mono text-[10px] uppercase tracking-widest text-primary"
+            >
               Sign in
             </Link>
           </nav>
@@ -115,254 +90,287 @@ export default function Landing() {
 
       <main>
         <section className="grid-bg border-b border-border">
-          <div className="container grid gap-8 py-8 md:gap-10 md:py-20 md:grid-cols-[minmax(0,1fr)_minmax(320px,0.82fr)] md:items-center lg:py-24">
+          <div className="container grid gap-8 py-12 md:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)] md:items-center md:py-20 lg:py-24">
             <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-2.5 py-1">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-primary">
-                  Proof Week · Beta
-                </span>
+              <div className="operator-label-signal">
+                &gt; Free // open source // no subscriptions
               </div>
-              <h1 className="mt-6 text-4xl font-semibold leading-[1.02] tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-                Submit real study work.
+              <h1 className="operator-heading-1 mt-5 md:text-6xl lg:text-7xl">
+                Stop fake productivity.
                 <br />
-                <span className="italic text-foreground/30">See if it actually counts.</span>
+                <span className="text-primary">Turn effort into proof.</span>
               </h1>
-              <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground md:mt-6 md:text-lg">
-                Eblocki is a student-first proof loop. Paste one real piece of work, get an honest verdict, and leave with one clear next step.
+              <p className="operator-body mt-6 max-w-xl md:text-lg">
+                Most trackers reward ticking boxes. Eblocki asks for the actual thing you made,
+                judges it honestly, and gives you one next move. Your levels are built from real
+                evidence, so the progress you see is progress you genuinely earned.
               </p>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap md:mt-8">
-                <Link
-                  to="/proof-week"
-                  className="inline-flex w-full sm:w-auto"
-                  onClick={() => {
-                    void logEvent("activation_landing_primary_cta_clicked", {
-                      route: "/",
-                      destination: "/proof-week",
-                      ctaName: "start_proof_week",
-                    });
-                  }}
-                >
-                  <Button size="lg" className="w-full sm:w-auto">
-                    Start Proof Week
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-                <a href="#how-it-works" className="inline-flex w-full sm:w-auto">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto">See How It Works</Button>
-                </a>
-              </div>
-              <p className="mt-4 text-sm text-muted-foreground">
-                Free beta. You submit real work, not plans. Honest feedback required.
-              </p>
-              <div className="mt-8 grid gap-2 text-xs font-mono uppercase tracking-wider text-muted-foreground sm:grid-cols-3">
-                <ProofLaw label="One real action" />
-                <ProofLaw label="One honest verdict" />
-                <ProofLaw label="One sharper next move" />
-              </div>
-            </div>
-            <HeroPreview />
-          </div>
-        </section>
 
-        <section id="how-it-works" className="border-b border-border">
-          <div className="container py-14 md:py-16">
-            <div className="max-w-2xl">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">How it works</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">A simple loop built around evidence.</h2>
-            </div>
-            <div className="mt-8 grid gap-3 md:grid-cols-3">
-              {STEPS.map(({ icon: Icon, label, title, body }) => (
-                <Card key={title} className="panel p-5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</span>
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <h3 className="mt-4 text-xl font-semibold">{title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{body}</p>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="border-b border-border">
-          <div className="container py-14 md:py-16">
-            <div className="max-w-2xl">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">The Proof Scale</div>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">See what your effort actually proves.</h2>
-            </div>
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {SCALE.map((item) => (
-                <Card key={item.title} className="panel p-5">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className={`h-4 w-4 ${item.accent}`} />
-                    <h3 className="font-semibold">{item.title}</h3>
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.body}</p>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="border-b border-border">
-          <div className="container grid gap-6 py-14 md:grid-cols-2 md:py-16">
-            <Card className="panel p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold">This is for you if</h2>
-              <ul className="mt-5 space-y-3 text-sm leading-6 text-muted-foreground">
-                {FOR_YOU.map((item) => (
-                  <li key={item} className="flex gap-3">
-                    <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-primary" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-
-            <Card className="panel p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold">What you get</h2>
-              <ul className="mt-5 space-y-3 text-sm leading-6 text-muted-foreground">
-                {WHAT_YOU_GET.map((item) => (
-                  <li key={item} className="flex gap-3">
-                    <Sparkles className="mt-1 h-4 w-4 shrink-0 text-primary" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </div>
-        </section>
-
-        <section className="border-b border-border">
-          <div className="container grid gap-6 py-14 md:grid-cols-2 md:py-16">
-            <Card className="panel p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold">What you submit</h2>
-              <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                One real artifact: an essay paragraph, corrected answer, notes in your own words, or another clear piece of work you actually produced.
-              </p>
-            </Card>
-            <Card className="panel p-6 sm:p-8">
-              <h2 className="text-2xl font-semibold">What Eblocki checks</h2>
-              <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                Whether the work is real, whether it meets the standard, what was weak or missing, and what your next step should be.
-              </p>
-            </Card>
-          </div>
-        </section>
-
-        <section id="join" className="container py-14 md:py-16">
-          <Card className="panel overflow-hidden border-primary/30 bg-primary/10">
-            <div className="grid gap-6 p-6 sm:p-8 md:grid-cols-[minmax(0,1fr)_320px] md:items-center">
-              <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Join the beta</div>
-                <h2 className="mt-2 text-3xl font-semibold">Use Eblocki for one honest week.</h2>
-                <p className="mt-4 max-w-2xl text-sm leading-6 text-foreground/85">
-                  The beta is free. You submit one real proof update per day for 7 days. In return, you give honest feedback at the end.
-                </p>
-                <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Button asChild size="lg" className="w-full sm:w-auto">
                   <Link
-                    to="/proof-week"
-                    className="inline-flex"
+                    to="/auth"
                     onClick={() => {
                       void logEvent("activation_landing_primary_cta_clicked", {
                         route: "/",
-                        destination: "/proof-week",
-                        ctaName: "join_beta_start_proof_week",
+                        destination: "/auth",
+                        ctaName: "start_your_run",
                       });
                     }}
                   >
-                    <Button size="lg" className="panel-glow">
-                      Start Proof Week
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    Start your run <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
-                  <a href="#how-it-works" className="inline-flex">
-                    <Button size="lg" variant="outline">Read the loop first</Button>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
+                  <Link
+                    to="/demo"
+                    onClick={() => {
+                      void logEvent("life_game_demo_started", {
+                        route: "/",
+                        source: "landing",
+                      });
+                    }}
+                  >
+                    Play the demo
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="ghost" className="w-full sm:w-auto">
+                  <a href="#how-xp-works">
+                    See what counts as proof
                   </a>
-                </div>
+                </Button>
               </div>
 
-              <div className="rounded-md border border-border bg-background/80 p-5">
-                <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                  <Flame className="h-3.5 w-3.5 text-primary" />
-                  Message to join
-                </div>
-                <p className="mt-4 text-2xl font-semibold">&quot;Proof Week&quot;</p>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  If you want founder support during beta, send this to Eblocki on Instagram after you start.
-                </p>
+              <div className="operator-label-signal mt-8 flex min-h-11 items-center gap-2 rounded-md border border-primary/30 bg-primary/[0.05] px-3 py-2 sm:inline-flex">
+                <ShieldCheck className="h-4 w-4" />
+No proof, no progress — that is the whole rule
               </div>
             </div>
-          </Card>
+
+            <CharacterPreview />
+          </div>
+        </section>
+
+        <section className="operator-section">
+          <div className="container">
+            <div className="max-w-2xl">
+              <div className="operator-label-signal">
+                How it works
+              </div>
+              <h2 className="operator-heading-2 mt-2 md:text-4xl">
+                Five steps. Two minutes a day.
+              </h2>
+              <p className="operator-body mt-3">
+                Your first goal is not to become perfect. Your first goal is to submit one honest
+                piece of proof. Everything else follows from that.
+              </p>
+            </div>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {GAME_LOOP.map(({ icon: Icon, label, title, body }) => (
+                <Card key={title} className="operator-panel p-5">
+                  <div className="flex items-center justify-between">
+                    <span className="operator-label">
+                      {label}
+                    </span>
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="operator-heading-3 mt-4">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="how-xp-works" className="operator-section">
+          <div className="container grid gap-8 md:grid-cols-[0.8fr_1.2fr] md:items-start">
+            <div>
+              <div className="operator-label-signal">
+                What counts as proof
+              </div>
+              <h2 className="operator-heading-2 mt-2 md:text-4xl">
+                You cannot award yourself progress.
+              </h2>
+              <p className="operator-body mt-4">
+                Proof is anything someone else could look at: a written answer, a page of worked
+                problems, a commit, a recording, a session log, a number that moved. Reading,
+                planning, organising and &quot;feeling productive&quot; do not count on their own.
+                Planning is useful. Hiding inside planning is not.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <EvidenceRule
+                title="Evidence before completion"
+                body="There is no &quot;mark as done&quot; shortcut. Tasks that need proof send you to log the real artifact instead."
+              />
+              <EvidenceRule
+                title="Honest states, always"
+                body="If something has not been judged yet, Eblocki says so. It never shows you a success you have not earned."
+              />
+              <EvidenceRule
+                title="Practice is free, progress is earned"
+                body="You can drill and play as much as you like. Your levels only move once a result is filed as evidence and judged."
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="operator-section">
+          <div className="container grid gap-4 md:grid-cols-2">
+            <Card className="operator-panel p-6 sm:p-8">
+              <Bot className="h-5 w-5 text-primary" />
+              <div className="operator-label-signal mt-5">
+                Your next move
+              </div>
+              <h2 className="mt-2 text-2xl font-semibold">One clear instruction.</h2>
+              <p className="mt-3 leading-7 text-muted-foreground">
+                Eblocki spots what you have been avoiding, gives you a single task, tells you exactly
+                what evidence to bring back, and keeps working even when AI is offline.
+              </p>
+            </Card>
+            <Card className="operator-panel p-6 sm:p-8">
+              <Swords className="h-5 w-5 text-primary" />
+              <div className="operator-label-signal mt-5">
+                Arena
+              </div>
+              <h2 className="mt-2 text-2xl font-semibold">Practice under pressure.</h2>
+              <p className="mt-3 leading-7 text-muted-foreground">
+                Drill timed reps for your subject or skill, review how you did, then file the result
+                as proof when it is good enough for a real verdict.
+              </p>
+            </Card>
+          </div>
+        </section>
+
+        <section className="operator-section">
+          <div className="container text-center">
+            <div className="mx-auto max-w-2xl">
+              <div className="operator-label-signal">
+                Start with one piece of proof
+              </div>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
+                See what you have actually done.
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                Try the demo with no account and no sign-up, or start for free and log your first
+                proof in under two minutes. Free forever, open source, no ads.
+              </p>
+              <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+                <Button asChild size="lg" className="w-full sm:w-auto">
+                  <Link to="/auth">
+                    Start your run <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
+                  <Link to="/demo">
+                    Play the demo
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
 
-      <footer className="container border-t border-border py-8 text-xs font-mono uppercase tracking-wider text-muted-foreground">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span>Proof beats motivation.</span>
-          <div className="flex flex-wrap gap-3">
-            <Link to="/legal/privacy" className="hover:text-foreground">Privacy</Link>
-            <Link to="/legal/data-handling" className="hover:text-foreground">Data handling</Link>
-            <Link to="/legal/terms" className="hover:text-foreground">Terms</Link>
+      <footer className="safe-bottom safe-x">
+        <div className="container flex flex-col gap-4 py-8 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <EblockiLogo variant="compact" size="sm" />
+          <div className="flex flex-wrap gap-4 font-mono text-[10px] uppercase tracking-widest">
+            <Link to="/legal/privacy" className="operator-interactive inline-flex min-h-11 items-center">Privacy</Link>
+            <Link to="/legal/terms" className="operator-interactive inline-flex min-h-11 items-center">Terms</Link>
+            <Link to="/legal/ai-disclosure" className="operator-interactive inline-flex min-h-11 items-center">AI disclosure</Link>
           </div>
         </div>
       </footer>
     </div>
   );
 }
-
-function HeroPreview() {
+function CharacterPreview() {
   return (
-    <Card className="panel relative overflow-hidden border-primary/30 bg-card/70 shadow-2xl shadow-primary/5">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Week</div>
-        <span className="rounded-sm border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-primary">
-          Beta
-        </span>
+    <Card className="operator-panel-accent overflow-hidden">
+      <div className="border-b border-border bg-primary/[0.04] px-4 py-3">
+        <div className="flex items-center justify-between gap-3 font-mono text-[9px] uppercase tracking-[0.2em]">
+          <span className="text-primary">Character preview</span>
+          <span className="text-muted-foreground">Sample data</span>
+        </div>
       </div>
-      <div className="space-y-4 p-4">
-        <div className="rounded-sm border border-primary/30 bg-primary/10 p-4">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Today&apos;s proof</div>
-          <p className="mt-2 text-lg font-semibold leading-snug">Past-paper answer corrected and rewritten in your own words.</p>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            Submitted as real evidence instead of a promise to study later.
-          </p>
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="operator-label-signal">
+              Operator Level 12
+            </div>
+            <h2 className="mt-1 text-xl font-semibold">Compound Operator</h2>
+          </div>
+          <div className="text-right">
+            <div className="operator-number text-lg font-semibold">4,280</div>
+            <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">
+              Total XP
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <PreviewMetric label="Verdict" value="strong" />
-          <PreviewMetric label="Leak" value="clarity" />
-          <PreviewMetric label="Next step" value="repeat" />
-          <PreviewMetric label="Day" value="03/07" />
+        <Progress value={59.5} className="mt-4 h-2" />
+
+        <div className="mt-5 rounded-sm border border-primary/30 bg-primary/[0.04] p-4">
+          <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-primary">
+            Active quest
+          </div>
+          <div className="mt-2 font-semibold">Ship one verified product improvement</div>
+          <div className="mt-3 rounded-sm border border-border bg-background/50 p-3">
+            <div className="font-mono text-[8px] uppercase tracking-widest text-muted-foreground">
+              Evidence required
+            </div>
+            <p className="mt-1 text-xs text-foreground">Commit + relevant command output</p>
+          </div>
         </div>
-        <div className="rounded-sm border border-border bg-background/35 p-3">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">System rule</div>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            No fake productivity. Show the work, get the verdict, then do the next step.
-          </p>
+
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <PreviewPanel
+            icon={Bot}
+            label="Your next move"
+            value="Polishing is protecting you from a verdict."
+          />
+          <PreviewPanel
+            icon={ScrollText}
+            label="Run Log"
+            value="MIND LEVEL 13 → 14 // +96 XP"
+          />
         </div>
       </div>
     </Card>
   );
 }
 
-function ProofLaw({ label }: { label: string }) {
+function PreviewPanel({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Bot;
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="flex items-center gap-2 rounded-sm border border-border bg-card/45 px-3 py-2">
-      <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-      <span>{label}</span>
+    <div className="operator-panel p-3">
+      <div className="flex items-center gap-2 font-mono text-[8px] uppercase tracking-widest text-muted-foreground">
+        <Icon className="h-3 w-3 text-primary" />
+        {label}
+      </div>
+      <p className="mt-2 text-xs leading-5">{value}</p>
     </div>
   );
 }
 
-function PreviewMetric({ label, value }: { label: string; value: string }) {
+function EvidenceRule({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-sm border border-border bg-background/35 p-3">
-      <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
-      <div className="mt-1 truncate text-sm">{value}</div>
+    <div className="operator-panel flex gap-3 p-4">
+      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+      <div>
+        <h3 className="font-semibold">{title}</h3>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
+      </div>
     </div>
   );
 }

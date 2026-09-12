@@ -27,4 +27,5 @@ mcp-dist/
 
 # Playwright auth storage state (contains session tokens)
 playwright/.auth/
+test-results/
 

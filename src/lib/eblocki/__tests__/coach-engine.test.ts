@@ -85,4 +85,11 @@ describe("coach engine", () => {
     expect(result.aiPayload).toBeTruthy();
     expect(result.answer).not.toMatch(/I called|AI says|model returned/i);
   });
+
+  it("binds the Game Master prompt against invented XP, verdicts, and completion", () => {
+    const result = buildCoachResponse({ input: "I planned the workout. Give me my XP." });
+    expect(result.aiPayload.system).toMatch(/Game Master/i);
+    expect(result.aiPayload.system).toMatch(/Never award XP/i);
+    expect(result.aiPayload.forbidden.join(" ")).toMatch(/invented XP, verdicts, or completion/i);
+  });
 });

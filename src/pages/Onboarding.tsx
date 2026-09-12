@@ -224,6 +224,7 @@ export default function Onboarding() {
             challenge_avoidance: challengeAvoidance,
             auto_create_proof_contracts: autoCreateProofContracts,
             completed_onboarding: true,
+            seen_welcome: true,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "user_id" },
@@ -237,8 +238,8 @@ export default function Onboarding() {
       if (modesError) throw modesError;
 
       haptics.success();
-      toast.success("Your Eblocki OS is live.");
-      navigate("/dashboard");
+      toast.success("Setup saved. Submit one piece of work to start the loop.");
+      navigate("/proof?first=1");
     } catch (error: any) {
       haptics.error();
       toast.error(error?.message || "Failed to save onboarding.");
@@ -247,13 +248,13 @@ export default function Onboarding() {
     }
   };
 
-  const stepLabels = ["Welcome", "Identity", "Context", "Arenas", "Coaching", "Confirm"];
+  const stepLabels = ["Advanced setup", "Identity", "Context", "Areas", "Coaching", "Confirm"];
 
   return (
     <div className="min-h-screen-safe flex flex-col bg-background">
       <Seo
-        title="Setup OS | EBLOCKI"
-        description="Configure your operating modes, identity claims, and arenas to start the proof loop."
+        title="Advanced setup | EBLOCKI"
+        description="Optionally configure your operating profile and evidence standards."
         path="/onboarding"
       />
 
@@ -554,16 +555,16 @@ function StepWelcome({ onStart }: { onStart: () => void }) {
         <Target className="h-7 w-7 text-primary" />
       </div>
       <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-primary">
-        Eblocki Setup
+        Optional advanced setup
       </span>
       <h1 className="text-3xl font-semibold mt-3 leading-tight">
-        Build the operating system that turns ambition into evidence.
+        Tune how Eblocki judges and responds to your work.
       </h1>
       <p className="text-sm text-muted-foreground mt-4 leading-relaxed">
-        Six short steps. About three minutes. You can edit any of this later in Settings.
+        This is not required before your first verdict. Use it when you want more specific standards and coaching.
       </p>
       <ul className="mt-6 space-y-2 text-sm">
-        {["Identity claim", "Performance arenas", "Coaching pressure", "Your custom modes"].map(
+        {["Operating profile", "Evidence areas", "Coaching style", "Custom standards"].map(
           (item) => (
             <li key={item} className="flex items-center gap-2 text-muted-foreground">
               <Check className="h-4 w-4 text-primary" />

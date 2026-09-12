@@ -5,7 +5,11 @@ import { Seo } from "@/components/Seo";
 export default function GameForge() {
   return (
     <AppShell>
-      <Seo title="GameForge — Eblocki" description="Turn any topic into playable proof." path="/gameforge" />
+      <Seo
+        title="Arena — Eblocki"
+        description="Practise under pressure, then file a reviewed result into the evidence loop."
+        path="/gameforge"
+      />
       <GameForgeShell />
     </AppShell>
   );

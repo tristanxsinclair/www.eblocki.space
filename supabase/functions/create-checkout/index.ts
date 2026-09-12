@@ -1,5 +1,15 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
+import {
+  assertAllowedPriceLookupKey,
+  assertLivemodeMatchesEnvironment,
+  assertRequestedEnvironmentMatchesConfig,
+  publicStripeErrorMessage,
+  redactSensitiveStripeText,
+  validateReturnUrl,
+} from "../_shared/stripe-config.ts";
+
+const readDenoEnv = (key: string) => Deno.env.get(key);
 
 async function resolveOrCreateCustomer(
   stripe: ReturnType<typeof createStripeClient>,
@@ -47,17 +57,19 @@ Deno.serve(async (req) => {
     if (!priceId || typeof priceId !== "string" || !/^[a-zA-Z0-9_-]+$/.test(priceId)) {
       throw new Error("Invalid priceId");
     }
-    if (environment !== "sandbox" && environment !== "live") {
-      throw new Error("Invalid environment");
-    }
-    if (!returnUrl || typeof returnUrl !== "string") throw new Error("returnUrl is required");
+    assertAllowedPriceLookupKey(priceId);
 
-    const env = environment as StripeEnv;
+    const env = assertRequestedEnvironmentMatchesConfig(environment, readDenoEnv);
+    const safeReturnUrl = validateReturnUrl(returnUrl, readDenoEnv);
     const stripe = createStripeClient(env);
 
     const prices = await stripe.prices.list({ lookup_keys: [priceId] });
     if (!prices.data.length) throw new Error("Price not found");
-    const stripePrice = prices.data[0];
+    const stripePrice = prices.data.find((price) => price.lookup_key === priceId) ?? prices.data[0];
+    assertLivemodeMatchesEnvironment(stripePrice.livemode, env, "Stripe price");
+    if (stripePrice.lookup_key && stripePrice.lookup_key !== priceId) {
+      throw new Error("Price lookup mismatch");
+    }
     const isRecurring = stripePrice.type === "recurring";
 
     const customerId = (customerEmail || userId)
@@ -77,7 +89,7 @@ Deno.serve(async (req) => {
       line_items: [{ price: stripePrice.id, quantity: quantity || 1 }],
       mode: isRecurring ? "subscription" : "payment",
       ui_mode: "embedded_page",
-      return_url: returnUrl,
+      return_url: safeReturnUrl,
       ...(customerId && { customer: customerId }),
       ...(!isRecurring && { payment_intent_data: { description: productDescription } }),
       ...(userId && {
@@ -93,8 +105,8 @@ Deno.serve(async (req) => {
       status: 200,
     });
   } catch (e) {
-    console.error("create-checkout error:", e);
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
+    console.error("create-checkout error:", redactSensitiveStripeText(e));
+    return new Response(JSON.stringify({ error: publicStripeErrorMessage(e, "Could not start checkout.") }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });

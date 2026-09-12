@@ -10,13 +10,13 @@ import { EblockiLogo } from "./EblockiLogo";
 import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 
 const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/start-today", label: "Start Today", icon: Sparkles },
-  { to: "/proof", label: "Proof", icon: Gavel },
-  { to: "/systems", label: "Systems", icon: Hammer },
-  { to: "/coach", label: "Coach", icon: MessageSquare },
-  { to: "/gameforge", label: "GameForge", icon: Swords },
-  { to: "/operator", label: "Operator", icon: Hexagon },
+  { to: "/dashboard", label: "Today", icon: LayoutDashboard },
+  { to: "/proof", label: "Log Action", icon: Gavel },
+  { to: "/start-today", label: "Quests", icon: Sparkles },
+  { to: "/coach", label: "Game Master", icon: MessageSquare },
+  { to: "/gameforge", label: "Arena", icon: Swords },
+  { to: "/operator", label: "Character", icon: Hexagon },
+  { to: "/systems", label: "Intel", icon: Hammer },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -44,36 +44,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-[100dvh] min-h-screen-safe flex flex-col md:flex-row w-full max-w-full overflow-x-hidden">
+    <div className="app-frame min-h-[100dvh] min-h-screen-safe flex flex-col md:flex-row w-full max-w-full overflow-x-hidden">
       {/* Mobile top: test-mode banner + sticky brand bar. Owns --app-header-h. */}
       <div
         ref={mobileTopRef}
-        className="md:hidden sticky top-0 z-30 w-full max-w-full bg-card"
+        className="operator-chrome mobile-app-chrome md:hidden sticky top-0 z-30 w-full max-w-full"
       >
         <PaymentTestModeBanner />
-        <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border bg-card safe-top safe-x w-full max-w-full">
-          <Link to="/dashboard" className="flex items-center gap-2 native-tap min-w-0">
+        <header className="flex min-h-14 items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-2 safe-top safe-x w-full max-w-full">
+          <Link to="/dashboard" className="operator-interactive operator-hit flex items-center gap-2 min-w-0">
             <EblockiLogo variant="compact" size="sm" />
           </Link>
         </header>
       </div>
 
       {/* Desktop / tablet sidebar */}
-      <aside className="hidden md:flex md:w-60 md:min-h-screen border-r border-border bg-card/60 backdrop-blur-sm md:flex-col md:sticky md:top-0 md:h-screen safe-x md:safe-bottom max-w-full min-w-0">
-        <Link to="/dashboard" className="flex items-center gap-2.5 px-5 py-5 border-b border-border md:w-full native-tap">
+      <aside className="operator-chrome mission-sidebar hidden md:flex md:w-[264px] md:min-h-screen border-r md:flex-col md:sticky md:top-0 md:h-screen safe-x md:safe-bottom max-w-full min-w-0">
+        <Link to="/dashboard" className="operator-interactive flex min-h-[76px] items-center gap-2.5 border-b border-white/[0.06] px-6 py-4 md:w-full">
           <EblockiLogo variant="compact" size="md" />
         </Link>
-        <nav className="flex-1 flex md:flex-col gap-1 p-3 min-w-0 max-w-full overflow-y-auto">
+        <nav className="flex-1 flex md:flex-col gap-1.5 p-4 min-w-0 max-w-full overflow-y-auto">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-semibold uppercase tracking-[0.16em] whitespace-nowrap native-tap shrink-0 min-h-[40px] motion-hover",
+                  "operator-interactive mission-nav-link flex items-center gap-3 px-3.5 py-2 text-[12px] font-medium whitespace-nowrap shrink-0 min-h-[46px]",
                   isActive
-                    ? "bg-primary/12 text-primary ring-1 ring-primary/25 shadow-[inset_0_1px_0_0_hsl(var(--primary)/0.15)]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                    ? "is-active bg-white/[0.07] text-foreground ring-1 ring-white/[0.09]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]",
                 )
               }
             >
@@ -82,11 +82,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </NavLink>
           ))}
         </nav>
-        <div className="hidden md:flex md:flex-col gap-2 p-4 border-t border-border bg-background/40">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground truncate">{user?.email}</div>
+        <div className="hidden md:flex md:flex-col gap-2 p-5 border-t border-white/[0.06] bg-black/10">
+          <div className="text-[11px] font-medium text-muted-foreground truncate">{user?.email}</div>
           <button
             onClick={async () => { await signOut(); nav("/"); }}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground hover:text-destructive motion-hover"
+            className="operator-interactive operator-hit inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-destructive"
           >
             <LogOut className="h-3.5 w-3.5" /> Sign out
           </button>

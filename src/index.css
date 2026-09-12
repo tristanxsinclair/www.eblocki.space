@@ -20,11 +20,12 @@ Brand direction (July 2026):
     /* Mobile shell dimensions — overwritten at runtime by AppShell / MobileBottomNav. */
     --app-header-h: 56px;
     --app-nav-h: 64px;
-    --background: 220 13% 5%;
-    --foreground: 210 20% 98%;
+    /* Sink Space family foundation: #071014 / #0b181e / #eef7f4 / #93aaa8. */
+    --background: 198 48% 5%;
+    --foreground: 160 36% 95%;
 
-    --card: 216 13% 8%;
-    --card-foreground: 210 20% 98%;
+    --card: 198 46% 8%;
+    --card-foreground: 160 36% 95%;
 
     --popover: 216 13% 8%;
     --popover-foreground: 210 20% 98%;
@@ -36,7 +37,12 @@ Brand direction (July 2026):
     --secondary-foreground: 210 20% 98%;
 
     --muted: 210 13% 13%;
-    --muted-foreground: 220 6% 58%;
+    --muted-foreground: 177 12% 62%;
+
+    /* Parent-studio accents stay supporting; Eblocki signal green remains primary. */
+    --studio-acid: 92 100% 68%;
+    --studio-cyan: 193 100% 66%;
+    --studio-blue: 229 100% 70%;
 
     --accent: 142 72% 56%;
     --accent-foreground: 220 20% 6%;
@@ -64,7 +70,7 @@ Brand direction (July 2026):
 
     --gradient-operator: linear-gradient(135deg, hsl(216 13% 8%) 0%, hsl(220 13% 4%) 100%);
     --gradient-evidence: linear-gradient(135deg, hsl(142 72% 56% / 0.10), transparent 100%);
-    --shadow-panel: 0 1px 0 0 hsl(210 13% 18%) inset, 0 24px 60px -28px hsl(0 0% 0% / 0.75);
+    --shadow-panel: 0 1px 0 0 hsl(var(--foreground) / 0.035) inset, 0 18px 48px -32px hsl(var(--foreground) / 0.16);
     --shadow-glow: 0 0 0 1px hsl(142 72% 56% / 0.28), 0 0 32px -8px hsl(142 72% 56% / 0.45);
 
     --sidebar-background: 0 0% 98%;
@@ -85,10 +91,10 @@ Brand direction (July 2026):
   }
 
   .dark {
-    --background: 220 13% 5%;
-    --foreground: 210 20% 98%;
-    --card: 216 13% 8%;
-    --card-foreground: 210 20% 98%;
+    --background: 198 48% 5%;
+    --foreground: 160 36% 95%;
+    --card: 198 46% 8%;
+    --card-foreground: 160 36% 95%;
     --popover: 216 13% 8%;
     --popover-foreground: 210 20% 98%;
 
@@ -97,7 +103,7 @@ Brand direction (July 2026):
     --secondary: 210 13% 13%;
     --secondary-foreground: 210 20% 98%;
     --muted: 210 13% 13%;
-    --muted-foreground: 220 6% 58%;
+    --muted-foreground: 177 12% 62%;
 
     --accent: 142 72% 56%;
     --accent-foreground: 220 20% 6%;
@@ -124,6 +130,11 @@ Brand direction (July 2026):
     @apply border-border;
   }
 
+  :where(a, button, input, textarea, select, summary, [role="button"], [tabindex]):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 3px;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -146,10 +157,91 @@ Brand direction (July 2026):
 
 @layer components {
   .panel {
-    @apply rounded-md border border-border bg-card/80 backdrop-blur-sm;
+    @apply rounded-lg border border-border/90 bg-card/90;
     box-shadow: var(--shadow-panel);
   }
   .panel-glow { box-shadow: var(--shadow-glow); }
+  .operator-surface {
+    @apply min-h-screen bg-background text-foreground;
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.18) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.18) 1px, transparent 1px),
+      radial-gradient(circle at 76% 0%, hsl(var(--studio-cyan) / 0.045), transparent 34%),
+      radial-gradient(circle at 16% 8%, hsl(var(--primary) / 0.035), transparent 28%);
+    background-size: 64px 64px, 64px 64px, auto;
+  }
+  .operator-chrome {
+    @apply border-border/90 bg-background/95 backdrop-blur-xl;
+    box-shadow: 0 1px 0 hsl(var(--foreground) / 0.025);
+  }
+  .operator-page {
+    @apply mobile-safe-page mx-auto w-full max-w-5xl space-y-5 px-4 py-5 text-wrap-safe sm:px-6 md:space-y-6 md:px-8 md:py-8;
+  }
+  .operator-page-wide {
+    @apply operator-page max-w-[1440px];
+  }
+  .operator-section {
+    @apply border-b border-border/80 py-14 md:py-20;
+  }
+  .operator-panel,
+  .crt-surface {
+    @apply rounded-lg border border-border/90 bg-card/90;
+    box-shadow: var(--shadow-panel);
+  }
+  .operator-panel-accent {
+    @apply operator-panel border-primary/30;
+    box-shadow:
+      inset 0 1px 0 hsl(var(--primary) / 0.1),
+      var(--shadow-panel);
+  }
+  .operator-label {
+    @apply font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground;
+  }
+  .operator-label-signal {
+    @apply operator-label text-primary;
+  }
+  .operator-heading-1 {
+    @apply font-display text-3xl font-semibold leading-[1.05] tracking-tight sm:text-4xl md:text-5xl;
+  }
+  .operator-heading-2 {
+    @apply font-display text-2xl font-semibold leading-tight tracking-tight md:text-3xl;
+  }
+  .operator-heading-3 {
+    @apply font-display text-base font-semibold leading-snug;
+  }
+  .operator-body {
+    @apply text-sm leading-6 text-muted-foreground md:text-base md:leading-7;
+  }
+  .operator-number {
+    @apply font-mono tabular-nums tracking-tight;
+  }
+  .operator-interactive {
+    @apply motion-hover native-tap rounded-md;
+  }
+  .operator-interactive:hover {
+    @apply border-primary/35 bg-primary/[0.045] text-foreground;
+  }
+  .operator-hit {
+    @apply min-h-11 min-w-11;
+  }
+  .operator-control {
+    @apply operator-interactive min-h-11 border border-input bg-background/70 px-3 py-2 text-sm text-foreground;
+  }
+  .operator-page :where(input, textarea, select) {
+    @apply rounded-md border-input bg-background/70;
+  }
+  .operator-page :where(input, textarea, select):hover {
+    border-color: hsl(var(--primary) / 0.3);
+  }
+  .operator-page :where(input, textarea, select):focus-visible {
+    border-color: hsl(var(--ring));
+  }
+  .operator-stat-grid {
+    @apply grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4;
+  }
+  .operator-stat {
+    @apply min-w-0 rounded-md border border-border/90 bg-background/50 p-3;
+  }
   .grid-bg {
     background-image:
       linear-gradient(hsl(var(--border) / 0.6) 1px, transparent 1px),
@@ -308,6 +400,227 @@ html, body, #root {
   .interactive-press:active {
     transform: scale(0.98);
   }
+  @media (prefers-reduced-motion: reduce) {
+    .interactive-press {
+      transition: none !important;
+    }
+    .interactive-press:active {
+      transform: none;
+    }
+  }
+}
+
+/* Mission Glass v2 — premium aerospace restraint for authenticated product
+   chrome and the Life Game. This layer changes presentation only; evidence,
+   verdict, XP, and quest authority remain in their canonical modules. */
+@layer components {
+  .app-frame {
+    position: relative;
+    background:
+      radial-gradient(circle at 82% -10%, hsl(var(--studio-cyan) / 0.055), transparent 31rem),
+      radial-gradient(circle at 18% 14%, hsl(var(--primary) / 0.045), transparent 28rem),
+      hsl(var(--background));
+  }
+
+  .operator-chrome {
+    border-color: hsl(var(--foreground) / 0.065);
+    background: hsl(var(--background) / 0.82);
+    backdrop-filter: blur(28px) saturate(135%);
+    -webkit-backdrop-filter: blur(28px) saturate(135%);
+    box-shadow: inset -1px 0 0 hsl(var(--foreground) / 0.025);
+  }
+
+  .mission-sidebar {
+    background:
+      linear-gradient(180deg, hsl(198 42% 6% / 0.94), hsl(204 40% 4% / 0.9));
+  }
+
+  .mission-nav-link {
+    position: relative;
+    border-radius: 0.85rem;
+    letter-spacing: -0.005em;
+  }
+
+  .mission-nav-link.is-active::before {
+    content: "";
+    position: absolute;
+    left: -0.25rem;
+    width: 0.2rem;
+    height: 1.35rem;
+    border-radius: 999px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 18px hsl(var(--primary) / 0.65);
+  }
+
+  .mobile-app-chrome,
+  .mobile-dock {
+    background: hsl(var(--background) / 0.78);
+    backdrop-filter: blur(30px) saturate(145%);
+    -webkit-backdrop-filter: blur(30px) saturate(145%);
+  }
+
+  .life-game-shell::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.3;
+    background-image: radial-gradient(hsl(var(--foreground) / 0.11) 0.55px, transparent 0.55px);
+    background-size: 26px 26px;
+    mask-image: linear-gradient(to bottom, black, transparent 72%);
+  }
+
+  .life-game-shell .operator-page-wide {
+    max-width: 94rem;
+    padding-top: clamp(1rem, 2.4vw, 2.5rem);
+    padding-bottom: clamp(2rem, 5vw, 5rem);
+  }
+
+  .life-game-shell .operator-panel,
+  .life-game-shell .crt-surface {
+    border-color: hsl(var(--foreground) / 0.075);
+    border-radius: 1.25rem;
+    background:
+      linear-gradient(145deg, hsl(var(--foreground) / 0.045), transparent 38%),
+      hsl(var(--card) / 0.76);
+    backdrop-filter: blur(24px) saturate(125%);
+    -webkit-backdrop-filter: blur(24px) saturate(125%);
+    box-shadow:
+      inset 0 1px 0 hsl(var(--foreground) / 0.055),
+      0 22px 70px -44px hsl(190 100% 80% / 0.24),
+      0 10px 30px -22px hsl(0 0% 0% / 0.8);
+  }
+
+  .life-game-shell .operator-panel-accent {
+    border-color: hsl(var(--primary) / 0.2);
+    box-shadow:
+      inset 0 1px 0 hsl(var(--foreground) / 0.07),
+      inset 0 0 0 1px hsl(var(--primary) / 0.025),
+      0 24px 80px -48px hsl(var(--primary) / 0.42);
+  }
+
+  .mission-hero {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mission-hero::after {
+    content: "";
+    position: absolute;
+    top: -9rem;
+    right: -7rem;
+    width: 25rem;
+    height: 25rem;
+    border-radius: 50%;
+    border: 1px solid hsl(var(--studio-cyan) / 0.09);
+    box-shadow:
+      inset 0 0 80px hsl(var(--studio-cyan) / 0.025),
+      0 0 0 3rem hsl(var(--foreground) / 0.008),
+      0 0 0 7rem hsl(var(--foreground) / 0.006);
+    pointer-events: none;
+  }
+
+  .mission-title {
+    position: relative;
+    z-index: 1;
+    max-width: 48rem;
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: clamp(2rem, 4vw, 3.75rem);
+    font-weight: 600;
+    line-height: 0.98;
+    letter-spacing: -0.055em;
+  }
+
+  .mission-status-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 0 0.25rem hsl(var(--primary) / 0.1), 0 0 16px hsl(var(--primary) / 0.75);
+  }
+
+  .life-game-shell .operator-label,
+  .life-game-shell .font-mono {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+
+  .life-game-shell .operator-stat,
+  .life-game-shell .operator-stat-grid > div,
+  .life-game-shell .run-protocol-stage,
+  .life-game-shell [class*="rounded-sm"][class*="border"] {
+    border-radius: 0.9rem;
+    border-color: hsl(var(--foreground) / 0.075);
+    background-color: hsl(var(--background) / 0.36);
+  }
+
+  .life-game-shell .operator-stat,
+  .life-game-shell .operator-stat-grid > div {
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, background-color 220ms ease;
+  }
+
+  .life-game-shell .operator-stat:hover,
+  .life-game-shell .operator-stat-grid > div:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--foreground) / 0.13);
+    background-color: hsl(var(--foreground) / 0.04);
+  }
+
+  .run-pulse::before {
+    content: "";
+    position: absolute;
+    right: -5rem;
+    top: -7rem;
+    width: 20rem;
+    height: 20rem;
+    border-radius: 50%;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.09), transparent 66%);
+    pointer-events: none;
+  }
+
+  .mission-director {
+    align-self: start;
+  }
+
+  .mission-brief,
+  .mission-directive-card {
+    background:
+      linear-gradient(145deg, hsl(var(--foreground) / 0.035), transparent 42%),
+      hsl(var(--background) / 0.34);
+    box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.035);
+  }
+
+  .life-game-shell[data-focus-mode="true"] .hud-stats,
+  .life-game-shell[data-focus-mode="true"] #run-log,
+  .life-game-shell[data-focus-mode="true"] #intel {
+    display: none;
+  }
+
+  .life-game-shell[data-focus-mode="true"] .hud-grid {
+    grid-template-areas:
+      "pulse"
+      "quest"
+      "gm";
+  }
+
+}
+
+@media (min-width: 1024px) {
+  .life-game-shell[data-focus-mode="true"] .hud-grid {
+    grid-template-areas:
+      "pulse pulse"
+      "quest gm";
+    grid-template-columns: minmax(0, 1.65fr) minmax(19rem, 0.75fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .mission-hero::after {
+    width: 17rem;
+    height: 17rem;
+    opacity: 0.7;
+  }
+
 }
 
 /* ── Pull to refresh indicator ────────────────────────────────────────────── */
@@ -317,4 +630,299 @@ html, body, #root {
 }
 .ptr-spinner {
   animation: ptr-spin 800ms linear infinite;
+}
+
+/* Life-game presentation layer. Scoped so proof, legal, and release surfaces
+   retain their existing evidence-first presentation. */
+@layer components {
+  .life-game-shell {
+    position: relative;
+    isolation: isolate;
+    background: hsl(var(--background));
+  }
+
+  .crt-surface {
+    background: hsl(var(--card) / 0.9);
+  }
+
+  .hud-grid {
+    display: grid;
+    grid-template-areas:
+      "quest"
+      "pulse"
+      "stats"
+      "gm";
+    gap: 1rem;
+  }
+
+  .hud-pulse { grid-area: pulse; }
+  .hud-stats { grid-area: stats; }
+  .hud-quest { grid-area: quest; }
+  .hud-gm { grid-area: gm; }
+
+  .hud-command-deck {
+    display: flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 0.35rem;
+    overflow-x: auto;
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.25rem;
+    background: hsl(var(--card) / 0.68);
+    padding: 0.35rem;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hud-command-deck::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hud-command-label,
+  .hud-command {
+    display: inline-flex;
+    min-height: 2rem;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 0.125rem;
+    padding: 0 0.65rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.55rem;
+    line-height: 1;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .hud-command-label {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .hud-command {
+    border: 1px solid transparent;
+    color: hsl(var(--muted-foreground));
+    transition:
+      color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .hud-command:hover,
+  .hud-command:focus-visible {
+    border-color: hsl(var(--primary) / 0.35);
+    background: hsl(var(--primary) / 0.07);
+    color: hsl(var(--primary));
+    outline: none;
+  }
+
+  .hud-command {
+    min-height: 2.75rem;
+  }
+
+  .hud-command-primary {
+    border-color: hsl(var(--primary) / 0.32);
+    color: hsl(var(--primary));
+  }
+
+  .run-pulse {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .run-protocol-stage {
+    position: relative;
+    transition:
+      border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .run-protocol-stage:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    right: -0.45rem;
+    width: 0.45rem;
+    height: 1px;
+    background: hsl(var(--border));
+    pointer-events: none;
+  }
+
+  .run-protocol-stage[data-state="complete"]:not(:last-child)::after {
+    background: hsl(var(--primary) / 0.55);
+  }
+
+  .run-protocol-stage[aria-current="step"] {
+    box-shadow:
+      inset 0 0 0 1px hsl(var(--warning) / 0.12),
+      0 0 24px -14px hsl(var(--warning) / 0.75);
+  }
+
+  .settlement-reveal {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  .settlement-reveal-settled {
+    background:
+      radial-gradient(circle at 15% 0%, hsl(var(--primary) / 0.14), transparent 38%),
+      linear-gradient(180deg, hsl(var(--card) / 0.96), hsl(var(--card) / 0.78));
+    box-shadow:
+      inset 0 1px 0 hsl(var(--primary) / 0.22),
+      0 24px 70px -42px hsl(var(--primary) / 0.9);
+  }
+
+  .settlement-reveal-settled::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -65% 35% -65% -15%;
+    background: linear-gradient(
+      112deg,
+      transparent 35%,
+      hsl(var(--primary) / 0.08) 48%,
+      transparent 61%
+    );
+    animation: settlement-flare 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+    pointer-events: none;
+  }
+
+  .settlement-pending-spin {
+    animation: settlement-spin 2.4s linear infinite;
+  }
+
+  .life-game-shell :is(#operator, #settlement, #quests, #stats, #gm, #run-log, #intel) {
+    scroll-margin-top: calc(var(--app-header-h, 56px) + 1rem);
+  }
+
+  .life-game-boot {
+    position: fixed;
+    z-index: 60;
+    top: max(1rem, env(safe-area-inset-top));
+    left: 50%;
+    width: min(calc(100% - 2rem), 32rem);
+    transform: translateX(-50%);
+    border: 1px solid hsl(var(--primary) / 0.45);
+    border-radius: 0.25rem;
+    padding: 1rem;
+    color: hsl(var(--primary));
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.7rem;
+    line-height: 1.8;
+    letter-spacing: 0.08em;
+    box-shadow: 0 18px 70px hsl(var(--background) / 0.82);
+  }
+
+  .life-game-boot > div {
+    animation: life-game-boot-line 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes settlement-flare {
+  from {
+    opacity: 0;
+    transform: translateX(-70%);
+  }
+  45% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(180%);
+  }
+}
+
+@keyframes settlement-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .hud-grid {
+    grid-template-areas:
+      "pulse pulse pulse"
+      "stats quest gm";
+    grid-template-columns: minmax(210px, 0.72fr) minmax(0, 1.7fr) minmax(250px, 0.9fr);
+    align-items: stretch;
+  }
+}
+
+@keyframes life-game-boot-line {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .life-game-boot > div,
+  .run-protocol-stage,
+  .settlement-reveal-settled::after,
+  .settlement-pending-spin {
+    animation: none !important;
+  }
+}
+
+/* Keep the Mission Glass values authoritative over the legacy Life Game
+   presentation declarations above while the older selectors are retired. */
+@layer components {
+  .life-game-shell {
+    background:
+      radial-gradient(ellipse at 75% -8%, hsl(var(--studio-cyan) / 0.07), transparent 36rem),
+      radial-gradient(ellipse at 28% 8%, hsl(var(--primary) / 0.055), transparent 34rem),
+      linear-gradient(180deg, hsl(198 50% 5%), hsl(204 46% 4%));
+  }
+
+  .hud-command-deck {
+    position: sticky;
+    top: 0.75rem;
+    z-index: 15;
+    gap: 0.25rem;
+    border-color: hsl(var(--foreground) / 0.08);
+    border-radius: 1rem;
+    background: hsl(var(--background) / 0.74);
+    padding: 0.4rem;
+    backdrop-filter: blur(26px) saturate(140%);
+    -webkit-backdrop-filter: blur(26px) saturate(140%);
+    box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.05), 0 18px 45px -30px hsl(0 0% 0% / 0.9);
+  }
+
+  .hud-command-label,
+  .hud-command {
+    min-height: 2.55rem;
+    border-radius: 0.7rem;
+    padding-inline: 0.8rem;
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.67rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: none;
+  }
+
+  .hud-command:hover,
+  .hud-command:focus-visible,
+  .hud-command[aria-pressed="true"] {
+    border-color: hsl(var(--foreground) / 0.1);
+    background: hsl(var(--foreground) / 0.065);
+    color: hsl(var(--foreground));
+  }
+
+  .hud-command-primary {
+    margin-left: auto;
+    border-color: hsl(var(--primary) / 0.2);
+    background: hsl(var(--primary) / 0.08);
+    color: hsl(var(--primary));
+  }
+
+}
+
+@media (max-width: 767px) {
+  .hud-command-deck {
+    top: calc(var(--app-header-h, 56px) + 0.45rem);
+  }
+
+  .hud-command-primary {
+    margin-left: 0;
+  }
 }

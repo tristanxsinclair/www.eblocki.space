@@ -4,8 +4,23 @@
 - Master plan: `Eblocki Elite Product Standard Complete` (uploaded 2026-07-10)
 - Stack: React 18 + Vite + TS + React Router + Tailwind/shadcn + Supabase + PostHog + Capacitor + Stripe
 - Current active phase: **Phase 1 — Trust and release blockers**
-- Current release gate: WP-004 (P1-ACCOUNT-DELETE) code/test/build complete; live Stripe cancellation end-to-end remains an external-verification gate (`WP-004-EXTERNAL`)
-- Ledger last updated: 2026-07-12
+- Current release gate: WP-005A (P1-PAY-ENV) code/test/build complete; Stripe/Supabase dashboard and safe payment-flow verification remain external-access gates
+- Ledger last updated: 2026-07-29
+
+## Reconciliation closeout (2026-07-12)
+
+- Audit report preserved via closeout PR: `docs/release/eblocki-repository-reconciliation-product-verdict.md` (PR #99).
+- Superseded branch disposition (re-verified zero unique work before deletion):
+  - deleted remote `codex/first-proof-post-merge-cleanup-20260629`
+  - deleted remote `tristanxsinclair-sync-update-branches`
+  - deleted local `tristanxsinclair-sync-update-branches`
+- `main` protection enabled with strict required checks and conversation resolution:
+  - required checks: `Verify product`, `Test, build, and lint`, `Playwright (mobile-chromium)`
+  - force-push blocked, branch deletion blocked, admins enforced
+  - deployment policy: Pages + Datadog remain post-merge/post-deploy release signals
+- WP split enforced:
+  - `WP-005A / P1-PAY-ENV` = PARTIALLY COMPLETE — code/test/build verified; external dashboard/payment-flow evidence still required (no pricing/term changes)
+  - `WP-005B / P1-PRICING-SOT` = BLOCKED — MANUAL COMMERCIAL DECISION REQUIRED (Tristan-owned decisions)
 
 ## E2E Test Infrastructure (WP-003 supporting)
 
@@ -66,8 +81,9 @@ audit completion.
 |---|---|---|---|---|---|---|
 | P0-CONFINE-AI-EXPORT | 0 | P0 | Strip `model`/`vector_store_id` from export-data archive | `supabase/functions/export-data` | BLOCKED — EXTERNAL ACCESS REQUIRED | Deploy function and inspect one real export archive |
 | P0-CONFINE-AI-BUNDLE-SCAN | 0 | P0 | Search built client bundle for `vs_`, model IDs | build output | VERIFIED COMPLETE (WP-002) | — |
-| P1-PRICING-SOT | 1 | P0 | Pricing source of truth (Stripe + display) | `src/lib/stripe.ts`, Pricing, UpgradeCard | NEEDS MANUAL DECISION | Awaiting Tristan-approved public prices |
-| P1-PAY-ENV | 1 | P0 | Payment env control (sandbox vs live surfacing) | `PaymentTestModeBanner`, `stripe.ts` | PARTIALLY COMPLETE | Verify banner never shows in live |
+| WP-005B / P1-PRICING-SOT | 1 | P0 | Pricing source of truth (Stripe + display) | `src/lib/stripe.ts`, Pricing, UpgradeCard | BLOCKED — MANUAL COMMERCIAL DECISION REQUIRED | Await Tristan decisions: Pro monthly, Pro annual, annual discount, Founder price/model, lifetime wording, refund wording |
+| WP-005A / P1-PAY-ENV | 1 | P0 | Payment env verification (sandbox vs live surfacing + routing) | `PaymentTestModeBanner`, `stripe.ts`, `create-checkout`, `payments-webhook`, `create-portal-session`, `useSubscription` | PARTIALLY COMPLETE — CODE/TEST/BUILD VERIFIED; EXTERNAL ACCESS REQUIRED | Deploy/configure function secrets; verify Stripe dashboard mode, sandbox checkout, webhook, portal, and entitlement writes |
+| WP-IMPROVEMENT-LOOP-01 | Draft | P2 | Verdict, Gap, and Correction Surface v1 | Proof result surface | PARTIALLY COMPLETE — code/test/build complete, browser QA blocked | Already present on `main`; complete authenticated proof-result browser evidence before claiming release verification |
 | P1-VERDICT-COPY | 1 | P0 | Remove duplicated / false verdict copy | Verdict surfaces | VERIFIED COMPLETE (2026-07-11) | — |
 | P1-BILLING-PORTAL | 1 | P1 | Billing portal reachable from Settings | `BillingCard`, `create-portal-session` | VERIFIED COMPLETE (prior turn) | — |
 | P1-ACCOUNT-EXPORT | 1 | P1 | Account data export | `export-data` | VERIFIED COMPLETE after WP-001 | — |
@@ -92,11 +108,204 @@ audit completion.
    Definitions block and a single Strength tally on desktop, and mobile
    duplicate accordion headers are gone.
 3. After WP-003 close-out, next executable P1 without user decision is
-   **P1-ACCOUNT-DELETE** review. **P1-PAY-ENV** verification follows.
-   **P1-PRICING-SOT** is blocked pending Tristan-approved public prices,
-   Founder terms, refund rules.
+   **P1-ACCOUNT-DELETE** review. **WP-005A / P1-PAY-ENV** verification follows.
+   **WP-005B / P1-PRICING-SOT** is blocked pending Tristan-approved public
+   prices, Founder terms, and refund rules.
 4. WP-004 shipped 2026-07-12 (see the WP-004 evidence section below).
-   Next executable strict WP is **P1-PAY-ENV** verification.
+   Next executable strict WP is **WP-005A / P1-PAY-ENV VERIFICATION**.
+5. WP-005A code/test/build verification completed 2026-07-13 on
+   `codex/wp-005a-pay-env-verification`. External Stripe/Supabase dashboard,
+   sandbox checkout, webhook, portal, and entitlement-write verification remain
+   blocked on deployment access.
+6. WP-IMPROVEMENT-LOOP-01 is already present on `main` as an out-of-sequence
+   product-refinement slice. Browser proof-result QA remains blocked because no
+   authenticated E2E credentials or local session were available.
+
+## WP-IMPROVEMENT-LOOP-01 evidence (Verdict, Gap, and Correction Surface v1)
+Date: 2026-07-13.
+
+Objective:
+- Make the proof-result experience clearly answer what the evidence proves,
+  the main available gap, the next correction, and what artifact should test
+  that correction.
+- Preserve existing proof scoring, persistence, routes, schemas, billing,
+  Coach, GameForge, System Forge, XP, identity progression, and forecasts.
+
+Root cause:
+- WP-003 centralized verdict headline/count/today copy, but the gap remained
+  in `ProofVerdictDetails` as `missingStandard` while correction stayed in the
+  primary card as a generic next command.
+- Available gap data is standard-level (`missingStandard` / `requiredEvidence`)
+  rather than a detected per-criterion missing element, so the UI needed honest
+  null/fallback states.
+- Correction data is `nextUpgrade`; it can be user-entered, scoring fallback,
+  or absent.
+- Mode/proof-type context existed during submission but was not carried into
+  the local verdict object for a corrected-attempt continuation.
+
+Implementation:
+- Added `buildImprovementLoopPresentation()` in
+  `src/lib/eblocki/user-facing-copy.ts`.
+- The helper returns one canonical presentation object with:
+  - verdict headline/classification/summary,
+  - nullable gap,
+  - nullable correction and expected next artifact,
+  - details labels,
+  - safe corrected-attempt href using existing `/proof`, `mode`, and `contract`
+    query parameters only.
+- Updated `src/pages/Proof.tsx` result UI to show:
+  - `What this proves`,
+  - `The main gap`,
+  - `What to do next`,
+  - `What to submit next`,
+  - collapsed `Verdict details`.
+- The result card now receives focus after verdict creation; loading uses a
+  short polite status line; previous verdict is still cleared before a new
+  submission.
+
+Files inspected:
+- `docs/release/elite-master-execution-ledger.md`
+- `docs/release/elite-current-work-package.md`
+- `docs/release/eblocki-repository-reconciliation-product-verdict.md`
+- `src/App.tsx`
+- `src/pages/Proof.tsx`
+- `src/pages/ProofWeek.tsx`
+- `src/pages/Dashboard.tsx`
+- `src/components/eblocki/ProofClosureCard.tsx`
+- `src/components/eblocki/ProofStandardPreviewPanel.tsx`
+- `src/components/eblocki/motion/MotionVerdictCard.tsx`
+- `src/lib/eblocki/user-facing-copy.ts`
+- `src/lib/eblocki/display-labels.ts`
+- `src/lib/eblocki/proof-scoring.ts`
+- `src/lib/eblocki/proof-check.ts`
+- `src/lib/eblocki/proof-standard-preview.ts`
+- `src/lib/eblocki/domain-standards.ts`
+- `src/lib/eblocki/first-proof.ts`
+- `src/lib/eblocki/temporal-proof-link.ts`
+- `src/lib/eblocki/analytics.ts`
+- `src/lib/eblocki/__tests__/user-facing-copy.test.ts`
+- `tests/e2e/wp-003-verdict-copy-qa.spec.ts`
+- `tests/e2e/fixtures/average-user-auth.ts`
+- `package.json`
+- `playwright.config.ts`
+
+Files changed:
+- `src/lib/eblocki/user-facing-copy.ts`
+- `src/pages/Proof.tsx`
+- `src/lib/eblocki/__tests__/user-facing-copy.test.ts`
+- `docs/release/elite-current-work-package.md`
+- `docs/release/elite-master-execution-ledger.md`
+
+Data / schema implications: none. No migrations, new tables, enum renames, or
+stored-data changes.
+
+Scoring implications: none. `scoreProofArtifact`, proof thresholds, persistence,
+and `proof_artifacts` writes are unchanged.
+
+Security implications:
+- No new network request or AI call.
+- No raw artifact content, verdict explanation, or correction text is logged.
+- Corrected-attempt analytics reuse existing whitelisted CTA properties only.
+
+Acceptance evidence:
+- `git diff --check` -> PASS, exit 0.
+- `npx tsc --noEmit` -> PASS, exit 0, no output.
+- `npm run test -- src/lib/eblocki/__tests__/user-facing-copy.test.ts`
+  -> PASS, 22 tests.
+- `npm run test` -> PASS, 39 files, 318 tests.
+- `npx vite build` -> PASS, existing large chunk warning remains.
+- Bundle confinement scan:
+  `rg -a -n 'vs_[A-Za-z0-9]{6,}|gpt-[0-9]|openai/|EBLOCKI_VECTOR_STORE_ID' dist`
+  -> no output, `rg_exit=1`; interpreted as no matches.
+- Source vocabulary scan:
+  `rg -n -iS '\b(model|vector|embedding|retrieval|prompt|llm|openai|token)\b' src/pages src/components/eblocki`
+  -> remaining matches are legal/admin/model-audit copy, PWA install APIs,
+  coach query params/quick prompts, `dashboard-view-model` imports, product
+  "freeze token" wording, and temporal trajectory implementation labels. No
+  new proof-result primary copy match from WP-IMPROVEMENT-LOOP-01.
+- Raw enum scan:
+  `rg -n -S 'EBLOCKI_[A-Z_]+|GENERAL_EXECUTION|accepted_strong|accepted_useful|accepted_minimum|elite_evidence|evidence_strength|proof_tier|quality_score|artifact_type|low_energy|hype_drift|academic_displacement|strategic_build|locked_in' src/pages/Proof.tsx src/components/eblocki src/lib/eblocki/user-facing-copy.ts`
+  -> remaining matches are internal DB column names, internal enum translation
+  maps, badge/style maps, tests, and source constants. No new primary
+  proof-result text renders raw enum values.
+
+Browser evidence:
+- In-app Browser at 390 px, local `/proof` -> redirected to `/auth`, title
+  `Sign in | EBLOCKI`; no proof result visible.
+- In-app Browser at 1280 px, local `/proof` -> redirected to `/auth`, title
+  `Sign in | EBLOCKI`; no proof result visible; auth page horizontal overflow
+  check returned false.
+- `npx playwright test tests/e2e/wp-003-verdict-copy-qa.spec.ts` -> PASS exit
+  0 with 3 skipped because E2E credentials/storage state are not configured.
+- No screenshots were created for this package. Do not report mobile or
+  desktop proof-result browser QA as passed.
+
+Status:
+- **PARTIALLY COMPLETE** — code/test/build/scans complete; authenticated browser
+  proof-submission/result QA blocked.
+- The implementation is present on `main`, but authenticated proof-result
+  browser evidence remains required before release verification can be claimed.
+
+Rollback:
+- Revert `src/lib/eblocki/user-facing-copy.ts`,
+  `src/pages/Proof.tsx`, `src/lib/eblocki/__tests__/user-facing-copy.test.ts`,
+  and this release-documentation update. No data rollback required.
+
+## WP-005A evidence (P1-PAY-ENV)
+Date: 2026-07-13.
+
+Objective:
+- Prevent sandbox/test and live Stripe resources from being crossed accidentally.
+- Make checkout, webhook, portal, return-page, and entitlement surfaces agree
+  on the intended payment environment.
+- Keep pricing, Founder terms, refunds, schema, and product modules unchanged.
+
+Implementation:
+- Added the shared `supabase/functions/_shared/stripe-config.ts` guard for
+  explicit deployment environment, allowed return origins, known lookup keys,
+  key-prefix mismatch detection, Stripe `livemode`, and redacted errors.
+- Checkout, portal, and webhook functions now fail closed on environment,
+  origin, lookup-key, and Stripe resource-mode mismatches.
+- Checkout return remains non-authoritative and displays only a redacted
+  reference.
+- `PaymentTestModeBanner` and `src/lib/stripe.ts` share the same client-side
+  publishable-token interpretation.
+
+Acceptance evidence:
+- `git diff --check` -> PASS.
+- `npx tsc --noEmit` -> PASS.
+- Stripe-environment tests -> PASS, 12 tests.
+- Reconciled full test suite -> PASS, 40 files and 330 tests.
+- Vite build -> PASS.
+- Repo lint -> PASS, 0 errors and 14 pre-existing warnings.
+- Bundle, client-secret, source-secret, and privileged `VITE_` scans found no
+  disallowed matches.
+- CI audit reconciliation (2026-07-29):
+  - `npm audit fix` without `--force` updated safe transitive lockfile versions,
+    including DOMPurify and PostCSS.
+  - `npm audit --omit=dev --audit-level=moderate` now reports only two moderate
+    React Router advisories whose available fix is the breaking v7 migration.
+  - CI continues to block high-severity production findings; the React Router
+    migration remains an explicit compatibility risk, not a forced merge-time
+    upgrade.
+- Pricing browser QA passed at 390 px and 1280 px with the test-mode banner,
+  working yearly toggle, and no horizontal overflow.
+- Screenshots:
+  - `docs/release/evidence/wp-005a/pricing-payment-env-390.png`
+  - `docs/release/evidence/wp-005a/pricing-payment-env-1280.png`
+
+External verification still required:
+1. Verify Supabase function secrets and Stripe sandbox/live dashboard resources.
+2. Execute a sandbox checkout and confirm the matching subscription write.
+3. Replay a webhook and verify idempotent handling.
+4. Verify failed checkout creates no entitlement.
+5. Verify the portal opens the matching sandbox customer.
+6. Verify production live configuration before enabling live checkout.
+
+Status:
+- **PARTIALLY COMPLETE — CODE/TEST/BUILD VERIFIED; EXTERNAL ACCESS REQUIRED.**
+- Do not mark WP-005A VERIFIED COMPLETE until dashboard and safe payment-flow
+  evidence is recorded.
 
 ## WP-004 evidence (P1-ACCOUNT-DELETE)
 Date: 2026-07-12.

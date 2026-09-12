@@ -35,6 +35,24 @@ export function localDayKey(value: DateInput = new Date(), timeZone?: string): s
   }
 }
 
+export function resolvedTimeZone(fallback = "UTC"): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function shiftDayKey(dayKey: string, days: number): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dayKey);
+  if (!match || !Number.isInteger(days)) return "";
+
+  const shifted = new Date(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + days),
+  );
+  return Number.isFinite(shifted.getTime()) ? shifted.toISOString().slice(0, 10) : "";
+}
+
 export function isSameLocalDay(
   candidate: DateInput,
   reference: DateInput = new Date(),

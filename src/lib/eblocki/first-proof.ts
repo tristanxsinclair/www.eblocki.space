@@ -15,6 +15,12 @@ export const FIRST_PROOF_QUERY_VALUE = "1";
 export const UGLY_START_QUERY_KEY = "ugly";
 export const UGLY_START_QUERY_VALUE = "1";
 
+export function shouldOpenWelcome(
+  profile: { seen_welcome?: boolean | null; completed_onboarding?: boolean | null } | null,
+): boolean {
+  return !profile?.seen_welcome && !profile?.completed_onboarding;
+}
+
 export const FIRST_PROOF_COPY = {
   title: "Submit your first proof.",
   subtitle:

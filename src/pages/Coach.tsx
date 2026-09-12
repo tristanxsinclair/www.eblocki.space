@@ -75,10 +75,10 @@ const MODE_CHIPS: Array<{
 
 const QUICK_PROMPTS = [
   "Diagnose what is actually blocking this.",
-  "Give me the answer and the proof action.",
+  "Give me one quest and the required evidence.",
   "Turn these notes into a practice plan.",
   "Challenge the weak thinking here.",
-  "Generate a GameForge pack if practice is the right move.",
+  "Send me to the Arena if practice is the right move.",
 ];
 
 type CoachRouteState = {
@@ -99,7 +99,7 @@ function coerceMode(value: string | null | undefined): CoachResponseMode | "auto
 
 function getCoachProcessingText(mode: CoachResponseMode | "auto"): string {
   if (mode === "auto") {
-    return "Coach is diagnosing...";
+    return "Game Master is diagnosing...";
   }
 
   const modeMap: Record<string, string> = {
@@ -113,8 +113,8 @@ function getCoachProcessingText(mode: CoachResponseMode | "auto"): string {
     execution_lock: "Execution",
   };
 
-  const label = modeMap[mode] ?? "Coach";
-  return `Coach is reasoning in ${label} mode...`;
+  const label = modeMap[mode] ?? "Game Master";
+  return `Game Master is reasoning in ${label} mode...`;
 }
 
 function splitRemoteResponse(text: string): string {
@@ -247,6 +247,10 @@ export default function Coach() {
       responseMode: deterministic.responseMode,
       proofActionType: deterministic.proofActionType,
     });
+    logEvent("gm_message_submitted", {
+      mode: deterministic.responseMode,
+      domain: deterministic.detectedDomain,
+    });
     if (deterministic.suggestedGameForgePack) {
       logEvent("coach_gameforge_suggested", {
         domain: deterministic.detectedDomain,
@@ -264,17 +268,24 @@ export default function Coach() {
         },
       });
       if (invokeError) {
-        setError(invokeError.message || "Coach function failed. Deterministic diagnosis is still available.");
+        setError(invokeError.message || "Remote Game Master unavailable. Local directive is still available.");
         return;
       }
       if (!data) {
-        setError("Coach returned no response. Deterministic diagnosis is still available.");
+        setError("Remote Game Master returned no response. Local directive is still available.");
         return;
       }
       const normalised = normaliseCoachResponse(data);
       setRemoteResult(normalised);
+      if (normalised.commitmentId) {
+        void logEvent("gm_quest_created", {
+          mode: normalised.proofContract.mode,
+          source: normalised.usedFallback ? "fallback" : "remote",
+          fallback: normalised.usedFallback,
+        });
+      }
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Unexpected coach error. Deterministic diagnosis is still available."));
+      setError(getErrorMessage(err, "Unexpected Game Master error. Local directive is still available."));
     } finally {
       setLoading(false);
     }
@@ -301,7 +312,12 @@ export default function Coach() {
       if (insertError) throw insertError;
       if (!data?.id) throw new Error("No commitment id returned.");
       setLocalCommitmentId(data.id);
-      toast.success("Committed to the Proof Check.");
+      toast.success("Quest committed to the evidence loop.");
+      void logEvent("gm_quest_created", {
+        mode: remoteResult.proofContract.mode,
+        source: remoteResult.usedFallback ? "fallback" : "remote",
+        fallback: remoteResult.usedFallback,
+      });
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, "Failed to commit."));
     } finally {
@@ -322,34 +338,34 @@ export default function Coach() {
   return (
     <AppShell>
       <Seo
-        title="Proof Coach | EBLOCKI"
-        description="Diagnose the situation, get the answer, create proof, and generate a practice pack when skill repetition is the right move."
+        title="Game Master | EBLOCKI"
+        description="Diagnose the real bottleneck, receive one quest, and define the evidence required to close it."
         path="/coach"
       />
-      <div className="mobile-safe-page p-4 md:p-8 max-w-5xl mx-auto space-y-5 min-w-0 max-w-full text-wrap-safe md:pb-8">
-        <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end min-w-0">
+      <div className="operator-page page-enter">
+        <header className="grid min-w-0 gap-4 border-b border-border/80 pb-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
           <div className="flex items-center gap-3 min-w-0">
             <EblockiLogo variant="mark" size="md" />
             <div className="min-w-0">
               {!isMobile && (
-                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Proof Coach // Diagnosis Engine</span>
+                <span className="operator-label">Game Master // Evidence-bound Directive Engine</span>
               )}
-              <h1 className="text-2xl md:text-3xl font-semibold mt-1 break-words">Bring the messy problem. Leave with proof.</h1>
+              <h1 className="operator-heading-1 mt-2 break-words">Bring the real bottleneck. Leave with one quest.</h1>
             </div>
           </div>
           </header>
 
-        <Card className="panel overflow-hidden border-primary/25 bg-card/60 max-w-full">
+        <Card className="operator-panel-accent max-w-full overflow-hidden">
           <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-3 min-w-0">
             <div className="min-w-0">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Input Console</div>
+              <div className="operator-label">Input Console</div>
               <div className="mt-1 text-sm text-foreground break-words">Question, notes, thought dump, sales situation, legal issue, or avoidance pattern.</div>
             </div>
             <BrainCircuit className="h-4 w-4 text-primary shrink-0" />
           </div>
           <div className="p-4 md:p-5 space-y-4">
             <Textarea
-              placeholder="Paste a problem, note, thought dump, question, or situation. Eblocki will diagnose it and give the next proof action."
+              placeholder="Name the real bottleneck, the action you are avoiding, or the decision that needs evidence."
               value={input}
               onChange={(event) => setInput(event.target.value)}
               className="min-h-[170px] resize-none w-full max-w-full input-anchored"
@@ -364,7 +380,7 @@ export default function Coach() {
                       type="button"
                       onClick={() => setSelectedMode(chip.value)}
                       className={cn(
-                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors min-h-[44px] flex items-center gap-1.5",
+                        "operator-interactive operator-hit flex items-center gap-1.5 border px-3 py-2 font-mono text-[10px] uppercase tracking-widest",
                         selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
                       )}
                     >
@@ -376,7 +392,7 @@ export default function Coach() {
               </MobileCollapse>
             ) : (
               <div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Mode chips</div>
+                <div className="operator-label mb-2">Mode chips</div>
                 <div className="flex flex-wrap gap-2">
                   {MODE_CHIPS.map((chip) => (
                     <button
@@ -384,7 +400,7 @@ export default function Coach() {
                       type="button"
                       onClick={() => setSelectedMode(chip.value)}
                       className={cn(
-                        "rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors flex items-center gap-1.5",
+                        "operator-interactive operator-hit flex items-center gap-1.5 border px-3 py-2 font-mono text-[10px] uppercase tracking-widest",
                         selectedMode === chip.value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
                       )}
                     >
@@ -408,7 +424,7 @@ export default function Coach() {
           </div>
         </Card>
 
-        {/* Calm processing state while Coach is thinking */}
+        {/* Calm processing state while the Game Master is thinking */}
         {loading && (
           <div className="flex justify-center py-2">
             <div className="motion-calm flex items-center gap-2 text-muted-foreground">
@@ -423,18 +439,18 @@ export default function Coach() {
             <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Start here</div>
             <p className="mt-2 text-sm text-muted-foreground break-words">
               Paste a real problem above (one paragraph is enough): a question, a stuck task,
-              an avoidance pattern, a sales situation, a study block. Coach will diagnose it
-              and return one proof action you can complete today.
+              an avoidance pattern, a sales situation, a study block. The Game Master will
+              return one quest, one required artifact, and one next move.
             </p>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <EmptyCell icon={<Radar />} title="Diagnose" body="Find the real domain, intent, state, and urgency." />
-              <EmptyCell icon={<Target />} title="Proof" body="Convert the answer into one artifact requirement." />
-              <EmptyCell icon={<Gamepad2 />} title="Practice" body="Send weak concepts to GameForge when repetition is useful." />
+              <EmptyCell icon={<Target />} title="Quest" body="Convert the answer into one evidence-bound action." />
+              <EmptyCell icon={<Gamepad2 />} title="Arena" body="Send weak concepts to practice when repetition is useful." />
             </div>
             {isMobile && (
               <Link to="/gameforge" className="mt-3 inline-block w-full">
                 <Button size="sm" variant="outline" className="w-full min-h-[44px] native-tap gap-2">
-                  <Gamepad2 className="h-3.5 w-3.5" /> GameForge (after diagnosis)
+                  <Gamepad2 className="h-3.5 w-3.5" /> Arena (after diagnosis)
                 </Button>
               </Link>
             )}
@@ -445,7 +461,7 @@ export default function Coach() {
           <Card className="panel p-4 border-primary/30 bg-primary/5 max-w-full overflow-hidden">
             <div className="flex items-start gap-2 text-sm text-muted-foreground">
               <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <span className="break-words">Deterministic diagnosis is ready. The existing coach function is being checked for an enhanced response.</span>
+              <span className="break-words">Local directive is ready. The existing Game Master function is being checked for an optional remote enhancement.</span>
             </div>
           </Card>
         )}
@@ -454,7 +470,7 @@ export default function Coach() {
           <Card className="panel p-4 border-destructive/40 max-w-full overflow-hidden">
             <div className="flex items-center gap-2 text-destructive">
               <AlertCircle className="h-4 w-4 shrink-0" />
-              <span className="font-mono text-[10px] uppercase tracking-widest">Coach function note</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest">Local Directive</span>
             </div>
             <p className="text-sm mt-1 text-muted-foreground break-words">{error}</p>
           </Card>
@@ -481,7 +497,7 @@ export default function Coach() {
 
             <Card className="panel p-4 border-primary/35 bg-primary/5 max-w-full overflow-hidden">
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Action</div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Quest Action</div>
                 <Button size="sm" variant="outline" onClick={copyProofAction} className="gap-1.5"><ClipboardCopy className="h-3.5 w-3.5" /> Copy</Button>
               </div>
               <p className="mt-2 text-sm leading-6 break-words whitespace-pre-wrap">{engineResult.proofAction}</p>
@@ -498,7 +514,7 @@ export default function Coach() {
               <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="min-w-0">
-                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional GameForge Pack</div>
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Optional Arena Pack</div>
                     <h3 className="mt-1 text-sm font-semibold break-words">{engineResult.suggestedGameForgePack.title}</h3>
                     <p className="mt-2 text-xs leading-5 text-muted-foreground break-words">{engineResult.suggestedGameForgePack.reason}</p>
                   </div>
@@ -514,7 +530,7 @@ export default function Coach() {
                   }}
                   className="mt-3 inline-flex"
                 >
-                  <Button size="sm">Generate GameForge Pack <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Button>
+                  <Button size="sm">Enter Arena <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Button>
                 </Link>
               </Card>
             )}
@@ -532,9 +548,9 @@ export default function Coach() {
               <MotionLockIn active={!!committedId} className="panel p-4 border-primary/30 flex items-center justify-between flex-wrap gap-3 max-w-full overflow-hidden">
                 <div className="min-w-0">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-primary">Next step</span>
-                  <p className="text-sm mt-1 break-words">Contract saved. Submit the proof artifact in the Proof Check.</p>
+                  <p className="text-sm mt-1 break-words">Quest saved. Log the action and file its required evidence.</p>
                 </div>
-                <Link to="/proof"><Button size="sm">Submit Proof <ArrowRight className="h-3 w-3 ml-1" /></Button></Link>
+                <Link to="/proof"><Button size="sm">Log Action <ArrowRight className="h-3 w-3 ml-1" /></Button></Link>
               </MotionLockIn>
             )}
           </div>
@@ -551,7 +567,7 @@ export default function Coach() {
                 key={prompt}
                 size="sm"
                 variant="outline"
-                className="text-xs whitespace-normal text-left h-auto py-2 motion-micro"
+                className="min-h-11 h-auto whitespace-normal py-2 text-left text-xs motion-micro"
                 onClick={() => setInput((prev) => (prev.trim() ? `${prev.trim()}\n\n${prompt}` : prompt))}
               >
                 {prompt}
@@ -563,7 +579,7 @@ export default function Coach() {
         <Card className="panel p-4 border-border/80 bg-card/50 max-w-full overflow-hidden">
           <h2 className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground m-0">Recent interactions</h2>
           {history.length === 0 ? (
-            <p className="text-sm text-muted-foreground mt-2 break-words">No coach interactions yet. Name a real bottleneck above to start the loop.</p>
+            <p className="text-sm text-muted-foreground mt-2 break-words">No Game Master interactions yet. Name a real bottleneck above to start the loop.</p>
           ) : (
             <ul className="mt-3 divide-y divide-border">
               {history.map((h) => (
@@ -630,7 +646,9 @@ function CoachResultSummaryCard({
     <Card className="panel p-4 md:p-5 border-primary/40 bg-primary/5 max-w-full overflow-hidden">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Coach Result</div>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
+            {remoteResult?.usedFallback ? "Local Directive" : "Game Master Result"}
+          </div>
           <h2 className="mt-1 text-lg font-semibold leading-snug break-words">{displayToken(engineResult.detectedIntent)}</h2>
         </div>
         <span className="rounded-sm border border-primary/40 bg-background/50 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-primary">
@@ -651,7 +669,7 @@ function CoachResultSummaryCard({
         {committedId ? (
           <Link to="/proof" className="w-full sm:w-auto">
             <Button className="w-full sm:w-auto min-h-[44px] native-tap">
-              Submit Proof <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              Log Action <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           </Link>
         ) : contract?.shouldCreate ? (
@@ -661,7 +679,7 @@ function CoachResultSummaryCard({
         ) : (
           <Link to="/proof" className="w-full sm:w-auto">
             <Button className="w-full sm:w-auto min-h-[44px] native-tap">
-              Submit Proof <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              Log Action <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           </Link>
         )}
@@ -692,7 +710,7 @@ function CoachFullReasoning({
 }) {
   return (
     <details className="group rounded-sm border border-border bg-card/50 p-4 max-w-full overflow-hidden">
-      <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3">
+      <summary className="operator-interactive flex min-h-11 cursor-pointer list-none items-center justify-between gap-3">
         <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Full reasoning</span>
         <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
       </summary>

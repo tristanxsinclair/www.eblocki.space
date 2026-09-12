@@ -55,6 +55,7 @@ import {
   type GameForgeQuestion,
   type GameForgeSession,
 } from "@/lib/gameforge/gameforge-engine";
+import { buildArenaLedgerContent } from "@/lib/gameforge/arena-presentation";
 
 const MODE_OPTIONS: Array<{ value: GameForgeMode | "auto"; label: string }> = [
   { value: "auto", label: "Auto" },
@@ -158,6 +159,11 @@ export function GameForgeShell() {
   const [proofArtifact, setProofArtifact] = useState<GameForgeProofArtifact | null>(null);
   const [submittingProof, setSubmittingProof] = useState(false);
   const [proofSubmittedId, setProofSubmittedId] = useState<string | null>(null);
+  const [filedResult, setFiledResult] = useState<{
+    verdict: string | null;
+    characterXp: number | null;
+    syncState: "complete" | "pending" | "unavailable";
+  } | null>(null);
 
   const detectedMode = useMemo(() => detectGameForgeMode(sourceMaterial), [sourceMaterial]);
   const activeQuestion = useMemo<GameForgeQuestion | null>(() => (pack && session ? getActiveQuestion(pack, session) : null), [pack, session]);
@@ -174,6 +180,7 @@ export function GameForgeShell() {
     setMasteryResult(null);
     setProofArtifact(null);
     setProofSubmittedId(null);
+    setFiledResult(null);
   }
 
   function handleGeneratePack() {
@@ -301,7 +308,7 @@ export function GameForgeShell() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Sign in to submit GameForge proof to your ledger.");
+        toast.error("Sign in to file this Arena result.");
         return;
       }
       const domainMap: Record<string, string> = {
@@ -320,14 +327,11 @@ export function GameForgeShell() {
         : masteryResult.scoreBucket === "solid" ? "moderate"
         : "weak";
       const qualityScore = Math.max(1, Math.min(5, Math.round(masteryResult.score / 20)));
-      const content = [
-        `GameForge mastery proof — ${pack.title}`,
-        `Mastery score: ${masteryResult.score}/100 (${masteryResult.masteryLabel}).`,
-        `Accuracy: ${masteryResult.accuracy}%. XP: ${masteryResult.xp}. Boss battle: ${masteryResult.completedBossBattle ? "cleared" : "not cleared"}.`,
-        `Strongest skill: ${masteryResult.strongestSkill}.`,
-        `Weak points: ${masteryResult.weakPoints.join("; ")}.`,
-        `Next upgrade: ${proofArtifact.nextUpgrade}`,
-      ].join("\n");
+      const content = buildArenaLedgerContent({
+        packTitle: pack.title,
+        result: masteryResult,
+        artifact: proofArtifact,
+      });
       const { data: row, error } = await supabase
         .from("proof_artifacts")
         .insert({
@@ -345,28 +349,69 @@ export function GameForgeShell() {
         .select("id")
         .single();
       if (error) throw error;
-      setProofSubmittedId(row?.id ?? null);
-      toast.success("Proof submitted to evidence ledger.");
+      const artifactId = row?.id ?? null;
+      if (!artifactId) throw new Error("No filed artifact id returned.");
+      setProofSubmittedId(artifactId);
+      const [{ data: xpRow, error: xpError }, { data: verdictRow, error: verdictError }] =
+        await Promise.all([
+          supabase
+            .from("xp_events")
+            .select("final_xp")
+            .eq("user_id", user.id)
+            .eq("proof_id", artifactId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from("court_verdicts")
+            .select("verdict")
+            .eq("user_id", user.id)
+            .eq("proof_id", artifactId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
+      const syncState = xpError || verdictError
+        ? "unavailable"
+        : xpRow && verdictRow
+          ? "complete"
+          : "pending";
+      setFiledResult({
+        verdict: verdictRow?.verdict ?? null,
+        characterXp: xpRow?.final_xp ?? null,
+        syncState,
+      });
+      void logEvent("arena_result_filed", {
+        mode: pack.mode,
+        domain: domainMap[pack.mode] ?? "life",
+        evidenceStrength,
+        syncState,
+      });
+      toast.success(
+        syncState === "complete"
+          ? "Arena result filed. Authoritative verdict and XP received."
+          : "Filed // XP sync pending",
+      );
     } catch (err) {
       console.error("[gameforge] submit proof failed", err);
-      toast.error("Could not submit proof. Try again or copy it manually.");
+      toast.error("Could not file Arena result. Try again or copy it manually.");
     } finally {
       setSubmittingProof(false);
     }
   }
 
   const coachSeed = pack && masteryResult
-    ? `Review this GameForge result. Domain: ${pack.mode}. Mastery score: ${masteryResult.score}. Weak points: ${masteryResult.weakPoints.join(", ")}. Next upgrade: ${masteryResult.nextPracticeRecommendation}.`
+    ? `Review this Arena result. Domain: ${pack.mode}. Mastery score: ${masteryResult.score}. Weak points: ${masteryResult.weakPoints.join(", ")}. Next upgrade: ${masteryResult.nextPracticeRecommendation}.`
     : "";
 
   return (
     <div className="mobile-safe-page px-4 md:px-8 py-6 max-w-6xl mx-auto space-y-5 min-w-0 max-w-full md:pb-6">
       <header className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">GameForge // Practice Engine</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Arena // GameForge Practice Engine</div>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mt-1">Turn material into playable mastery.</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Paste notes, choose the pressure, play the rounds, expose weak points, clear the boss battle, and leave with a proof artifact.
+            Paste material, choose the pressure, play the rounds, expose weak points, and file a reviewed result into the evidence loop.
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-sm border border-primary/30 bg-primary/5 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-primary">
@@ -377,7 +422,7 @@ export function GameForgeShell() {
       <Card className="panel overflow-hidden border-primary/25 bg-card/60">
         <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-3">
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">GameForge Input Console</div>
+            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Arena Input Console</div>
             <div className="mt-1 text-sm text-foreground">Paste any material. Empty input still creates a safe starter pack.</div>
           </div>
           <Radar className="h-4 w-4 text-primary" />
@@ -476,7 +521,7 @@ export function GameForgeShell() {
               <h2 className="mt-1 text-lg font-semibold">{activeLevel?.title}</h2>
             </div>
             <div className="grid grid-cols-3 gap-2 min-w-[240px]">
-              <Metric label="XP" value={String(session.xp)} />
+              <Metric label="Arena Score" value={String(session.xp)} />
               <Metric label="Streak" value={String(session.streak)} />
               <Metric label="Focus" value={String(session.focus)} />
             </div>
@@ -494,7 +539,7 @@ export function GameForgeShell() {
               <div className="font-mono text-[10px] uppercase tracking-widest text-primary">
                 {activeQuestion.difficulty} // {activeQuestion.skill}
               </div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{activeQuestion.xp} XP</div>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{activeQuestion.xp} arena pts</div>
             </div>
             <h3 className="mt-3 text-base md:text-lg font-medium leading-snug">{activeQuestion.prompt}</h3>
 
@@ -607,7 +652,7 @@ export function GameForgeShell() {
           <div className="mt-4 grid gap-2 sm:grid-cols-4">
             <Metric label="Score" value={`${masteryResult.score}/100`} />
             <Metric label="Accuracy" value={`${masteryResult.accuracy}%`} />
-            <Metric label="XP" value={String(masteryResult.xp)} />
+            <Metric label="Arena Score" value={String(masteryResult.xp)} />
             <Metric label="Boss" value={masteryResult.completedBossBattle ? "cleared" : "missed"} />
           </div>
           <div className="mt-4 rounded-sm border border-border bg-background/30 p-3">
@@ -617,7 +662,7 @@ export function GameForgeShell() {
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleStartSession} className="gap-2"><RefreshCw className="h-4 w-4" /> Replay</Button>
             <Link to="/coach" state={{ coachSeed, mode: "proof_review" }}>
-              <Button variant="outline" className="gap-2"><MessageSquare className="h-4 w-4" /> Ask Coach to Review</Button>
+              <Button variant="outline" className="gap-2"><MessageSquare className="h-4 w-4" /> Ask Game Master to Review</Button>
             </Link>
           </div>
         </Card>
@@ -627,7 +672,7 @@ export function GameForgeShell() {
         <Card className="panel p-4 md:p-5 border-primary/45 bg-card/60">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Proof Artifact Output</div>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Arena Result</div>
               <h2 className="mt-1 text-base font-semibold">{proofArtifact.title}</h2>
               <p className="mt-2 text-sm text-muted-foreground">{proofArtifact.summary}</p>
             </div>
@@ -640,7 +685,7 @@ export function GameForgeShell() {
                 className="gap-2"
               >
                 <ShieldCheck className="h-3.5 w-3.5" />
-                {proofSubmittedId ? "Submitted" : submittingProof ? "Submitting..." : "Submit to Evidence Ledger"}
+                {proofSubmittedId ? "Filed" : submittingProof ? "Filing..." : "File Arena Result"}
               </Button>
             </div>
           </div>
@@ -650,10 +695,33 @@ export function GameForgeShell() {
             <Metric label="Weak point" value={proofArtifact.weakPoint} />
             <Metric label="Next upgrade" value={proofArtifact.nextUpgrade} />
           </div>
+          {filedResult && (
+            <div className="mt-4 grid gap-2 rounded-sm border border-primary/30 bg-primary/5 p-3 sm:grid-cols-3">
+              <Metric
+                label="Court verdict"
+                value={filedResult.verdict ?? syncLabel(filedResult.syncState)}
+              />
+              <Metric
+                label="Character XP"
+                value={
+                  filedResult.characterXp === null
+                    ? syncLabel(filedResult.syncState)
+                    : `+${filedResult.characterXp}`
+                }
+              />
+              <Metric label="Ledger sync" value={filedResult.syncState} />
+            </div>
+          )}
         </Card>
       )}
     </div>
   );
+}
+
+function syncLabel(state: "complete" | "pending" | "unavailable"): string {
+  if (state === "pending") return "sync pending";
+  if (state === "unavailable") return "unavailable";
+  return "—";
 }
 
 function Selector({ label, value, onChange, items }: { label: string; value: string; onChange: (value: string) => void; items: Array<{ value: string; label: string }> }) {

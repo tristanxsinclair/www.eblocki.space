@@ -273,11 +273,11 @@ export default function Modes() {
           <Card className="panel p-5 text-center">
             <h2 className="text-xl font-semibold">No personalised modes yet.</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Build your operating system so Eblocki knows what evidence matters in your world.
+              Add an area so Eblocki knows which evidence standard to use.
             </p>
             <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link to="/onboarding">
-                <Button>Setup My OS</Button>
+                <Button>Open advanced setup</Button>
               </Link>
               <Button variant="secondary" onClick={() => setShowAddMode(true)}>
                 Add a mode manually
@@ -304,7 +304,7 @@ export default function Modes() {
             {tristanPreview.length > 0 && (
               <Card className="panel p-3 border-primary/30 bg-primary/5">
                 <p className="text-xs text-muted-foreground">
-                  Showing your preset modes. Open onboarding to lock these into your personalised OS.
+                  Showing your preset modes. Open advanced setup to save them to your profile.
                 </p>
               </Card>
             )}
