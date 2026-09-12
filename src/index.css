@@ -410,6 +410,219 @@ html, body, #root {
   }
 }
 
+/* Mission Glass v2 — premium aerospace restraint for authenticated product
+   chrome and the Life Game. This layer changes presentation only; evidence,
+   verdict, XP, and quest authority remain in their canonical modules. */
+@layer components {
+  .app-frame {
+    position: relative;
+    background:
+      radial-gradient(circle at 82% -10%, hsl(var(--studio-cyan) / 0.055), transparent 31rem),
+      radial-gradient(circle at 18% 14%, hsl(var(--primary) / 0.045), transparent 28rem),
+      hsl(var(--background));
+  }
+
+  .operator-chrome {
+    border-color: hsl(var(--foreground) / 0.065);
+    background: hsl(var(--background) / 0.82);
+    backdrop-filter: blur(28px) saturate(135%);
+    -webkit-backdrop-filter: blur(28px) saturate(135%);
+    box-shadow: inset -1px 0 0 hsl(var(--foreground) / 0.025);
+  }
+
+  .mission-sidebar {
+    background:
+      linear-gradient(180deg, hsl(198 42% 6% / 0.94), hsl(204 40% 4% / 0.9));
+  }
+
+  .mission-nav-link {
+    position: relative;
+    border-radius: 0.85rem;
+    letter-spacing: -0.005em;
+  }
+
+  .mission-nav-link.is-active::before {
+    content: "";
+    position: absolute;
+    left: -0.25rem;
+    width: 0.2rem;
+    height: 1.35rem;
+    border-radius: 999px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 18px hsl(var(--primary) / 0.65);
+  }
+
+  .mobile-app-chrome,
+  .mobile-dock {
+    background: hsl(var(--background) / 0.78);
+    backdrop-filter: blur(30px) saturate(145%);
+    -webkit-backdrop-filter: blur(30px) saturate(145%);
+  }
+
+  .life-game-shell::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.3;
+    background-image: radial-gradient(hsl(var(--foreground) / 0.11) 0.55px, transparent 0.55px);
+    background-size: 26px 26px;
+    mask-image: linear-gradient(to bottom, black, transparent 72%);
+  }
+
+  .life-game-shell .operator-page-wide {
+    max-width: 94rem;
+    padding-top: clamp(1rem, 2.4vw, 2.5rem);
+    padding-bottom: clamp(2rem, 5vw, 5rem);
+  }
+
+  .life-game-shell .operator-panel,
+  .life-game-shell .crt-surface {
+    border-color: hsl(var(--foreground) / 0.075);
+    border-radius: 1.25rem;
+    background:
+      linear-gradient(145deg, hsl(var(--foreground) / 0.045), transparent 38%),
+      hsl(var(--card) / 0.76);
+    backdrop-filter: blur(24px) saturate(125%);
+    -webkit-backdrop-filter: blur(24px) saturate(125%);
+    box-shadow:
+      inset 0 1px 0 hsl(var(--foreground) / 0.055),
+      0 22px 70px -44px hsl(190 100% 80% / 0.24),
+      0 10px 30px -22px hsl(0 0% 0% / 0.8);
+  }
+
+  .life-game-shell .operator-panel-accent {
+    border-color: hsl(var(--primary) / 0.2);
+    box-shadow:
+      inset 0 1px 0 hsl(var(--foreground) / 0.07),
+      inset 0 0 0 1px hsl(var(--primary) / 0.025),
+      0 24px 80px -48px hsl(var(--primary) / 0.42);
+  }
+
+  .mission-hero {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mission-hero::after {
+    content: "";
+    position: absolute;
+    top: -9rem;
+    right: -7rem;
+    width: 25rem;
+    height: 25rem;
+    border-radius: 50%;
+    border: 1px solid hsl(var(--studio-cyan) / 0.09);
+    box-shadow:
+      inset 0 0 80px hsl(var(--studio-cyan) / 0.025),
+      0 0 0 3rem hsl(var(--foreground) / 0.008),
+      0 0 0 7rem hsl(var(--foreground) / 0.006);
+    pointer-events: none;
+  }
+
+  .mission-title {
+    position: relative;
+    z-index: 1;
+    max-width: 48rem;
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: clamp(2rem, 4vw, 3.75rem);
+    font-weight: 600;
+    line-height: 0.98;
+    letter-spacing: -0.055em;
+  }
+
+  .mission-status-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 0 0.25rem hsl(var(--primary) / 0.1), 0 0 16px hsl(var(--primary) / 0.75);
+  }
+
+  .life-game-shell .operator-label,
+  .life-game-shell .font-mono {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+
+  .life-game-shell .operator-stat,
+  .life-game-shell .operator-stat-grid > div,
+  .life-game-shell .run-protocol-stage,
+  .life-game-shell [class*="rounded-sm"][class*="border"] {
+    border-radius: 0.9rem;
+    border-color: hsl(var(--foreground) / 0.075);
+    background-color: hsl(var(--background) / 0.36);
+  }
+
+  .life-game-shell .operator-stat,
+  .life-game-shell .operator-stat-grid > div {
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, background-color 220ms ease;
+  }
+
+  .life-game-shell .operator-stat:hover,
+  .life-game-shell .operator-stat-grid > div:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--foreground) / 0.13);
+    background-color: hsl(var(--foreground) / 0.04);
+  }
+
+  .run-pulse::before {
+    content: "";
+    position: absolute;
+    right: -5rem;
+    top: -7rem;
+    width: 20rem;
+    height: 20rem;
+    border-radius: 50%;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.09), transparent 66%);
+    pointer-events: none;
+  }
+
+  .mission-director {
+    align-self: start;
+  }
+
+  .mission-brief,
+  .mission-directive-card {
+    background:
+      linear-gradient(145deg, hsl(var(--foreground) / 0.035), transparent 42%),
+      hsl(var(--background) / 0.34);
+    box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.035);
+  }
+
+  .life-game-shell[data-focus-mode="true"] .hud-stats,
+  .life-game-shell[data-focus-mode="true"] #run-log,
+  .life-game-shell[data-focus-mode="true"] #intel {
+    display: none;
+  }
+
+  .life-game-shell[data-focus-mode="true"] .hud-grid {
+    grid-template-areas:
+      "pulse"
+      "quest"
+      "gm";
+  }
+
+}
+
+@media (min-width: 1024px) {
+  .life-game-shell[data-focus-mode="true"] .hud-grid {
+    grid-template-areas:
+      "pulse pulse"
+      "quest gm";
+    grid-template-columns: minmax(0, 1.65fr) minmax(19rem, 0.75fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .mission-hero::after {
+    width: 17rem;
+    height: 17rem;
+    opacity: 0.7;
+  }
+
+}
+
 /* ── Pull to refresh indicator ────────────────────────────────────────────── */
 @keyframes ptr-spin {
   from { transform: rotate(0deg); }
@@ -430,21 +643,6 @@ html, body, #root {
 
   .crt-surface {
     background: hsl(var(--card) / 0.9);
-  }
-
-  .scanlines::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 20;
-    pointer-events: none;
-    opacity: 0.025;
-    background: repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 3px,
-      hsl(var(--foreground) / 0.32) 4px
-    );
   }
 
   .hud-grid {
@@ -529,18 +727,6 @@ html, body, #root {
   .run-pulse {
     position: relative;
     overflow: hidden;
-  }
-
-  .run-pulse::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 28%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.85), transparent);
-    animation: run-pulse-scan 4.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-    pointer-events: none;
   }
 
   .run-protocol-stage {
@@ -634,22 +820,6 @@ html, body, #root {
   }
 }
 
-@keyframes run-pulse-scan {
-  0%,
-  42% {
-    opacity: 0;
-    transform: translateX(-130%);
-  }
-  55% {
-    opacity: 0.9;
-  }
-  82%,
-  100% {
-    opacity: 0;
-    transform: translateX(470%);
-  }
-}
-
 @keyframes settlement-flare {
   from {
     opacity: 0;
@@ -687,10 +857,72 @@ html, body, #root {
 
 @media (prefers-reduced-motion: reduce) {
   .life-game-boot > div,
-  .run-pulse::after,
   .run-protocol-stage,
   .settlement-reveal-settled::after,
   .settlement-pending-spin {
     animation: none !important;
+  }
+}
+
+/* Keep the Mission Glass values authoritative over the legacy Life Game
+   presentation declarations above while the older selectors are retired. */
+@layer components {
+  .life-game-shell {
+    background:
+      radial-gradient(ellipse at 75% -8%, hsl(var(--studio-cyan) / 0.07), transparent 36rem),
+      radial-gradient(ellipse at 28% 8%, hsl(var(--primary) / 0.055), transparent 34rem),
+      linear-gradient(180deg, hsl(198 50% 5%), hsl(204 46% 4%));
+  }
+
+  .hud-command-deck {
+    position: sticky;
+    top: 0.75rem;
+    z-index: 15;
+    gap: 0.25rem;
+    border-color: hsl(var(--foreground) / 0.08);
+    border-radius: 1rem;
+    background: hsl(var(--background) / 0.74);
+    padding: 0.4rem;
+    backdrop-filter: blur(26px) saturate(140%);
+    -webkit-backdrop-filter: blur(26px) saturate(140%);
+    box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.05), 0 18px 45px -30px hsl(0 0% 0% / 0.9);
+  }
+
+  .hud-command-label,
+  .hud-command {
+    min-height: 2.55rem;
+    border-radius: 0.7rem;
+    padding-inline: 0.8rem;
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.67rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: none;
+  }
+
+  .hud-command:hover,
+  .hud-command:focus-visible,
+  .hud-command[aria-pressed="true"] {
+    border-color: hsl(var(--foreground) / 0.1);
+    background: hsl(var(--foreground) / 0.065);
+    color: hsl(var(--foreground));
+  }
+
+  .hud-command-primary {
+    margin-left: auto;
+    border-color: hsl(var(--primary) / 0.2);
+    background: hsl(var(--primary) / 0.08);
+    color: hsl(var(--primary));
+  }
+
+}
+
+@media (max-width: 767px) {
+  .hud-command-deck {
+    top: calc(var(--app-header-h, 56px) + 0.45rem);
+  }
+
+  .hud-command-primary {
+    margin-left: 0;
   }
 }

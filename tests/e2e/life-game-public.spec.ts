@@ -5,11 +5,11 @@ test.describe("public life-game settlement replay", () => {
     await page.goto("/");
 
     await expect(
-      page.getByRole("heading", { name: "Your life. Turned into a game you can prove." }),
+      page.getByRole("heading", { name: "Stop fake productivity. Turn effort into proof." }),
     ).toBeVisible();
-    await expect(page.getByText("A learning path with consequences.")).toBeVisible();
-    await expect(page.getByText("More than a proof form. Your operating system.")).toBeVisible();
-    await expect(page.getByText("The game cannot award itself.")).toBeVisible();
+    await expect(page.getByText("Five steps. Two minutes a day.")).toBeVisible();
+    await expect(page.getByText("You cannot award yourself progress.")).toBeVisible();
+    await expect(page.getByText("No proof, no progress")).toBeVisible();
 
     const overflow = await page.evaluate(
       () =>

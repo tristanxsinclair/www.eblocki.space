@@ -5,6 +5,7 @@ const routes = [
   "/auth",
   "/welcome",
   "/dashboard",
+  "/today",
   "/game",
   "/game?result=33333333-3333-4333-8333-333333333333",
   "/log",

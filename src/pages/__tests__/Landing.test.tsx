@@ -16,14 +16,16 @@ describe("public Eblocki system", () => {
       </HelmetProvider>,
     );
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Turned into a game you can prove.");
-    expect(screen.getByText("A learning path with consequences.")).toBeInTheDocument();
-    expect(screen.getByText("More than a proof form. Your operating system.")).toBeInTheDocument();
-    expect(screen.getByText("An IRAC answer from a tutorial or past paper")).toBeInTheDocument();
-    expect(screen.getByText("One route through the day")).toBeInTheDocument();
-    expect(screen.getByText("Train before it counts")).toBeInTheDocument();
-    expect(screen.getByText("A capability profile you earn")).toBeInTheDocument();
-    expect(screen.getByText("A Sink Space product")).toBeInTheDocument();
-    expect(screen.getByText("The game cannot award itself.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      /Stop fake productivity\.\s*Turn effort into proof\./,
+    );
+    expect(screen.getByText("Five steps. Two minutes a day.")).toBeInTheDocument();
+    expect(screen.getByText("You cannot award yourself progress.")).toBeInTheDocument();
+    expect(screen.getByText("Evidence before completion")).toBeInTheDocument();
+    expect(screen.getByText("Honest states, always")).toBeInTheDocument();
+    expect(screen.getByText("Practice is free, progress is earned")).toBeInTheDocument();
+    expect(screen.getByText("One clear instruction.")).toBeInTheDocument();
+    expect(screen.getByText("Practice under pressure.")).toBeInTheDocument();
+    expect(screen.getByText(/No proof, no progress/)).toBeInTheDocument();
   });
 });

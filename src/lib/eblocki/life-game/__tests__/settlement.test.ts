@@ -10,8 +10,8 @@ describe("evidence settlement projection", () => {
   it("uses a trusted record ID in the HUD return URL", () => {
     const id = "33333333-3333-4333-8333-333333333333";
     expect(isSafeLifeGameRecordId(id)).toBe(true);
-    expect(buildLifeGameSettlementHref(id)).toBe(`/game?result=${id}`);
-    expect(buildLifeGameSettlementHref("invented-result")).toBe("/game");
+    expect(buildLifeGameSettlementHref(id)).toBe(`/dashboard?result=${id}`);
+    expect(buildLifeGameSettlementHref("invented-result")).toBe("/dashboard");
   });
 
   it("reveals XP and verdict only when both committed records exist", () => {

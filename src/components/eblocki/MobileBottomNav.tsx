@@ -68,7 +68,7 @@ export function MobileBottomNav() {
     <nav
       ref={navRef}
       aria-label="Primary mobile navigation"
-      className="operator-chrome md:hidden fixed bottom-0 inset-x-0 z-40 border-t safe-bottom safe-x"
+      className="operator-chrome mobile-dock md:hidden fixed bottom-0 inset-x-0 z-40 border-t safe-bottom safe-x"
     >
       <ul className="grid grid-cols-4">
         {PRIMARY.map((item) => (
@@ -79,7 +79,7 @@ export function MobileBottomNav() {
               onClick={() => haptics.select()}
               className={({ isActive }) =>
                 cn(
-                  "operator-interactive flex flex-col items-center justify-center gap-0.5 min-h-[56px] px-1 py-1.5 text-[10px] font-mono uppercase tracking-widest",
+                  "operator-interactive flex flex-col items-center justify-center gap-0.5 min-h-[58px] px-1 py-1.5 text-[10px] font-medium",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
@@ -90,8 +90,8 @@ export function MobileBottomNav() {
                 <>
                   <span
                     className={cn(
-                      "relative flex h-6 w-10 items-center justify-center rounded-sm motion-micro",
-                      isActive && "bg-primary/10 border border-primary/30",
+                      "relative flex h-7 w-11 items-center justify-center rounded-xl motion-micro",
+                      isActive && "bg-white/[0.08] border border-white/[0.1]",
                     )}
                   >
                     <item.icon className="h-4 w-4" />
@@ -112,7 +112,7 @@ export function MobileBottomNav() {
                 type="button"
                 aria-label="Open more navigation"
                 className={cn(
-                  "operator-interactive flex flex-col items-center justify-center gap-0.5 min-h-[56px] w-full px-1 py-1.5 text-[10px] font-mono uppercase tracking-widest",
+                  "operator-interactive flex flex-col items-center justify-center gap-0.5 min-h-[58px] w-full px-1 py-1.5 text-[10px] font-medium",
                   moreActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
@@ -120,8 +120,8 @@ export function MobileBottomNav() {
               >
                 <span
                   className={cn(
-                    "flex h-6 w-10 items-center justify-center rounded-sm",
-                    moreActive && "bg-primary/10 border border-primary/30",
+                    "flex h-7 w-11 items-center justify-center rounded-xl",
+                    moreActive && "bg-white/[0.08] border border-white/[0.1]",
                   )}
                 >
                   <MoreHorizontal className="h-4 w-4" />

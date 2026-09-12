@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { AppShell } from "@/components/eblocki/AppShell";
 import { LifeGameHud } from "@/components/eblocki/life-game/LifeGameHud";
 import { Seo } from "@/components/Seo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLifeGameSnapshot } from "@/hooks/useLifeGameSnapshot";
 import { useQuestReconciliation } from "@/hooks/useQuestReconciliation";
+import { useWelcomeGate } from "@/hooks/useWelcomeGate";
 import { logEvent } from "@/lib/eblocki/analytics";
 import {
   isSafeLifeGameRecordId,
@@ -15,12 +16,14 @@ import {
 const PANEL_TARGETS = new Map([
   ["quests", "quests"],
   ["stats", "stats"],
-  ["gm", "gm"],
+  ["director", "quests"],
+  ["gm", "quests"],
   ["run-log", "run-log"],
   ["intel", "intel"],
 ]);
 
 export default function GameDashboard() {
+  const welcomeCheck = useWelcomeGate();
   const [params, setParams] = useSearchParams();
   const { snapshot, loading, refreshing, refresh } = useLifeGameSnapshot();
   const { repairedCount } = useQuestReconciliation();
@@ -44,7 +47,7 @@ export default function GameDashboard() {
     if (!snapshot || viewed.current) return;
     viewed.current = true;
     void logEvent("life_game_hud_viewed", {
-      route: "/game",
+      route: "/dashboard",
       source: "authenticated",
     });
   }, [snapshot]);
@@ -53,7 +56,7 @@ export default function GameDashboard() {
     if (!snapshot || !panelTarget) return;
     document.getElementById(panelTarget)?.scrollIntoView({ behavior: "smooth", block: "start" });
     void logEvent("life_game_panel_opened", {
-      route: "/game",
+      route: "/dashboard",
       panel: panelTarget,
     });
   }, [panelTarget, snapshot]);
@@ -76,7 +79,7 @@ export default function GameDashboard() {
       if (settlementLogged.current !== logKey) {
         settlementLogged.current = logKey;
         void logEvent("life_game_settlement_viewed", {
-          route: "/game",
+          route: "/dashboard",
           statKey: settlement.stat,
           evidenceStrength: settlement.evidenceStrength,
           verdict: settlement.courtVerdict,
@@ -102,14 +105,18 @@ export default function GameDashboard() {
     setParams(next, { replace: true });
   };
 
+  if (welcomeCheck === "needs") {
+    return <Navigate to="/welcome" replace />;
+  }
+
   return (
     <AppShell>
       <Seo
         title="Life Game — Eblocki"
         description="Turn real actions into evidence, verdicts, and authoritative XP."
-        path="/game"
+        path="/dashboard"
       />
-      {loading || !snapshot ? (
+      {welcomeCheck === "checking" || loading || !snapshot ? (
         <div className="operator-page-wide">
           <Skeleton className="h-44 w-full" />
           <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)_300px]">

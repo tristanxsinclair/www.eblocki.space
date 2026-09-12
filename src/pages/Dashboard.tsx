@@ -43,7 +43,7 @@ import {
 } from "@/lib/eblocki/dashboard-view-model";
 import { mobileRecentProofLimit } from "@/lib/eblocki/mobile-disclosure";
 import { logEvent } from "@/lib/eblocki/analytics";
-import { buildProofEntryHref, shouldOpenWelcome } from "@/lib/eblocki/first-proof";
+import { buildProofEntryHref } from "@/lib/eblocki/first-proof";
 import { isSameLocalDay, localDayKey } from "@/lib/eblocki/local-day";
 import { ProofWeekPanel } from "@/components/eblocki/ProofWeekPanel";
 import { ProofClosureCard } from "@/components/eblocki/ProofClosureCard";
@@ -51,6 +51,7 @@ import { MobileCollapse } from "@/components/eblocki/MobileCollapse";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEntitlement } from "@/hooks/useEntitlement";
 import { hasProofOnDate, plainEvidenceStrength } from "@/lib/eblocki/user-facing-copy";
+import { useWelcomeGate } from "@/hooks/useWelcomeGate";
 
 type UserModeRow = Pick<Tables<"user_modes">, "mode_id">;
 type DashboardArtifactRow = DashboardProofRow & ProofArtifactLike;
@@ -65,7 +66,7 @@ export default function Dashboard() {
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const { accessLevel } = useEntitlement();
-  const [welcomeCheck, setWelcomeCheck] = useState<"checking" | "needs" | "ok">("checking");
+  const welcomeCheck = useWelcomeGate();
   const [today, setToday] = useState<DashboardDailySheetRow | null>(null);
   const [pending, setPending] = useState<DashboardCommitmentRow[]>([]);
   const [recent, setRecent] = useState<DashboardProofRow[]>([]);
@@ -79,7 +80,6 @@ export default function Dashboard() {
   const [state, setStateBadge] = useState<BehaviouralState | null>(null);
   const [diagnosticsTab, setDiagnosticsTab] = useState("forecast");
   const [queryFailed, setQueryFailed] = useState(false);
-  const [dashboardLoaded, setDashboardLoaded] = useState(false);
 
   const todayISO = localDayKey();
   const artifactDates = useMemo(
@@ -99,26 +99,7 @@ export default function Dashboard() {
     if (!user) return;
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("user_onboarding_profiles")
-        .select("seen_welcome, completed_onboarding")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      // Legacy users may have completed the original setup before
-      // `seen_welcome` existed. Treat that durable completion as equivalent,
-      // and fail open on profile-read errors so returning users keep access.
-      setWelcomeCheck(!error && shouldOpenWelcome(data) ? "needs" : "ok");
-    })();
-    return () => { cancelled = true; };
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
       setQueryFailed(false);
-      setDashboardLoaded(false);
       try {
         const [dcsRes, pcRes, paRes, ciRes, allRes, modesRes, verdictRes, ledgerRes] = await Promise.all([
           supabase.from("daily_control_sheets").select("*").eq("user_id", user.id).eq("sheet_date", todayISO).maybeSingle(),
@@ -144,11 +125,9 @@ export default function Dashboard() {
         setVerdicts(verdictRes.data ?? []);
         setLedger(ledgerRes.data ?? []);
         setQueryFailed(Boolean(dcsRes.error || pcRes.error || paRes.error || ciRes.error || allRes.error || modesRes.error || verdictRes.error || ledgerRes.error));
-        setDashboardLoaded(true);
       } catch {
         if (!cancelled) {
           setQueryFailed(true);
-          setDashboardLoaded(true);
         }
       }
     })();
@@ -158,7 +137,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user || welcomeCheck !== "ok" || allArtifacts.length !== 0) return;
     void logEvent("activation_dashboard_zero_state_seen", {
-      route: "/dashboard",
+      route: "/today",
       source: "today",
     });
   }, [user, welcomeCheck, allArtifacts.length]);
@@ -168,7 +147,7 @@ export default function Dashboard() {
     const latestCreatedAt = allArtifacts[0]?.created_at;
     if (!latestCreatedAt || isSameLocalDay(latestCreatedAt, todayISO)) return;
     void logEvent("activation_day_2_return_seen", {
-      route: "/dashboard",
+      route: "/today",
       source: "today",
     });
   }, [user, allArtifacts, todayISO]);
@@ -222,7 +201,7 @@ export default function Dashboard() {
     logEvent("dashboard_section_opened", { sectionName: `diagnostics_${tabName}` });
   };
 
-  if (dashboardLoaded && welcomeCheck === "needs" && allArtifacts.length === 0) {
+  if (welcomeCheck === "needs") {
     return <Navigate to="/welcome" replace />;
   }
 
@@ -231,7 +210,7 @@ export default function Dashboard() {
       <Seo
         title="Dashboard | EBLOCKI"
         description="Today surface: next proof, verdict, progress, and deeper analysis."
-        path="/dashboard"
+        path="/today"
       />
       <div className="mobile-safe-page p-4 md:p-8 max-w-6xl mx-auto space-y-5">
         <header className="flex items-end justify-between gap-4 flex-wrap min-w-0">

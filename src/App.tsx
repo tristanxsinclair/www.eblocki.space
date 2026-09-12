@@ -86,8 +86,9 @@ const App = () => (
             <Route path="/founder" element={<Founder />} />
             <Route path="/checkout/return" element={<CheckoutReturn />} />
             <Route path="/welcome" element={<Protected><Welcome /></Protected>} />
-            <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+            <Route path="/dashboard" element={<Protected><GameDashboard /></Protected>} />
             <Route path="/game" element={<Protected><GameDashboard /></Protected>} />
+            <Route path="/today" element={<Protected><Dashboard /></Protected>} />
             <Route path="/operator" element={<Protected><Operator /></Protected>} />
             <Route path="/character" element={<Protected><Operator /></Protected>} />
             <Route path="/gameforge" element={<Protected><GameForge /></Protected>} />

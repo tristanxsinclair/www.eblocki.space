@@ -21,9 +21,9 @@ export function isSafeLifeGameRecordId(value: string | null | undefined): value 
 }
 
 export function buildLifeGameSettlementHref(artifactId: string): string {
-  if (!isSafeLifeGameRecordId(artifactId)) return "/game";
+  if (!isSafeLifeGameRecordId(artifactId)) return "/dashboard";
   const params = new URLSearchParams({ result: artifactId });
-  return `/game?${params.toString()}`;
+  return `/dashboard?${params.toString()}`;
 }
 
 /**

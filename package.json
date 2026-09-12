@@ -8,7 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "lint:eblocki": "eslint src/lib/eblocki src/lib/gameforge src/components/gameforge src/components/eblocki/life-game src/components/eblocki/MissionCard.tsx src/hooks/useLifeGameSnapshot.ts src/hooks/useQuestReconciliation.ts src/hooks/useDailyObjectives.ts src/hooks/useMomentum.ts src/pages/Coach.tsx src/pages/GameForge.tsx src/pages/GameDashboard.tsx src/pages/Demo.tsx src/pages/Landing.tsx src/pages/Proof.tsx",
+    "lint:eblocki": "eslint src/lib/eblocki src/lib/gameforge src/components/gameforge src/components/eblocki/life-game src/components/eblocki/MissionCard.tsx src/hooks/useLifeGameSnapshot.ts src/hooks/useQuestReconciliation.ts src/hooks/useDailyObjectives.ts src/hooks/useMomentum.ts src/hooks/useWelcomeGate.ts src/pages/Coach.tsx src/pages/GameForge.tsx src/pages/GameDashboard.tsx src/pages/Demo.tsx src/pages/Landing.tsx src/pages/Proof.tsx",
     "mcp:build": "tsc -p tsconfig.mcp.json && mkdir -p mcp-dist && cp mcp/package.json mcp-dist/package.json",
     "mcp:start": "npm run mcp:build && node mcp-dist/mcp/server.js",
     "mcp:smoke": "npm run mcp:build && node scripts/eblocki-proof-check-smoke.mjs",

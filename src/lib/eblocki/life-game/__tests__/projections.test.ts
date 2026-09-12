@@ -53,10 +53,13 @@ const commitment = (overrides: Partial<CommitmentRow> = {}): CommitmentRow => ({
   completion_reflection: null,
   coach_interaction_id: null,
   daily_control_sheet_id: null,
+  assistance_boundary: null,
+  blocked_actions: [],
+  restriction_evidence: [],
   due_date: null,
   created_at: "2026-07-25T02:00:00.000Z",
   ...overrides,
-});
+} as CommitmentRow);
 
 const objective = (overrides: Partial<ObjectiveRow> = {}): ObjectiveRow => ({
   id: "22222222-2222-4222-8222-222222222222",
@@ -96,6 +99,7 @@ const proof: ProofRow = {
   artifact_type: "implementation",
   content: "private content must not enter the run log",
   content_hash: null,
+  corrects_proof_artifact_id: null,
   evidence_strength: "strong",
   feedback: null,
   next_upgrade: null,
@@ -109,7 +113,7 @@ const proof: ProofRow = {
   attachment_size: null,
   attachment_type: null,
   attachment_url: null,
-};
+} as ProofRow;
 
 describe("life stat projections", () => {
   it("maps every canonical domain into the five cosmetic stats", () => {

@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { normaliseModeKey, pickTemplatesForMode } from "@/lib/eblocki/mode-templates";
+import { normaliseModeKey } from "@/lib/eblocki/mode-templates";
+import { personaliseQuests } from "@/lib/eblocki/quest-personalisation";
 import { logEvent } from "@/lib/eblocki/analytics";
 import { assertObjectiveCanComplete } from "@/lib/eblocki/life-game";
 import { localDayKey, resolvedTimeZone } from "@/lib/eblocki/local-day";
@@ -33,7 +34,6 @@ export interface DailyObjective {
   completion_hard_part: string | null;
   completion_upgrade: string | null;
 }
-
 /** Module-scoped guard so seeding cannot double-fire across hook instances. */
 const seedingInFlight = new Map<string, Promise<void>>();
 
@@ -69,15 +69,32 @@ async function seedIfNeededInner(userId: string, date: string) {
     .order("created_at", { ascending: false })
     .limit(5);
 
-  // Active user mode — drives template-based seeding when no open
-  // commitments exist.
-  const { data: activeModes } = await supabase
-    .from("user_modes")
-    .select("mode_id, display_name, is_default")
-    .eq("user_id", userId)
-    .eq("is_active", true)
-    .order("is_default", { ascending: false })
-    .limit(1);
+  // Everything the operator has actually built their OS to be — modes with
+  // their own evidence standards, domain levels, and recent proof history.
+  const [{ data: activeModes }, { data: domainLevels }, { data: recentProofs }] =
+    await Promise.all([
+      supabase
+        .from("user_modes")
+        .select(
+          "mode_id, display_name, is_default, strong_evidence_examples, proof_examples, keywords",
+        )
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .order("is_default", { ascending: false })
+        .limit(4),
+      supabase
+        .from("domain_levels")
+        .select("domain, level, next_requirement, current_standard, updated_at")
+        .eq("user_id", userId),
+      supabase
+        .from("proof_artifacts")
+        .select(
+          "title, domain, quality_score, next_upgrade, created_at, transfer_flag, pressure_flag",
+        )
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20),
+    ]);
   const activeModeRaw = activeModes?.[0]?.mode_id ?? null;
   const modeKey = normaliseModeKey(activeModeRaw);
 
@@ -126,26 +143,51 @@ async function seedIfNeededInner(userId: string, date: string) {
       });
     });
   } else if (!hasAny) {
-    // Mode-aware seeding — pull 3 templates from the active mode bank.
-    const templates = pickTemplatesForMode(modeKey, 3, date);
-    templates.forEach((t, i) => {
+    // Personalised seeding — derived from this operator's modes, standards,
+    // domain neglect, last recorded upgrade, and earned resistance band.
+    const { data: momentumForSeed } = await supabase
+      .from("momentum_state")
+      .select("streak_days, avg_quality, proofs_today, state")
+      .eq("user_id", userId)
+      .order("state_date", { ascending: false })
+      .limit(1);
+    const quests = personaliseQuests({
+      dayKey: date,
+      modes: activeModes ?? [],
+      domainLevels: domainLevels ?? [],
+      recentProofs: recentProofs ?? [],
+      momentum: momentumForSeed?.[0] ?? null,
+      maxQuests: 3,
+    });
+    quests.forEach((q, i) => {
       rows.push({
         user_id: userId,
         objective_date: date,
-        title: t.title,
-        description: `${t.description}\n\nProof required: ${t.required_artifact}`,
-        mode_id: activeModeRaw ?? modeKey,
-        kind: i === 0 ? "quick_win" : "mission",
-        resistance_level: t.resistance_level,
-        focus_minutes: t.focus_minutes,
-        reward_value: t.reward_value,
-        streak_impact: t.streak_impact,
-        identity_alignment: t.identity_alignment,
+        title: q.title,
+        description: `${q.description}\n\nProof required: ${q.required_artifact}`,
+        mode_id: q.modeId ?? activeModeRaw ?? modeKey,
+        kind:
+          q.origin === "correction"
+            ? "recovery"
+            : q.origin === "pressure_step"
+              ? "boss"
+              : q.resistance_level <= 2
+                ? "quick_win"
+                : "mission",
+        resistance_level: q.resistance_level,
+        focus_minutes: q.focus_minutes,
+        reward_value: q.reward_value,
+        streak_impact: q.streak_impact,
+        identity_alignment: q.identity_alignment,
         proof_required: true,
-        why_it_matters: t.why_it_matters,
+        why_it_matters: `${q.why_it_matters}\n\nWhy you got this: ${q.personalisationReason}`,
         status: "pending",
         position: i,
       });
+    });
+    void logEvent("objective_created", {
+      personalised: true,
+      origins: quests.map((q) => q.origin).join(","),
     });
   }
 

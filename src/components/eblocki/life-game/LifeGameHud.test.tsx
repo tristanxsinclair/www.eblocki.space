@@ -49,13 +49,27 @@ describe("LifeGameHud", () => {
     expect(container.querySelectorAll("a button, button a")).toHaveLength(0);
   });
 
-  it("reveals the local demo directive and filters the Run Log without changing truth", () => {
+  it("offers a persistent focus mode without changing evidence data", () => {
     renderHud();
 
-    fireEvent.click(screen.getByRole("button", { name: "Run scripted directive" }));
-    expect(
-      screen.getByText("CALLOUT // Polishing is protecting you from a verdict."),
-    ).toBeInTheDocument();
+    const focus = screen.getByRole("button", { name: "Focus" });
+    expect(focus).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(focus);
+
+    expect(screen.getByRole("button", { name: "Overview" })).toHaveAttribute("aria-pressed", "true");
+    expect(sessionStorage.getItem("eblocki-demo-focus-mode")).toBe("1");
+    expect(screen.getByRole("heading", { name: "Compound Operator" })).toBeInTheDocument();
+    expect(screen.getByText("Court Verified")).toBeInTheDocument();
+  });
+
+  it("shows the personalised Quest Director and filters the Run Log without changing truth", () => {
+    renderHud();
+
+    expect(screen.getByRole("heading", { name: "Quest Director" })).toBeInTheDocument();
+    expect(screen.getByText("Read of your record")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: /Standard/ })[0]);
+    expect(screen.getAllByText(/Self-deception risk:/).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: "pending" }));
     const runLog = screen.getByRole("heading", { name: "Run Log" }).closest("section");
