@@ -12,12 +12,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
 import { ProofStandardPreviewPanel } from "@/components/eblocki/ProofStandardPreviewPanel";
+import { CorrectionComparison } from "@/components/eblocki/CorrectionComparison";
+import { assessmentSnapshot, compareCorrection, correctionAssessmentContext, readAssessment, type CorrectionParent, type CorrectionComparison as Comparison } from "@/lib/eblocki/correction-assessment";
+import { extractNextUpgrade as userNextStep } from "@/lib/eblocki/next-upgrade-extract";
 import { scoreProofArtifact, type EvidenceStrength } from "@/lib/eblocki/proof-scoring";
 import { classifyStudyActivity } from "@/lib/eblocki/fake-study-detector";
 import { StudyVerdictHint } from "@/components/eblocki/StudyVerdictHint";
 import { humaniseModeId, isStudyDomain } from "@/lib/eblocki/display-labels";
 import { buildProofStandardPreview, type ProofStandardPreview } from "@/lib/eblocki/proof-standard-preview";
-import type { UserMode } from "@/lib/eblocki/modes";
+import { getDomainStandard } from "@/lib/eblocki/domain-standards";
+import { MODE_DOMAINS, type UserMode } from "@/lib/eblocki/modes";
 import { computeTemporal } from "@/lib/eblocki/temporal-engine";
 import { buildTemporalSnapshotPayload, stripSensitiveTemporalSnapshotFields } from "@/lib/eblocki/temporal-snapshot";
 import { logEvent } from "@/lib/eblocki/analytics";
@@ -77,6 +81,8 @@ const ARTIFACT_TYPES = [
 ];
 
 interface Verdict {
+  comparison: Comparison | null;
+  recommendedArtifact: string | null;
   title: string;
   modeId: string;
   artifactType: string;
@@ -250,14 +256,15 @@ function VerdictFeedback({ artifactId }: { artifactId: string }) {
 export default function Proof() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  const correctionParentId = trustedRecordHint(params.get("corrects"));
   const firstProofMode = isFirstProofMode(params);
   const uglyStartMode = isUglyStartMode(params);
   const temporalBrief = useMemo(() => parseTemporalProofParams(params), [params]);
   const taskSource = params.get("source") === "task" || params.get("source") === "quest";
   const objectiveIdHint = trustedRecordHint(params.get("objective"));
   const [firstProofSubmitted, setFirstProofSubmitted] = useState(false);
-  const [correctionAttempt, setCorrectionAttempt] = useState(false);
+  const [correctionAttempt, setCorrectionAttempt] = useState(Boolean(correctionParentId));
 
   const [pending, setPending] = useState<ProofCommitmentRow[]>([]);
   const [completed, setCompleted] = useState<ProofArtifactRow[]>([]);
@@ -266,6 +273,12 @@ export default function Proof() {
   const [userModes, setUserModes] = useState<UserMode[]>([]);
 
   const [selectedModeId, setSelectedModeId] = useState<string>("");
+  const [correctionOverride, setCorrectionOverride] = useState<{ parentId: string; domain: string } | null>(null);
+  const explicitCorrectionDomain = correctionOverride?.parentId === correctionParentId ? correctionOverride.domain : null;
+  const chooseStudyArea = (value: string) => {
+    setSelectedModeId(value);
+    if (correctionParentId) setCorrectionOverride(value ? { parentId: correctionParentId, domain: value } : null);
+  };
   const [linkedContractId, setLinkedContractId] = useState<string>("");
   const [title, setTitle] = useState("");
   const [firstProofDomain, setFirstProofDomain] = useState<string>(FIRST_PROOF_DEFAULTS.domain);
@@ -439,6 +452,7 @@ export default function Proof() {
   >(null);
 
   const resetForm = () => {
+    setCorrectionOverride(null);
     setTitle("");
     setContent("");
     setReflection("");
@@ -457,6 +471,10 @@ export default function Proof() {
 
   const submit = async () => {
     if (!user) return;
+    if (params.has("corrects") && !correctionParentId) {
+      toast.error("This correction link is invalid. Reopen the original proof.");
+      return;
+    }
     const effectiveArtifactType = artifactType.trim()
       ? artifactType
       : firstProofMode
@@ -481,11 +499,21 @@ export default function Proof() {
       });
     }
     try {
+      let parent: CorrectionParent | null = null;
+      if (correctionParentId) {
+        const { data, error: parentError } = await supabase.from("proof_artifacts")
+          .select("id,domain,title,artifact_type,content,quality_score,evidence_strength,assessment")
+          .eq("id", correctionParentId).eq("user_id", user.id).maybeSingle();
+        if (parentError || !data) throw new Error("The original proof could not be verified. Reopen it before submitting a correction.");
+        parent = data;
+      }
+      const correctionContext = parent ? correctionAssessmentContext(parent, explicitCorrectionDomain) : null;
       const modeId =
         selectedMode?.mode_id ??
         linkedContract?.mode ??
+        Object.entries(MODE_DOMAINS).find(([, domain]) => domain === linkedContract?.domain)?.[0] ??
         (firstProofMode ? FIRST_PROOF_DEFAULTS.modeId : "GENERAL_EXECUTION");
-      const domainValue = (
+      const domainValue = correctionContext?.domain ?? (
         selectedMode?.mode_id ??
         linkedContract?.domain ??
         (firstProofMode ? firstProofDomain : modeId)
@@ -505,6 +533,7 @@ export default function Proof() {
 
       const score = scoreProofArtifact({
         domain: domainValue,
+        selectedStandard: correctionContext?.selectedStandard,
         title,
         artifactType: effectiveArtifactType,
         content: scoringContent,
@@ -512,6 +541,10 @@ export default function Proof() {
         nextUpgrade,
       });
 
+      const comparison = parent && correctionParentId
+        ? compareCorrection(parent, { parentId: correctionParentId, domain: domainValue, content: scoringContent, score })
+        : null;
+      const assessment = assessmentSnapshot(score, nextUpgrade.trim() || (/next\s+upgrade\s*:/i.test(content) ? userNextStep({ content }) : ""), comparison);
       const composedFeedback = [
         score.feedback,
         reflection.trim() && `Reflection: ${reflection.trim()}`,
@@ -547,11 +580,13 @@ export default function Proof() {
           domain: domainValue,
           title: title.trim(),
           artifact_type: effectiveArtifactType,
-          content,
+          content: scoringContent,
+          parent_artifact_id: correctionParentId,
+          assessment,
           quality_score: score.qualityScore,
           evidence_strength: score.evidenceStrength,
           feedback: composedFeedback,
-          next_upgrade: nextUpgrade.trim() || score.nextUpgrade,
+          next_upgrade: score.nextUpgrade,
           attachment_path: attachmentPath,
           attachment_url: attachmentUrl,
           attachment_type: attachment?.type ?? null,
@@ -604,8 +639,8 @@ export default function Proof() {
 
       let contractClosed = false;
       let taskSyncPending = false;
-      if (linkedContract && !linkedContract.proof_artifact_id) {
-        const { error: upErr } = await supabase
+      if (score.closureEligible && linkedContract && !linkedContract.proof_artifact_id) {
+        const { data: settledContract, error: upErr } = await supabase
           .from("proof_commitments")
           .update({
             status: "completed",
@@ -615,12 +650,14 @@ export default function Proof() {
           })
           .eq("id", linkedContract.id)
           .eq("user_id", user.id)
-          .is("proof_artifact_id", null);
-        if (!upErr) contractClosed = true;
+          .is("proof_artifact_id", null)
+          .in("status", ["pending", "active"])
+          .select("id").maybeSingle();
+        if (!upErr && settledContract) contractClosed = true;
         else taskSyncPending = true;
       }
 
-      if (linkedObjective) {
+      if (score.closureEligible && linkedObjective && !correctionParentId) {
         const completedAt = new Date().toISOString();
         const { data: syncedObjective, error: objectiveError } = await supabase
           .from("daily_objectives")
@@ -639,14 +676,11 @@ export default function Proof() {
 
       const extras = buildVerdictExtras(submissionPreview, score);
 
-      const verdictNextUpgrade = extractNextUpgrade({
-        nextUpgrade,
-        content,
-        reflection,
-        fallback: score.nextUpgrade,
-      });
+      const verdictNextUpgrade = score.nextUpgrade;
 
       setVerdict({
+        comparison,
+        recommendedArtifact: score.recommendedArtifact,
         title: title.trim(),
         modeId,
         artifactType: effectiveArtifactType,
@@ -656,13 +690,13 @@ export default function Proof() {
         feedback: score.feedback,
         nextUpgrade: verdictNextUpgrade,
         why: extras.why,
-        missingStandard: extras.missingStandard,
-        eliteVersion: extras.eliteVersion,
+        missingStandard: score.gap,
+        eliteVersion: getDomainStandard(score.standardKey).eliteVersion,
         artifactId: artifact!.id,
         contractClosed,
         taskSyncPending,
-        selectedStandard: submissionPreview.standardLabel,
-        requiredEvidence: submissionPreview.requiredEvidence,
+        selectedStandard: score.standardLabel,
+        requiredEvidence: getDomainStandard(score.standardKey).requiredEvidence,
         contractAlignment: submissionPreview.alignmentMessage,
         identityEscalationAllowed: submissionPreview.identityEscalationAllowed,
         identityEscalationReason: submissionPreview.identityRule,
@@ -722,6 +756,13 @@ export default function Proof() {
           setCorrectionAttempt(false);
         }
       }
+      if (comparison) void logEvent("correction_attempt_submitted", {
+        parent_artifact_id: comparison.parentId, parent_score: comparison.originalScore,
+        corrected_score: comparison.newScore, score_delta: comparison.scoreDelta,
+        correction_status: comparison.status, domain: domainValue, standard_key: score.standardKey,
+      });
+      setCorrectionAttempt(false);
+      setParams(previous => { const next = new URLSearchParams(previous); next.delete("corrects"); return next; }, { replace: true });
       resetForm();
       reload();
     } catch (error: unknown) {
@@ -883,6 +924,7 @@ export default function Proof() {
         feedback: verdict.feedback,
         nextUpgrade: verdict.nextUpgrade,
         missingStandard: verdict.missingStandard,
+        recommendedArtifact: verdict.recommendedArtifact,
         selectedStandard: verdict.selectedStandard,
         requiredEvidence: verdict.requiredEvidence,
         artifactType: verdict.artifactType,
@@ -1167,7 +1209,7 @@ export default function Proof() {
                     <select
                       id="proof-mode-select"
                       value={selectedModeId}
-                      onChange={(e) => setSelectedModeId(e.target.value)}
+                      onChange={(e) => chooseStudyArea(e.target.value)}
                       className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value="">- pick an area -</option>
@@ -1232,7 +1274,10 @@ export default function Proof() {
                     <select
                       id="proof-first-domain"
                       value={firstProofDomain}
-                      onChange={(e) => setFirstProofDomain(e.target.value)}
+                      onChange={(e) => {
+                        setFirstProofDomain(e.target.value);
+                        if (correctionParentId) setCorrectionOverride({ parentId: correctionParentId, domain: e.target.value });
+                      }}
                       className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value={FIRST_PROOF_DEFAULTS.domain}>General</option>
@@ -1282,7 +1327,7 @@ export default function Proof() {
                         <select
                           id="proof-mode-select-mobile"
                           value={selectedModeId}
-                          onChange={(e) => setSelectedModeId(e.target.value)}
+                          onChange={(e) => chooseStudyArea(e.target.value)}
                           className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                         >
                           <option value="">- pick an area -</option>
@@ -1331,6 +1376,13 @@ export default function Proof() {
               />
             )}
 
+            {correctionParentId && <div className="rounded-sm border border-primary/30 p-3 text-sm break-words">
+              <p className="font-medium">Correction target</p>
+              <p className="mt-1 text-muted-foreground">{explicitCorrectionDomain
+                ? `Study area explicitly changed to ${displayProofDomain(explicitCorrectionDomain)}. A different domain or standard makes this comparison unavailable.`
+                : "This attempt inherits the original proof’s study area and assessment standard, even if that area is no longer active."}</p>
+              <p className="mt-1 text-muted-foreground">{readAssessment(completed.find(item => item.id === correctionParentId)?.assessment)?.systemRecommendation ?? "The original system target is unavailable. Comparison will remain unknown unless it can be verified."}</p>
+            </div>}
             <div>
               <Label htmlFor="proof-content">
                 {firstProofMode ? "Paste your work" : "Your work"}
@@ -1389,7 +1441,7 @@ export default function Proof() {
                   <select
                     id="proof-mode-select"
                     value={selectedModeId}
-                    onChange={(e) => setSelectedModeId(e.target.value)}
+                    onChange={(e) => chooseStudyArea(e.target.value)}
                     className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="">- default -</option>
@@ -1705,6 +1757,8 @@ export default function Proof() {
               firstProofMode={firstProofMode}
               settlementHref={taskSource ? "/profile" : null}
               onCorrectedAttempt={(presentation) => {
+                setCorrectionOverride(null);
+                setParams(previous => { const next = new URLSearchParams(previous); next.set("corrects", verdict.artifactId); next.set("mode", verdict.modeId); if (verdict.contractClosed) next.delete("contract"); next.delete("objective"); return next; });
                 setVerdict(null);
                 setSubmittedStudyClassification(null);
                 setDetailOpen(true);
@@ -1714,7 +1768,7 @@ export default function Proof() {
                   setLinkedContractId(verdict.linkedContractId);
                 }
                 setTitle(verdict.title ? `Corrected attempt: ${verdict.title}` : "");
-                setNextUpgrade(presentation.correction?.action ?? "");
+                setNextUpgrade("");
                 setCorrectionAttempt(true);
                 void logEvent("activation_correction_started", {
                   route: "/proof",
@@ -1732,10 +1786,12 @@ export default function Proof() {
                 });
               }}
               onNewProof={() => {
+                setCorrectionOverride(null);
                 setVerdict(null);
                 setSubmittedStudyClassification(null);
                 setDetailOpen(false);
                 setCorrectionAttempt(false);
+                setParams(previous => { const next = new URLSearchParams(previous); next.delete("corrects"); return next; }, { replace: true });
               }}
             />
             {verdict.attachmentUrl && (
@@ -1917,6 +1973,7 @@ function ProofVerdictSummaryCard({
         <VerdictRow label="Count status" value={presentation.details.countStatus} />
         <VerdictRow label="Today status" value={presentation.details.todayStatus} />
       </div>
+      {verdict.comparison && <CorrectionComparison comparison={verdict.comparison} />}
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <section className="rounded-sm border border-border bg-background/50 p-4 min-w-0">
           <div className="font-mono text-[10px] uppercase tracking-widest text-primary">Most important gap · inferred</div>
@@ -1977,7 +2034,7 @@ function ProofVerdictSummaryCard({
           </Link>
         )}
         {presentation.primaryAction === "corrected_attempt" ? (
-          <Link to={presentation.correctedAttemptHref} className="w-full sm:w-auto">
+          <div className="w-full sm:w-auto">
             <Button
               size="sm"
               className="w-full sm:w-auto min-h-[44px] native-tap"
@@ -1986,7 +2043,7 @@ function ProofVerdictSummaryCard({
               <Gavel className="h-3.5 w-3.5 mr-1.5" />
               {presentation.primaryLabel}
             </Button>
-          </Link>
+          </div>
         ) : (
           <Link to="/dashboard" className="w-full sm:w-auto">
             <Button
@@ -2130,9 +2187,12 @@ function CompletedArtifactCard({ artifact }: { artifact: ProofArtifactRow }) {
           {open || !isLong ? fullFeedback : summary}
         </p>
       )}
+      {readAssessment(artifact.assessment)?.comparison && <CorrectionComparison comparison={readAssessment(artifact.assessment)!.comparison!} />}
+      {artifact.parent_artifact_id && !readAssessment(artifact.assessment)?.comparison && <p className="mt-2 text-xs">Correction linked to an earlier proof. Historical comparison is unavailable.</p>}
+      {readAssessment(artifact.assessment)?.userProposedNextStep && <p className="mt-2 text-xs text-muted-foreground break-words">Your proposed next step: {readAssessment(artifact.assessment)!.userProposedNextStep}</p>}
       {artifact.next_upgrade && (
         <p className="text-xs text-primary mt-1 break-words">
-          Next upgrade: {extractNextUpgrade({ nextUpgrade: artifact.next_upgrade, content: artifact.content })}
+          {readAssessment(artifact.assessment) ? "System correction" : "Recorded next step (provenance unknown)"}: {artifact.next_upgrade}
         </p>
       )}
       {artifact.attachment_url && (

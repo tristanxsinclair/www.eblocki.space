@@ -1,4 +1,5 @@
 export type DomainStandardKey =
+  | "academic_applied_standard"
   | "law_irac_standard"
   | "law_source_bank_standard"
   | "academic_proof_plan_standard"
@@ -32,6 +33,15 @@ export interface DomainStandardSelectionInput {
 }
 
 export const DOMAIN_STANDARD_REGISTRY: Record<DomainStandardKey, DomainStandard> = {
+  academic_applied_standard: {
+    key: "academic_applied_standard",
+    label: "Academic Applied Understanding Standard",
+    criteria: ["concept explanation", "scenario application", "competing explanations", "error correction"],
+    requiredEvidence: ["concept explanation", "scenario with reasoning", "discrimination between explanations", "visible error correction"],
+    missingStandard: "Missing applied understanding: demonstrate a scenario with reasoning and distinguish competing explanations.",
+    eliteVersion: "A worked answer with application, discrimination and checked corrections; factual correctness requires authoritative marking.",
+    nextUpgrade: "Answer a concrete scenario and justify the explanation against an alternative.",
+  },
   law_irac_standard: {
     key: "law_irac_standard",
     label: "Law IRAC Standard",
@@ -187,6 +197,13 @@ export function selectDomainStandard(input: DomainStandardSelectionInput = {}): 
   const signalText = normalise(input.signalText);
   const slotCombined = `${domain} ${intent} ${artifactType}`;
   const combined = `${slotCombined} ${signalText}`.trim();
+
+  // Explicit study context wins over incidental product words in an answer.
+  if (hasAny(slotCombined, ["psychology", "psych hd", "psych"]) ||
+      (hasAny(slotCombined, ["academic", "study", "biology", "history", "science"]) && !hasAny(slotCombined, ["law", "legal", "source bank"]) &&
+       !hasAny(slotCombined, ["plan", "system", "workflow"]))) {
+    return DOMAIN_STANDARD_REGISTRY.academic_applied_standard;
+  }
 
   // Implementation standard requires actual shipped-evidence markers, not the
   // bare word "implementation" (which appears in "implementation path stated"

@@ -376,6 +376,7 @@ export function runProofCheck(input: ProofCheckInput): ProofCheckVerdict {
     title: clean(input.goal) || route.recommendedProofArtifact.title,
     artifactType: route.recommendedProofArtifact.artifactType,
     content: artifactText,
+    selectedStandard: standard.key,
     reflection: "",
     nextUpgrade: "",
   });
@@ -384,7 +385,9 @@ export function runProofCheck(input: ProofCheckInput): ProofCheckVerdict {
     artifactType: route.recommendedProofArtifact.artifactType,
     content: artifactText,
   });
-  const missingEvidence = detectMissingEvidence(standard, artifactText);
+  const missingEvidence = scoring.dimensions
+    ? Object.entries(scoring.dimensions).filter(([, evidence]) => !evidence).map(([dimension]) => dimension)
+    : detectMissingEvidence(standard, artifactText);
   const weakClaims = detectWeakClaims(artifactText);
   const unsupportedClaims = detectUnsupportedClaims(artifactText);
   const selfDeceptionRisk = resolveRisk({
@@ -405,7 +408,7 @@ export function runProofCheck(input: ProofCheckInput): ProofCheckVerdict {
     missingEvidence.length
       ? `Missing evidence: ${missingEvidence.join(", ")}.`
       : `Required evidence is visible for ${standard.label}.`,
-    `Study verdict: ${study.verdict}. ${study.reason}`,
+    "Study-method keywords are diagnostic only, not a separate evidence verdict.",
   ];
 
   return {
@@ -420,7 +423,7 @@ export function runProofCheck(input: ProofCheckInput): ProofCheckVerdict {
     weakClaims,
     unsupportedClaims,
     minimumNextArtifact: proofContract.requiredArtifact || route.recommendedProofArtifact.requiredArtifact,
-    nextCommand: study.upgradeCommand || scoring.nextUpgrade || route.recommendedProofArtifact.action,
+    nextCommand: scoring.nextUpgrade,
     recommendedArtifactType: route.recommendedProofArtifact.artifactType,
     proofQuestion: PROOF_QUESTION,
     modeWarning:

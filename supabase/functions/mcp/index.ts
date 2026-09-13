@@ -42,6 +42,15 @@ function buildTwoSourceBankProofTask() {
 
 // src/lib/eblocki/domain-standards.ts
 var DOMAIN_STANDARD_REGISTRY = {
+  academic_applied_standard: {
+    key: "academic_applied_standard",
+    label: "Academic Applied Understanding Standard",
+    criteria: ["concept explanation", "scenario application", "competing explanations", "error correction"],
+    requiredEvidence: ["concept explanation", "scenario with reasoning", "discrimination between explanations", "visible error correction"],
+    missingStandard: "Missing applied understanding: demonstrate a scenario with reasoning and distinguish competing explanations.",
+    eliteVersion: "A worked answer with application, discrimination and checked corrections; factual correctness requires authoritative marking.",
+    nextUpgrade: "Answer a concrete scenario and justify the explanation against an alternative."
+  },
   law_irac_standard: {
     key: "law_irac_standard",
     label: "Law IRAC Standard",
@@ -194,6 +203,9 @@ function selectDomainStandard(input = {}) {
   const signalText = normalise(input.signalText);
   const slotCombined = `${domain} ${intent} ${artifactType}`;
   const combined = `${slotCombined} ${signalText}`.trim();
+  if (hasAny(slotCombined, ["psychology", "psych hd", "psych"]) || hasAny(slotCombined, ["academic", "study", "biology", "history", "science"]) && !hasAny(slotCombined, ["law", "legal", "source bank"]) && !hasAny(slotCombined, ["plan", "system", "workflow"])) {
+    return DOMAIN_STANDARD_REGISTRY.academic_applied_standard;
+  }
   if (hasAny(combined, [
     "file changes",
     "commit reference",
@@ -745,34 +757,31 @@ function buildProofStandardPreview(input = {}) {
   };
 }
 
-// src/lib/eblocki/next-upgrade-extract.ts
-var NEXT_UPGRADE_MAX_CHARS = 280;
-function cap(value, max = NEXT_UPGRADE_MAX_CHARS) {
-  const trimmed = value.trim();
-  if (trimmed.length <= max) return trimmed;
-  return trimmed.slice(0, Math.max(0, max - 1)).trimEnd() + "\u2026";
+// src/lib/eblocki/academic-evidence.ts
+function evidenceOnly(text = "") {
+  return text.split(/(?:^|\n)\s*(?:#{1,6}\s*)?(?:next upgrade|next step|future upgrade|proposed upgrade)\s*:/i)[0].trim();
 }
-function extractLine(text) {
-  if (!text) return "";
-  const re = /(?:^|\n)\s*(?:next\s+upgrade|next\s+required\s+proof)\s*[:-]\s*([^\n]+(?:\n(?!\s*(?:[a-z][a-z0-9 _-]{2,30}\s*:|$))[^\n]+)*)/i;
-  const m = text.match(re);
-  if (!m) return "";
-  return m[1].replace(/\s+/g, " ").trim();
+function academicEvidence(content) {
+  const sentences = evidenceOnly(content).split(/(?<=[.!?])\s+|\n+/).map((s) => s.trim());
+  const worked = sentences.filter((s) => s.split(/\s+/).length >= 12 && !/^(?:i |we )?(?:will|plan to|need to|should|want to)|\b(?:i applied the concept|desired score|strong proof|required evidence)\b/i.test(s));
+  const find = (pattern) => worked.find((s) => pattern.test(s)) ?? null;
+  return {
+    explanation: find(/\b(?:means|refers to|defined as|is the|because|due to)\b/i),
+    application: worked.find((s) => /\b(?:scenario|for example|when|patient|participant|student|reader|degraded|blurred)\b/i.test(s) && /\b(?:because|therefore|due to|suggests|explains|predicts)\b/i.test(s)) ?? null,
+    discrimination: worked.find((s) => /\b(?:whereas|although|however|rather than|both|alternative)\b/i.test(s) && /\b(?:because|therefore|depends|unlike|distinguish)\b/i.test(s)) ?? null,
+    correction: worked.find((s) => /\b(?:initially|previously|mistaken|incorrect|mistake|wrong)\b/i.test(s) && /\b(?:now|instead|correct|because|revised)\b/i.test(s)) ?? null
+  };
 }
-function extractNextUpgrade(input) {
-  const raw = (input.nextUpgrade ?? "").trim();
-  if (raw) {
-    const embedded = extractLine(raw);
-    if (embedded) return cap(embedded);
-    return cap(raw);
-  }
-  const fromContent = extractLine(input.content ?? "");
-  if (fromContent) return cap(fromContent);
-  const fromReflection = extractLine(input.reflection ?? "");
-  if (fromReflection) return cap(fromReflection);
-  const fallback = (input.fallback ?? "").trim();
-  if (fallback) return cap(fallback);
-  return "Submit implementation or external test evidence.";
+function academicGap(evidence) {
+  if (!evidence.explanation) return { target: "explanation", gap: "A worked concept explanation is not yet visible.", action: "Explain one concept in a full answer, including why it works." };
+  if (!evidence.application) return { target: "application", gap: "Definitions are visible, but a concrete scenario linked to a reason is not yet demonstrated.", action: "Answer one concrete scenario and explain why the concept accounts for the observed result." };
+  if (!evidence.discrimination) return { target: "discrimination", gap: "Scenario application is visible; discrimination between competing explanations is not yet demonstrated.", action: "Answer one ambiguous scenario with two plausible explanations. Justify which fits better and why the alternative is weaker." };
+  if (!/\b(?:dominant|more likely|stronger explanation|better explains)\b/i.test(evidence.discrimination)) return {
+    target: "discrimination",
+    gap: "Competing explanations are discussed, but weighing them in an ambiguous case is not yet demonstrated.",
+    action: "Answer one ambiguous scenario with two plausible explanations. Justify which fits better and why the alternative is weaker."
+  };
+  return { target: "correction", gap: "Structural reasoning is visible. Independent marking and transfer to a novel case remain unverified.", action: "Check this answer against an authoritative rubric, show any error and its correction, then answer a novel case." };
 }
 
 // src/lib/eblocki/proof-scoring.ts
@@ -809,12 +818,11 @@ function scoreProofArtifact(input) {
   const domain = String(input.domain || "general").toLowerCase();
   const title = input.title?.trim() || "";
   const artifactType = input.artifactType?.trim() || "";
-  const content = input.content?.trim() || "";
+  const content = evidenceOnly(input.content);
   const reflection = input.reflection?.trim() || "";
-  const nextUpgrade = input.nextUpgrade?.trim() || "";
   const signalText = [title, content, reflection].filter(Boolean).join("\n");
-  const standard = selectDomainStandard({ domain, artifactType, signalText });
-  const combined = [title, artifactType, content, reflection, nextUpgrade].filter(Boolean).join("\n");
+  const standard = input.selectedStandard ? getDomainStandard(input.selectedStandard) : selectDomainStandard({ domain, artifactType, signalText });
+  const combined = [title, artifactType, content, reflection].filter(Boolean).join("\n");
   const standardHits = standard.criteria.filter((criterion) => combined.toLowerCase().includes(criterion.split(" ")[0].toLowerCase())).length;
   let score = 1;
   if (title.length > 4) score += 1;
@@ -822,7 +830,6 @@ function scoreProofArtifact(input) {
   if (content.length >= 80) score += 1;
   if (content.length >= 250) score += 1;
   if (reflection.length >= 40) score += 1;
-  if (nextUpgrade.length >= 20) score += 1;
   const markerCount = countDomainMarkers(domain, combined);
   if (markerCount >= 2) score += 1;
   if (markerCount >= 4) score += 1;
@@ -841,6 +848,13 @@ function scoreProofArtifact(input) {
       finalScore = Math.min(finalScore, 8);
     }
   }
+  const dimensions = standard.key === "academic_applied_standard" ? academicEvidence(content) : null;
+  if (dimensions) {
+    const demonstrated = Object.values(dimensions).filter(Boolean).length;
+    finalScore = demonstrated === 0 ? content.length >= 80 ? 3 : 1 : Math.min(8, 3 + demonstrated * 2);
+    if (!dimensions.application) finalScore = Math.min(finalScore, 6);
+  }
+  if (content.length < 40) finalScore = Math.min(finalScore, 3);
   const evidenceStrength = evidenceStrengthFromScore(finalScore);
   let feedback = "";
   let suggestedUpgrade = "";
@@ -857,17 +871,23 @@ function scoreProofArtifact(input) {
     feedback = `Elite evidence against ${standard.label}. The artifact includes action, application, feedback, and a clear upgrade path.`;
     suggestedUpgrade = "Preserve this standard and repeat it across the next proof cycle.";
   }
-  const resolvedNextUpgrade = extractNextUpgrade({
-    nextUpgrade,
-    content,
-    reflection,
-    fallback: suggestedUpgrade
-  });
+  const diagnosis = dimensions ? academicGap(dimensions) : null;
+  if (dimensions) feedback = `${evidenceStrength[0].toUpperCase() + evidenceStrength.slice(1)} structural evidence against ${standard.label}. Visible dimensions: ${Object.entries(dimensions).filter(([, v]) => v).map(([k]) => k).join(", ") || "none"}. Subject correctness and unaided recall are not verified.`;
   return {
     qualityScore: finalScore,
     evidenceStrength,
     feedback,
-    nextUpgrade: resolvedNextUpgrade
+    nextUpgrade: diagnosis?.action ?? suggestedUpgrade,
+    standardKey: standard.key,
+    standardLabel: standard.label,
+    gap: diagnosis?.gap ?? standard.missingStandard,
+    correctionTarget: diagnosis?.target ?? null,
+    dimensions,
+    recommendationSource: "system",
+    recommendedArtifact: diagnosis ? `A worked answer with ${diagnosis.target} evidence and the reasoning behind it.` : null,
+    countEligible: finalScore >= 7,
+    closureEligible: finalScore >= 7,
+    limitations: ["Structural text assessment; external truth, task difficulty and factual correctness are not verified."]
   };
 }
 
@@ -1254,6 +1274,7 @@ function runProofCheck(input) {
     title: clean3(input.goal) || route.recommendedProofArtifact.title,
     artifactType: route.recommendedProofArtifact.artifactType,
     content: artifactText,
+    selectedStandard: standard.key,
     reflection: "",
     nextUpgrade: ""
   });
@@ -1262,7 +1283,7 @@ function runProofCheck(input) {
     artifactType: route.recommendedProofArtifact.artifactType,
     content: artifactText
   });
-  const missingEvidence = detectMissingEvidence(standard, artifactText);
+  const missingEvidence = scoring.dimensions ? Object.entries(scoring.dimensions).filter(([, evidence]) => !evidence).map(([dimension]) => dimension) : detectMissingEvidence(standard, artifactText);
   const weakClaims = detectWeakClaims(artifactText);
   const unsupportedClaims = detectUnsupportedClaims(artifactText);
   const selfDeceptionRisk = resolveRisk({
@@ -1280,7 +1301,7 @@ function runProofCheck(input) {
   const reasoningParts = [
     scoring.feedback,
     missingEvidence.length ? `Missing evidence: ${missingEvidence.join(", ")}.` : `Required evidence is visible for ${standard.label}.`,
-    `Study verdict: ${study.verdict}. ${study.reason}`
+    "Study-method keywords are diagnostic only, not a separate evidence verdict."
   ];
   return {
     verdict: scoring.evidenceStrength,
@@ -1294,7 +1315,7 @@ function runProofCheck(input) {
     weakClaims,
     unsupportedClaims,
     minimumNextArtifact: proofContract.requiredArtifact || route.recommendedProofArtifact.requiredArtifact,
-    nextCommand: study.upgradeCommand || scoring.nextUpgrade || route.recommendedProofArtifact.action,
+    nextCommand: scoring.nextUpgrade,
     recommendedArtifactType: route.recommendedProofArtifact.artifactType,
     proofQuestion: PROOF_QUESTION,
     modeWarning: route.intent === "product_system_review" ? "Judge product behaviour by output evidence, corrected logic, implementation path, and a measurable test." : route.intent === "execution_lock" ? "Planning does not count as proof. Produce one visible artifact first." : "",
