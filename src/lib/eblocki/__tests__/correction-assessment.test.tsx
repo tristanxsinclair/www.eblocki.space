@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import { scoreProofArtifact } from "../proof-scoring";
 import { academicEvidence } from "../academic-evidence";
-import { assessmentSnapshot, compareCorrection, readAssessment } from "../correction-assessment";
+import { assessmentSnapshot, compareCorrection, correctionAssessmentContext, canonicalCorrectionDomain, readAssessment } from "../correction-assessment";
 import { selectDomainStandard } from "../domain-standards";
 import { classifyStudyActivity } from "../fake-study-detector";
 import { StudyVerdictHint } from "@/components/eblocki/StudyVerdictHint";
@@ -97,4 +97,39 @@ describe("production correction coherence", () => {
     expect(result.status).toBe("resolved");
   });
 
+});
+
+
+describe("trusted correction context", () => {
+  it("inherits persisted canonical context without a contract or active mode row", () => {
+    expect(correctionAssessmentContext({...parent,domain:"psychology"})).toEqual({domain:"psychology",selectedStandard:"academic_applied_standard"});
+    expect(correctionAssessmentContext(parent)).toEqual({domain:"psychology",selectedStandard:"academic_applied_standard"});
+    expect(canonicalCorrectionDomain("LAW_MAX")).toBe("law");
+  });
+  it("honours a registered persisted standard even when current inference differs", () => {
+    const historical = {...parent,domain:"general"};
+    const context = correctionAssessmentContext(historical);
+    const score = scoreProofArtifact({...corrected,...context});
+    expect(context.selectedStandard).toBe("academic_applied_standard");
+    expect(compareCorrection(historical,{parentId:parent.id,domain:context.domain,content:corrected.content,score}).status).not.toBe("incomparable");
+  });
+  it("treats an explicit different study area as a legitimate context change", () => {
+    const context = correctionAssessmentContext(parent,"GENERAL_EXECUTION");
+    expect(context).toEqual({domain:"general",selectedStandard:"general_proof_standard"});
+    const score = scoreProofArtifact({...corrected,...context});
+    expect(compareCorrection(parent,{parentId:parent.id,domain:context.domain,content:corrected.content,score}).status).toBe("incomparable");
+  });
+  it("recovers legacy standards without inventing a missing correction target", () => {
+    for (const assessment of [null,{}, {standardKey:"not_a_standard"}, {standardKey:"__proto__"}, {standardKey:42}]) {
+      const historical = {...parent,domain:"psychology",assessment};
+      const context = correctionAssessmentContext(historical);
+      expect(context.selectedStandard).toBe("academic_applied_standard");
+      const score = scoreProofArtifact({...corrected,...context});
+      const comparison = compareCorrection(historical,{parentId:parent.id,domain:context.domain,content:corrected.content,score});
+      expect(comparison.status).toBe("incomparable");
+      expect(comparison.explanation).toContain("verified correction target is unavailable");
+    }
+    expect(correctionAssessmentContext({...parent,assessment:{standardKey:"law_source_bank_standard"}}).selectedStandard).toBe("law_source_bank_standard");
+    expect(correctionAssessmentContext({...parent,domain:"law",artifact_type:"source-bank entries",assessment:null}).selectedStandard).toBe("law_source_bank_standard");
+  });
 });

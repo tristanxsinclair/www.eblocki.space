@@ -13,13 +13,14 @@ import { Progress } from "@/components/ui/progress";
 import { EvidenceStrengthBadge } from "@/components/eblocki/Badges";
 import { ProofStandardPreviewPanel } from "@/components/eblocki/ProofStandardPreviewPanel";
 import { CorrectionComparison } from "@/components/eblocki/CorrectionComparison";
-import { assessmentSnapshot, compareCorrection, readAssessment, type CorrectionComparison as Comparison } from "@/lib/eblocki/correction-assessment";
+import { assessmentSnapshot, compareCorrection, correctionAssessmentContext, readAssessment, type CorrectionParent, type CorrectionComparison as Comparison } from "@/lib/eblocki/correction-assessment";
 import { extractNextUpgrade as userNextStep } from "@/lib/eblocki/next-upgrade-extract";
 import { scoreProofArtifact, type EvidenceStrength } from "@/lib/eblocki/proof-scoring";
 import { classifyStudyActivity } from "@/lib/eblocki/fake-study-detector";
 import { StudyVerdictHint } from "@/components/eblocki/StudyVerdictHint";
 import { humaniseModeId, isStudyDomain } from "@/lib/eblocki/display-labels";
 import { buildProofStandardPreview, type ProofStandardPreview } from "@/lib/eblocki/proof-standard-preview";
+import { getDomainStandard } from "@/lib/eblocki/domain-standards";
 import { MODE_DOMAINS, type UserMode } from "@/lib/eblocki/modes";
 import { computeTemporal } from "@/lib/eblocki/temporal-engine";
 import { buildTemporalSnapshotPayload, stripSensitiveTemporalSnapshotFields } from "@/lib/eblocki/temporal-snapshot";
@@ -272,6 +273,12 @@ export default function Proof() {
   const [userModes, setUserModes] = useState<UserMode[]>([]);
 
   const [selectedModeId, setSelectedModeId] = useState<string>("");
+  const [correctionOverride, setCorrectionOverride] = useState<{ parentId: string; domain: string } | null>(null);
+  const explicitCorrectionDomain = correctionOverride?.parentId === correctionParentId ? correctionOverride.domain : null;
+  const chooseStudyArea = (value: string) => {
+    setSelectedModeId(value);
+    if (correctionParentId) setCorrectionOverride(value ? { parentId: correctionParentId, domain: value } : null);
+  };
   const [linkedContractId, setLinkedContractId] = useState<string>("");
   const [title, setTitle] = useState("");
   const [firstProofDomain, setFirstProofDomain] = useState<string>(FIRST_PROOF_DEFAULTS.domain);
@@ -445,6 +452,7 @@ export default function Proof() {
   >(null);
 
   const resetForm = () => {
+    setCorrectionOverride(null);
     setTitle("");
     setContent("");
     setReflection("");
@@ -491,12 +499,21 @@ export default function Proof() {
       });
     }
     try {
+      let parent: CorrectionParent | null = null;
+      if (correctionParentId) {
+        const { data, error: parentError } = await supabase.from("proof_artifacts")
+          .select("id,domain,title,artifact_type,content,quality_score,evidence_strength,assessment")
+          .eq("id", correctionParentId).eq("user_id", user.id).maybeSingle();
+        if (parentError || !data) throw new Error("The original proof could not be verified. Reopen it before submitting a correction.");
+        parent = data;
+      }
+      const correctionContext = parent ? correctionAssessmentContext(parent, explicitCorrectionDomain) : null;
       const modeId =
         selectedMode?.mode_id ??
         linkedContract?.mode ??
         Object.entries(MODE_DOMAINS).find(([, domain]) => domain === linkedContract?.domain)?.[0] ??
         (firstProofMode ? FIRST_PROOF_DEFAULTS.modeId : "GENERAL_EXECUTION");
-      const domainValue = (
+      const domainValue = correctionContext?.domain ?? (
         selectedMode?.mode_id ??
         linkedContract?.domain ??
         (firstProofMode ? firstProofDomain : modeId)
@@ -516,6 +533,7 @@ export default function Proof() {
 
       const score = scoreProofArtifact({
         domain: domainValue,
+        selectedStandard: correctionContext?.selectedStandard,
         title,
         artifactType: effectiveArtifactType,
         content: scoringContent,
@@ -523,14 +541,9 @@ export default function Proof() {
         nextUpgrade,
       });
 
-      let comparison: Comparison | null = null;
-      if (correctionParentId) {
-        const { data: parent, error: parentError } = await supabase.from("proof_artifacts")
-          .select("id,domain,content,quality_score,evidence_strength,assessment")
-          .eq("id", correctionParentId).eq("user_id", user.id).maybeSingle();
-        if (parentError || !parent) throw new Error("The original proof could not be verified. Reopen it before submitting a correction.");
-        comparison = compareCorrection(parent, { parentId: correctionParentId, domain: domainValue, content: scoringContent, score });
-      }
+      const comparison = parent && correctionParentId
+        ? compareCorrection(parent, { parentId: correctionParentId, domain: domainValue, content: scoringContent, score })
+        : null;
       const assessment = assessmentSnapshot(score, nextUpgrade.trim() || (/next\s+upgrade\s*:/i.test(content) ? userNextStep({ content }) : ""), comparison);
       const composedFeedback = [
         score.feedback,
@@ -678,12 +691,12 @@ export default function Proof() {
         nextUpgrade: verdictNextUpgrade,
         why: extras.why,
         missingStandard: score.gap,
-        eliteVersion: extras.eliteVersion,
+        eliteVersion: getDomainStandard(score.standardKey).eliteVersion,
         artifactId: artifact!.id,
         contractClosed,
         taskSyncPending,
         selectedStandard: score.standardLabel,
-        requiredEvidence: submissionPreview.requiredEvidence,
+        requiredEvidence: getDomainStandard(score.standardKey).requiredEvidence,
         contractAlignment: submissionPreview.alignmentMessage,
         identityEscalationAllowed: submissionPreview.identityEscalationAllowed,
         identityEscalationReason: submissionPreview.identityRule,
@@ -1196,7 +1209,7 @@ export default function Proof() {
                     <select
                       id="proof-mode-select"
                       value={selectedModeId}
-                      onChange={(e) => setSelectedModeId(e.target.value)}
+                      onChange={(e) => chooseStudyArea(e.target.value)}
                       className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value="">- pick an area -</option>
@@ -1261,7 +1274,10 @@ export default function Proof() {
                     <select
                       id="proof-first-domain"
                       value={firstProofDomain}
-                      onChange={(e) => setFirstProofDomain(e.target.value)}
+                      onChange={(e) => {
+                        setFirstProofDomain(e.target.value);
+                        if (correctionParentId) setCorrectionOverride({ parentId: correctionParentId, domain: e.target.value });
+                      }}
                       className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value={FIRST_PROOF_DEFAULTS.domain}>General</option>
@@ -1311,7 +1327,7 @@ export default function Proof() {
                         <select
                           id="proof-mode-select-mobile"
                           value={selectedModeId}
-                          onChange={(e) => setSelectedModeId(e.target.value)}
+                          onChange={(e) => chooseStudyArea(e.target.value)}
                           className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                         >
                           <option value="">- pick an area -</option>
@@ -1362,6 +1378,9 @@ export default function Proof() {
 
             {correctionParentId && <div className="rounded-sm border border-primary/30 p-3 text-sm break-words">
               <p className="font-medium">Correction target</p>
+              <p className="mt-1 text-muted-foreground">{explicitCorrectionDomain
+                ? `Study area explicitly changed to ${displayProofDomain(explicitCorrectionDomain)}. A different domain or standard makes this comparison unavailable.`
+                : "This attempt inherits the original proof’s study area and assessment standard, even if that area is no longer active."}</p>
               <p className="mt-1 text-muted-foreground">{readAssessment(completed.find(item => item.id === correctionParentId)?.assessment)?.systemRecommendation ?? "The original system target is unavailable. Comparison will remain unknown unless it can be verified."}</p>
             </div>}
             <div>
@@ -1422,7 +1441,7 @@ export default function Proof() {
                   <select
                     id="proof-mode-select"
                     value={selectedModeId}
-                    onChange={(e) => setSelectedModeId(e.target.value)}
+                    onChange={(e) => chooseStudyArea(e.target.value)}
                     className="mt-2 w-full min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="">- default -</option>
@@ -1738,6 +1757,7 @@ export default function Proof() {
               firstProofMode={firstProofMode}
               settlementHref={taskSource ? "/profile" : null}
               onCorrectedAttempt={(presentation) => {
+                setCorrectionOverride(null);
                 setParams(previous => { const next = new URLSearchParams(previous); next.set("corrects", verdict.artifactId); next.set("mode", verdict.modeId); if (verdict.contractClosed) next.delete("contract"); next.delete("objective"); return next; });
                 setVerdict(null);
                 setSubmittedStudyClassification(null);
@@ -1766,6 +1786,7 @@ export default function Proof() {
                 });
               }}
               onNewProof={() => {
+                setCorrectionOverride(null);
                 setVerdict(null);
                 setSubmittedStudyClassification(null);
                 setDetailOpen(false);

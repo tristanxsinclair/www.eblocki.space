@@ -155,3 +155,38 @@ Rollback should first stop new writes and restore the prior browser/edge release
 - `tests/sql/correction-assessment.sql`
 
 Implementation commit: `db3dd35`. Work is committed on the isolated branch; nothing was pushed or deployed.
+
+## STAGING FINDING — CORRECTION DOMAIN LINEAGE
+
+Observed authenticated staging failure: the original contract-backed psychology proof was Strong 8/10 under `academic_applied_standard`, counted and closed its contract. After correction navigation removed the completed contract, the child became General/Strong 7/10 and its comparison correctly failed closed as incomparable. The detector disposition was correct; this was context loss, not a reason to loosen comparison.
+
+Confirmed root cause: `Proof.tsx` resolved `selectedModeId` through active mode rows, used the contract as another domain source, and fell back to `GENERAL_EXECUTION` when neither resolved. The parent was loaded only after scoring. A `PSYCH_HD` URL hint therefore did not preserve assessment context without an exact active mode row. Comparison also re-inferred the parent's standard, allowing current inference to override its persisted canonical standard.
+
+Fix: fetch the owned parent before scoring. `correctionAssessmentContext` defaults to its canonical domain and registered persisted standard key; absent/invalid keys fall back to the parent's stored domain, artifact type and evidence through the existing selector. It never uses route hints to override lineage. The existing scorer's `selectedStandard` option is reused; no new scorer, score tuning or migration was introduced. The child persists canonical `psychology`, `academic_applied_standard` and the original parent ID. Required-evidence/elite-reference details use the scorer's selected standard. Comparison now compares the canonical domain and trusted parent standard rather than re-scoring the parent to infer context.
+
+Study-area select events are tracked separately from URL hydration and automatic mode selection. An explicit different area changes context visibly and preserves the legitimate incomparable result. Merely opening or refreshing a correction, including a forged `mode=GENERAL_EXECUTION` URL, does not count as a user override. Refresh resets unsaved form choices and defaults back to trusted parent context. Missing parents still stop submission before scoring/filing. Malformed or incomplete historical snapshots can recover a standard without inventing their missing correction target; comparison remains unknown for that missing history.
+
+Regression coverage:
+
+- All four viewport correction flows now have **no active PSYCH_HD row**. They create the parent from a psychology-linked contract, close it, launch correction, refresh and submit. Assertions verify canonical domain/standard, original parent ID, meaningful comparison and structural improvement, raw score delta, and exactly one contract write retaining the original reference.
+- Additional browser tests cover a forged General route, deliberate General selection with visible notice/incomparable result, a historical parent without assessment, and the existing missing-parent fail-closed path.
+- Unit tests cover trusted persisted standards outranking current inference, domain aliases, deliberate domain changes, null/invalid/partial snapshots and parent evidence/type fallback. The comparator does not weaken genuine incomparable conditions.
+
+Verification for this follow-up:
+
+| Command | Result |
+| --- | --- |
+| `npm test` | PASS: 47 files, 373 tests |
+| `npx vitest run src/lib/eblocki/__tests__/correction-assessment.test.tsx` | PASS: 15 tests |
+| `npm run lint:eblocki` | PASS: no errors/warnings |
+| `npm run lint` | PASS: zero errors, same 12 warnings in untouched files |
+| `npx tsc --noEmit -p tsconfig.app.json` | PASS |
+| `npm run build` | PASS; existing chunk advisory |
+| `npm run perf:bundle-size` | PASS |
+| `npm run check:judgment-generated` | PASS against canonical generated output; pre-existing local staging issuer override preserved separately |
+| `E2E_BASE_URL=http://127.0.0.1:8087 npx playwright test tests/e2e/correction-coherence.spec.ts` | PASS: 8 tests, including absent-mode lineage and explicit overrides |
+| `PGLITE_MODULE=/tmp/eblocki-correction-db/node_modules/@electric-sql/pglite/dist/index.js node scripts/test-correction-database.mjs` | PASS: unchanged migration and CLE settlement checks |
+
+Exact follow-up files: `src/pages/Proof.tsx`, `src/lib/eblocki/correction-assessment.ts`, `src/lib/eblocki/__tests__/correction-assessment.test.tsx`, `tests/e2e/correction-coherence.spec.ts`, and this release receipt. Existing local staging edits in `supabase/functions/mcp/index.ts` and `supabase/.temp/` are excluded.
+
+**Another authenticated staging run is required. Verdict remains READY WITH EXTERNAL VERIFICATION.** With the new branch build, repeat the real original-to-corrected psychology loop on an account without an exact active PSYCH_HD row. Close the original contract, click corrected attempt, refresh, and submit the improved artifact without changing study area. Verify the saved child domain is `psychology`, standard key is `academic_applied_standard`, parent ID is correct, raw delta is visible, and comparison is not incomparable because of a lost domain. Verify the original contract still points to the original artifact and has not settled again. A deliberate different area must still yield incomparable. Local mocks and SQL tests do not substitute for this authenticated rerun. Do not merge until it succeeds.

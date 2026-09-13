@@ -1,11 +1,14 @@
 import { z } from "zod";
 import { academicEvidence, evidenceOnly, type AcademicDimension } from "./academic-evidence";
-import { scoreProofArtifact, type ProofScoringResult } from "./proof-scoring";
+import type { ProofScoringResult } from "./proof-scoring";
+import { DOMAIN_STANDARD_REGISTRY, selectDomainStandard, type DomainStandardKey } from "./domain-standards";
 
 export interface CorrectionParent {
   id: string;
   domain: string;
   content: string | null;
+  title?: string | null;
+  artifact_type?: string | null;
   quality_score: number | null;
   evidence_strength: string | null;
   assessment?: unknown;
@@ -27,7 +30,7 @@ const comparisonSchema = z.object({
 export type CorrectionComparison = z.infer<typeof comparisonSchema>;
 const snapshotSchema = z.object({
   version: z.literal(1),
-  standardKey: z.string(),
+  standardKey: z.string().refine(key => Object.prototype.hasOwnProperty.call(DOMAIN_STANDARD_REGISTRY, key)),
   gap: z.string(),
   correctionTarget: z.enum(["explanation", "application", "discrimination", "correction"]).nullable(),
   systemRecommendation: z.string(),
@@ -39,6 +42,36 @@ export function readAssessment(value: unknown): AssessmentSnapshot | null {
   const result = snapshotSchema.safeParse(value);
   return result.success ? result.data : null;
 }
+/** Mode IDs are routing hints; persisted correction contexts use domain identity. */
+export function canonicalCorrectionDomain(value: string): string {
+  const domain = value.trim().toLowerCase();
+  const aliases: Record<string, string> = {
+    psych_hd: "psychology", psych: "psychology", law_max: "law",
+    sales_close: "sales", general_execution: "general", career: "career_money",
+  };
+  return Object.prototype.hasOwnProperty.call(aliases, domain) ? aliases[domain] : domain;
+}
+
+/** Call only after fetching and validating the owned parent, before scoring. */
+export function correctionAssessmentContext(parent: CorrectionParent, explicitDomain?: string | null): {
+  domain: string; selectedStandard: DomainStandardKey;
+} {
+  const domain = canonicalCorrectionDomain(explicitDomain || parent.domain) || "general";
+  const changed = domain !== canonicalCorrectionDomain(parent.domain);
+  const snapshot = parent.assessment;
+  const key = snapshot && typeof snapshot === "object" && "standardKey" in snapshot ? snapshot.standardKey : null;
+  const validKey = typeof key === "string" && Object.prototype.hasOwnProperty.call(DOMAIN_STANDARD_REGISTRY, key);
+  return {
+    domain,
+    selectedStandard: !changed && validKey ? key as DomainStandardKey : selectDomainStandard({
+      domain,
+      // Changed contexts must not be re-routed by the old artifact's wording.
+      artifactType: changed ? undefined : parent.artifact_type,
+      signalText: changed ? undefined : [parent.title, parent.content].filter(Boolean).join("\n"),
+    }).key,
+  };
+}
+
 export function compareCorrection(parent: CorrectionParent | null, child: {
   parentId: string; domain: string; content: string; score: ProofScoringResult;
 }): CorrectionComparison {
@@ -54,9 +87,8 @@ export function compareCorrection(parent: CorrectionParent | null, child: {
     explanation: "Parent evidence or a verified correction target is unavailable. No improvement claim can be made.",
   };
   if (!parent?.content || !saved) return base;
-  const normalDomain = (value: string) => /^(psychology|psych_hd|psych)$/i.test(value) ? "psychology" : value.toLowerCase();
-  const parentStandard = scoreProofArtifact({ domain: parent.domain, content: parent.content }).standardKey;
-  if (normalDomain(parent.domain) !== normalDomain(child.domain) || parentStandard !== child.score.standardKey || saved.standardKey !== child.score.standardKey) {
+  const parentContext = correctionAssessmentContext(parent);
+  if (parentContext.domain !== canonicalCorrectionDomain(child.domain) || parentContext.selectedStandard !== child.score.standardKey) {
     return { ...base, explanation: "The domain or evidence standard changed; raw scores are shown but are not a valid improvement comparison." };
   }
   const oldText = evidenceOnly(parent.content).toLowerCase().replace(/\s+/g, " ");

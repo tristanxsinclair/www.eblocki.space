@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { readAssessment } from "../../src/lib/eblocki/correction-assessment";
 import { original, corrected } from "../../src/lib/eblocki/__tests__/fixtures/perception";
 const userId = "11111111-1111-4111-8111-111111111111";
 const backend = new URL(process.env.VITE_SUPABASE_URL!);
@@ -177,6 +178,7 @@ for (const width of [320,390,768,1440]) {
   await page.setViewportSize({width,height:900});
   const {tables,writes} = await studentSession(page);
   tables.proof_artifacts = [];
+  tables.user_modes = [];
   await page.goto("/proof?contract=22222222-2222-4222-8222-222222222222");
   await page.locator("#proof-title").fill(original.title);
   await page.locator("#proof-content").fill(original.content);
@@ -184,6 +186,8 @@ for (const width of [320,390,768,1440]) {
   await expect(page.locator("#proof-result-heading")).toBeVisible();
   await expect(page.locator("body")).not.toContainText("not strong evidence yet");
   expect(tables.proof_artifacts).toHaveLength(1);
+  expect(tables.proof_artifacts[0].quality_score).toBe(8);
+  expect(readAssessment(tables.proof_artifacts[0].assessment)?.standardKey).toBe("academic_applied_standard");
   const firstId = tables.proof_artifacts[0].id;
   expect(tables.proof_commitments[0].proof_artifact_id).toBe(firstId);
   await page.getByRole("button",{name:"Submit corrected attempt",exact:true}).click();
@@ -195,6 +199,12 @@ for (const width of [320,390,768,1440]) {
   await expect(page.locator("#feedback").first().getByTestId("correction-comparison")).toBeVisible();
   expect(tables.proof_artifacts).toHaveLength(2);
   expect(tables.proof_artifacts[1].parent_artifact_id).toBe(firstId);
+  expect(tables.proof_artifacts[1].domain).toBe("psychology");
+  const assessment = readAssessment(tables.proof_artifacts[1].assessment)!;
+  expect(assessment.standardKey).toBe("academic_applied_standard");
+  expect(assessment.comparison?.status).not.toBe("incomparable");
+  expect(assessment.comparison?.scoreDelta).toBe(Number(tables.proof_artifacts[1].quality_score) - Number(tables.proof_artifacts[0].quality_score));
+  expect(assessment.comparison?.improved).toContain("New structural evidence of discrimination.");
   expect(tables.proof_commitments[0].proof_artifact_id).toBe(firstId);
   expect(writes.filter(w=>w.table==="proof_commitments")).toHaveLength(1);
   await expect(page.locator("body")).not.toContainText("not strong evidence yet");
@@ -217,3 +227,45 @@ test("missing parent fails closed without creating an unrelated artifact", async
   await expect(page.getByText("The original proof could not be verified. Reopen it before submitting a correction.")).toBeVisible();
   expect(tables.proof_artifacts).toHaveLength(0);
 });
+
+
+for (const scenario of ["stale route", "explicit change", "historical parent"] as const) {
+ test(`correction lineage: ${scenario}`, async ({page}) => {
+  const {tables,writes} = await studentSession(page);
+  tables.proof_artifacts = [];
+  // Only a different area is currently active: PSYCH_HD cannot resolve.
+  tables.user_modes = [{user_id:userId,mode_id:"GENERAL_EXECUTION",display_name:"General",is_active:true}];
+  await page.goto("/proof?contract=22222222-2222-4222-8222-222222222222");
+  await page.locator("#proof-title").fill(original.title);
+  await page.locator("#proof-content").fill(original.content);
+  await page.getByRole("button",{name:"Submit proof",exact:true}).first().click();
+  await expect(page.locator("#proof-result-heading")).toBeVisible();
+  const parentId = tables.proof_artifacts[0].id;
+  if (scenario === "historical parent") tables.proof_artifacts[0].assessment = null;
+  await page.getByRole("button",{name:"Submit corrected attempt",exact:true}).click();
+  await expect(page).toHaveURL(/corrects=/);
+  if (scenario === "stale route") {
+    const forged = new URL(page.url()); forged.searchParams.set("mode","GENERAL_EXECUTION");
+    await page.goto(forged.toString());
+  } else await page.reload();
+  if (scenario === "explicit change") {
+    await page.locator("#proof-mode-select-mobile").selectOption("GENERAL_EXECUTION");
+    await expect(page.getByText(/Study area explicitly changed to/)).toBeVisible();
+  }
+  await page.locator("#proof-title").fill(corrected.title);
+  await page.locator("#proof-content").fill(corrected.content);
+  await page.getByRole("button",{name:"Submit proof",exact:true}).first().click();
+  await expect(page.locator("#proof-result-heading")).toBeVisible();
+  expect(tables.proof_artifacts).toHaveLength(2);
+  const child = tables.proof_artifacts[1];
+  const assessment = readAssessment(child.assessment)!;
+  expect(child.parent_artifact_id).toBe(parentId);
+  expect(child.domain).toBe(scenario === "explicit change" ? "general" : "psychology");
+  expect(assessment.standardKey).toBe(scenario === "explicit change" ? "general_proof_standard" : "academic_applied_standard");
+  if (scenario === "stale route") expect(assessment.comparison?.status).not.toBe("incomparable");
+  else expect(assessment.comparison?.status).toBe("incomparable");
+  if (scenario === "historical parent") expect(assessment.comparison?.explanation).toContain("verified correction target is unavailable");
+  expect(tables.proof_commitments[0].proof_artifact_id).toBe(parentId);
+  expect(writes.filter(write=>write.table==="proof_commitments")).toHaveLength(1);
+ });
+}
